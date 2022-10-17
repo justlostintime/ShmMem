@@ -1,0 +1,46 @@
+' Gambas module file
+
+Public Sub main()
+
+    Dim vmem As New ShmMem(1000000)
+    Dim c As New Collection
+    Dim a As String[] = ["this", "that", "other"]
+    Dim b As Integer[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+
+    With vmem
+        !go = "hello"
+        !goagain = "bye"
+        !Pork = 1
+        !Alpha = "Bobby"
+        !Beta = 3
+        !Gamma = a
+        c!Dumb = "hello"
+        Print vmem.Count, !PorkBellies, c!smart
+
+        For Each v As Variant In vmem
+            Print vmem.key, v
+        Next
+
+        Print "Gamma[2]", !Gamma[2]
+        .["Gamma", 2] = "post"                           ' example how To update staic arrays this is very very slow
+        Print "Gamma[2]", !Gamma[2]
+        !delta = b
+
+        Print b[0], !delta[0]
+        b[0] = 12
+        .["Delta", 0] = 12                              ' example how To update staic arrays this is very very slow
+        Print b[0], !delta[0]
+
+        Print
+
+        For Each v In c
+            Print c.key, v
+        Next
+
+        Print !go, !goagain
+
+
+    End With
+
+
+End

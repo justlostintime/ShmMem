@@ -1,0 +1,761 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Fast Unsafe
+'' How a symbol is stored in the shared memory
+
+Public Struct Symbol
+    Name[128] As Byte                       '' Max length of any variable name
+    Used As Boolean                         '' This slot is in use
+    NotifyBlock As Pointer                  '' pointer to chain of pids waiting to be notified when This symbol changes
+    Address As Long                         '' virtual address of the value, 0 means no value yet
+    Hash As Long                            '' When we start using a hash for this table
+    NameLength As Integer                   '' NameLength
+End Struct
+
+'' The content of each entry in the symbol table
+Public Struct TableInfo
+    Initialized As Boolean                  '' indicates if memory must be initialized
+    LastUpdate As Float                     '' The last time the table was updated
+    Count As Long                           '' Number of actual table slots available
+    Collisions As Long                      '' Number of times hash was already used
+    UsedCount As Long                       '' Number of used Entries
+    MaxCount As Long                        '' Max Number of entries ever used
+End Struct
+
+'' The structure of the actual symbol table, Virtual definition see Max default entries in ShmMem
+Public Struct tableLayout
+    Table[20000] As Struct Symbol           '' fake number entries but does limit max number of variables in a program
+End Struct
+
+Public Struct sString
+    Value As String
+End Struct
+
+'' The value returned When there are no valid entry in table, not found, end of table, etc
+Static Private NoEntry As Pointer = CPointer(-1)
+
+Public SymTblMem As ShmMemBlock
+Public VarMem As ShmVarStorage
+Public NotifyVars As ShmNotify
+Public SymMem As TableLayout
+Public SymInfo As TableInfo
+
+'' cache the symbol names in a hash table for quick access
+'' Does mean that we have to update this every time a symbol is added or removed .. lol
+'' But this is a database not just a bunch of variables
+Private SymbolCache As New Collection(gb.ignorecase)
+
+Private LastUpdated As Float = 0
+
+' Extern SymMemPtr(dest As Pointer, src As Pointer, Len As Integer) As TableLayout In "libc:6" Exec "memcpy"
+' Extern SymInfoPtr(dest As Pointer, src As Pointer, Len As Integer) As TableInfo In "libc:6" Exec "memcpy"
+' Extern memPtr(dest As Pointer, src As Pointer, Len As Integer) As Pointer In "libc:6" Exec "memcpy"
+'Extern strncpy(dest As Pointer, source As String, len As Integer) As Pointer In "libc:6"
+Extern strncmp(dest As Pointer, source As String, len As Integer) As Integer In "libc:6"
+
+Property Read text As String                      '' Returns a printable representation of the symbol table
+Property Read count As Integer                    '' The number of active entries in the symbol table
+Property Read Length As Integer                   '' The number of active entries in the symbol table
+Property Read Max As Integer                      '' The highest index that will work
+Private $sKey As String
+Property Read Key As String                       '' The key when using for each
+Private $vDefault As Variant = False
+Property Default As Variant                       '' The default value returned when a symbol does not exist, Defaults to False
+Property Read MaxSymbols As Integer               '' The Max number of symbols that can be placed in the table
+Property Read Collisions As Integer               '' The number of time the Hash Function Collided with used entry
+Property Read MaxUsedSymbols As Integer           '' Highest Number Of Symbols ever used
+Property Debug As Boolean Use $bDebug
+
+Public Sub Save(OutFile As File)
+
+    If $bDebug Then Print Application.id, "Save SymTblmem.exclusive"
+    SymTblMem.Exclusive()
+    Write #outFile, SymInfo.UsedCount As Long
+    Write #outFile, SymInfo.LastUpdate As Float
+    For i As Integer = 0 To SymInfo.count - 1                   '' for each slot save to the file with the value
+        If SymMem.Table[i].Used = False Then Continue             '' Skip unused entries
+        If SymMem.Table[i].address > 0 Then
+            Write #OutFile, True As Boolean                         '' There is saved data
+            WriteVar(SymMem.Table[i].Address, OutFile, SymMem.Table[i].Name.ToString())          '' Write the variable to the file
+        Else
+            Write #OutFile, False As Boolean                        '' There is no data saved
+        Endif
+    Next
+
+    SymTblMem.Release()
+    If $bDebug Then Print Application.id, "Save SymTblmem.release"
+
+Catch
+    Dim errormsg As String = "Save Error :" & Error.Text & "," & Error.where
+    SymTblMem.Release()
+    If $bDebug Then Print Application.id, "Save SymTblmem.release"
+    Error.Raise(errormsg)
+
+End
+
+Public Sub SaveVar(SymName As String, OutFile As File)
+
+    UpdateCache()
+
+    If Not SymbolCache.exist(SymName) Then
+        Error.Raise("SaveVar Error:" & Error.text & "," & Error.where)
+    Endif
+
+    Dim index As Long = SymbolCache[SymName]
+    WriteVar(SymMem.Table[index].Address, OutFile, SymName)
+    If Error Then
+        Error.Raise("SaveVar Error: " & Error.text & "," & Error.where)
+    Endif
+
+End
+
+
+Public Sub WriteVar(Address As Long, OutFile As File, SymName As String)
+
+    Dim value As Variant
+
+    If $bDebug Then Print Application.id, "Save ShmSymbolTable VarMem.Lock " & SymName
+    VarMem.Lock()
+    value = VarMem[Address]
+    Write #OutFile, SymName As String
+    Write #OutFile, Value As Variant
+    VarMem.Unlock()
+    If $bDebug Then Print Application.id, "Save ShmSymbolTable Varmem.UnLock " & SymName
+Catch
+    Dim errormsg As String = "WriteVar Error :" & Error.text & "," & Error.where
+    VarMem.Unlock()
+    If $bDebug Then Print Application.id, "Save ShmSymbolTable Varmem.UnLock " & SymName
+    Error.Raise(errormsg)
+
+End
+
+
+Public Sub Load(InFile As File)
+
+    Dim UsedCount As Long
+    Dim lastUpdate As Float
+    Dim Assigned As Boolean
+
+    UsedCount = Read #inFile As Long
+    lastUpdate = Read #inFile As Float
+    For i As Integer = 1 To usedCount                           '' load all the variables
+        Assigned = Read #inFile As Boolean
+        If Not Assigned Then Continue
+        LoadVar(inFile)
+    Next
+
+Catch
+    Dim errormsg As String = "Load Error :" & Error.Text & "," & Error.where
+    Error.Raise(errormsg)
+
+End
+
+Public Sub Loadvar(infile As File, Optional symname As String = "")
+
+    ReadVar(infile, symname)
+
+End
+
+Public Sub ReadVar(infile As File, ReqSymname As String)
+
+    Dim symname As String
+    Dim value As Variant
+
+    Symname = Read #infile As String
+    If reqSymname <> "" Then symname = ReqSymName
+    value = Read #infile As Variant
+    _put(value, symname)
+
+End
+
+
+
+Static Public Sub SymbolLength() As Integer
+
+    Return SizeOf(symbol)
+
+End
+
+Static Public Sub InfoLength() As Integer
+
+    Return SizeOf(TableInfo)
+
+End
+
+Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage)
+
+    ' $bDebug = True
+
+    VarMem = DataMem
+    SymTblMem = MemBlock
+
+    If $bDebug Then Print Application.id, "_new SymTblmem.exclusive"
+    SymTblMem.Exclusive()
+
+    ' SymMem = SymMemPtr(MemBlock.DataAddress + SizeOf(TableInfo), MemBlock.DataAddress + SizeOf(TableInfo), 0)
+    SymMem = MemBlock.DataAddress + SizeOf(TableInfo)
+
+    ' SymInfo = SymInfoPtr(MemBlock.DataAddress, MemBlock.DataAddress, 0)
+    SymInfo = MemBlock.DataAddress
+
+    If Not SymInfo.Initialized Then
+        SymInfo.count = (SymTblMem.DataLength / SizeOf(Symbol)) - 10
+        SymInfo.LastUpdate = Timer
+        SymInfo.Initialized = True
+        SymInfo.Collisions = 0
+        SymInfo.MaxCount = 0
+        SymInfo.UsedCount = 0
+    Endif
+
+    LastUpdated = Timer
+
+    SymTblMem.Release()
+    If $bDebug Then Print Application.id, "_new SymTblmem.release"
+
+    NotifyVars = New ShmNotify(DataMem)
+
+    UpdateCache()
+
+End
+
+Public Sub _free()
+
+    If varmem = Null Then
+        Return
+    Endif
+
+    NotifyVars = Null
+    varmem = Null
+    SymTblMem = Null
+
+End
+
+Private Sub UpdateCache()
+
+    If LastUpdated = SymInfo.LastUpdate Then Return
+
+    SymbolCache.Clear()
+
+
+    For i As Integer = 0 To SymInfo.Count - 1
+        If SymMem.Table[i].Used And SymMem.Table[i].Address > 0 Then
+            SymbolCache.Add(i, SymMem.Table[i].Name.toString())
+        Endif
+    Next
+
+End
+
+Public Sub Clear()
+
+    If $bDebug Then Print Application.id, "Clear SymTblmem.exclusive"
+    SymTblMem.Exclusive()
+
+    SymbolCache.Clear()
+
+    For i As Integer = 0 To SymInfo.Count - 1
+        If SymMem.Table[i].Used = True Then
+            VarMem.Free(SymMem.Table[i].Address)
+        Else
+            Continue
+        Endif
+        SymMem.Table[i].Used = False
+    Next
+
+    SymInfo.UsedCount = 0
+    LastUpdated = Timer
+    SymInfo.LastUpdate = LastUpdated
+
+    SymTblMem.Release()
+    If $bDebug Then Print Application.id, "Clear SymTblmem.release"
+
+End
+
+
+Private Sub Hash(Symbol As String) As Pointer                 '' Hash table uses  pointers as index value  as they are unsigned
+
+    Dim SymName As String = Lower(Symbol)
+    Dim Buffer As Byte[]
+    Dim Value As Long = 0
+    Dim tblLen As Long = SymInfo.count
+
+    Buffer = Byte[].FromString(SymName)
+    For i As Integer = 0 To Buffer.Max
+        Value = (31 * Value + Buffer[i]) Mod TblLen
+    Next
+    Return value
+
+End
+
+Private Sub FindHash(HashValue As Pointer, SymName As String, Optional NextEmpty As Boolean = False) As Pointer '' returns the table entry with this hash and symbol or null if not found
+
+    Dim index As Pointer = HashValue
+    Dim TopValue As Boolean = False
+
+    SymName = Lower(SymName)
+    If SymMem.Table[index].Used = False Then
+        If Not NextEmpty Then
+            Return NoEntry
+        Else
+            Return index
+        Endif
+    Endif
+
+    If NextEmpty Then
+        Inc SymInfo.Collisions
+    Endif
+
+    While TopValue = False Or index <> HashValue
+
+        If SymMem.Table[index].Used = False Then
+            If Not NextEmpty Then
+                Return NoEntry
+            Else
+                Return index
+            Endif
+        Endif
+
+        If SymMem.Table[index].Hash = hashValue Then
+            Dim NameLen As Integer = SymMem.Table[index].NameLength
+            If NameLen = SymName.len Then
+                Dim cmpresult As Integer = strncmp(SymMem.Table[index].Name.data, SymName, NameLen)
+                If cmpresult = 0 Then
+                    If Not NextEmpty Then
+                        Return index
+                    Endif
+                Endif
+            Endif
+        Endif
+
+        Inc index
+
+        If index = SymInfo.Count Then
+            index = 0
+            TopValue = True
+        Endif
+    Wend
+
+    Return NoEntry
+
+End
+
+Private Sub FindEmpty(HashValue As Pointer, Symbol As String) As Pointer     '' Returns the next available entry in the symbol table
+
+    Return FindHash(HashValue, Symbol, True)
+
+End
+
+Public Sub GetSymIndex(Symbol As String) As Pointer
+
+    Dim MyHash As Pointer = Hash(symbol)
+
+    Return FindHash(MyHash, Symbol)
+
+End
+
+
+'' Return the slot number insert the name and change the lastupdated time
+'' Create a basic variable storage to go along with this symbol
+'' Update the virtual address of Var in the table
+Public Sub Add(symName As String, value As Variant) As Long
+
+    Dim result As Pointer
+
+    If SymName = "" Then
+        Error.Raise("Symbol name can not be blank")
+    Endif
+
+    Symname = Lower(symname)
+
+    Dim HashValue As Pointer = Hash(symName)
+
+    If $bDebug Then Print Application.id, "Add SymTblmem.exclusive " & SymName
+    SymTblMem.Exclusive()
+
+    Dim i As Pointer = FindEmpty(HashValue, SymName)
+
+    If i = NoEntry Then
+        SymTblMem.Release()
+        Error.Raise("No More Room In Symbol Table : " & SymInfo.count & " for " & symname)
+    Endif
+
+    If $bDebug Then Print Application.id, "Add SymTblmem.Empty hash found " & SymName
+
+
+    ' result = strncpy(SymMem.Table[i].Name.data, symname, 127)
+    If symname.len > 127 Then symname = Left(symname, 127)
+    Dim sNewSym As Byte[] = Byte[].FromString(symname)
+
+    For j As Integer = 0 To sNewSym.max
+        SymMem.Table[i].Name[j] = sNewSym[j]
+    Next
+    SymMem.Table[i].Name[j] = 0
+
+    If $bDebug Then Print Application.id, "Add SymTblmem.Symbol name set  " & SymName
+
+    SymMem.Table[i].NameLength = IIf(symname.len > 127, 127, symName.len)
+
+    SymMem.Table[i].Hash = HashValue
+    SymMem.Table[i].Used = True
+    SymInfo.LastUpdate = Timer
+
+    If SymInfo.MaxCount < SymInfo.UsedCount Then
+        SymInfo.MaxCount = SymInfo.UsedCount
+    Endif
+
+    LastUpdated = SymInfo.LastUpdate
+    SymbolCache[symName] = i
+
+    SymMem.Table[i].Address = VarMem.set(value)
+    Inc SymInfo.UsedCount
+
+    SymTblMem.Release()
+    If $bDebug Then Print Application.id, "Add SymTblmem.release"
+
+End
+
+
+Public Sub Remove(SymName As String)
+
+    Dim freeData As Pointer
+
+    UpdateCache()
+
+    If Not SymbolCache.Exist(SymName) Then
+        Error.Raise("Unknown Symbol " & SymName)
+    Endif
+
+    Dim index As Long = SymbolCache[SymName]
+
+    If $bDebug Then Print Application.id, "remove SymTblmem.exclusive " & SymName
+    SymTblMem.Exclusive()
+
+    freeData = SymMem.Table[index].Address
+    SymMem.Table[index].Address = NoEntry
+    SymMem.Table[index].Used = False
+    SymbolCache.Remove(SymName)
+    SymInfo.LastUpdate = Timer
+    LastUpdated = SymInfo.LastUpdate
+    Dec SymInfo.UsedCount
+
+    SymTblMem.Release()
+    If $bDebug Then Print Application.id, "remove SymTblmem.release"
+    VarMem.Free(Freedata)
+
+End
+
+Public Sub _get(SymName As String) As Variant
+
+    UpdateCache()
+
+    If Not SymbolCache.exist(SymName) Then
+        Return $vDefault
+    Endif
+
+    Dim index As Long = SymbolCache[SymName]
+
+    If $bDebug Then Print Application.id, "_get ShmSymbolTable VarMem.Lock " & SymName
+    VarMem.Lock()
+    Dim value As Variant = VarMem[SymMem.Table[index].Address]
+    VarMem.Unlock()
+    If $bDebug Then Print Application.id, "_get ShmSymbolTable Varmem.UnLock " & SymName
+    Return value
+
+End
+
+Public Sub _put(value As Variant, SymName As String)
+
+    UpdateCache()
+    Dim SymbolIndex As Long
+    Dim sym As Symbol
+
+    If Not SymbolCache.Exist(SymName) Then
+        Add(SymName, Value)
+    Else
+
+        SymbolIndex = SymbolCache[SymName]
+        Sym = SymMem.Table[SymbolIndex]
+        VarMem.Lock()
+        VarMem[Sym.Address] = value
+        VarMem.Unlock()
+        If Sym.NotifyBlock <> 0 Then
+            NotifyVars.SignalEach(Sym)
+        Endif
+    Endif
+
+End
+
+Public Sub Notify(SymName As String, CallBack As Object, Optional FuncName As String = "", Timeout As Long = 0)
+
+    Dim ObjClass As Class = Null
+    Dim SymbolIndex As Variant = SymbolCache[SymName]
+
+    If Not SymbolIndex Then
+        Error.Raise("Unknown Variable " & Quote(SymName))
+    Endif
+    If FuncName = "" Then funcName = SymName & "_Changed"
+
+    Dim cClass As Class
+    For Each cClass In classes
+        If CallBack = cClass Then
+            ObjClass = cClass
+            Break
+        Endif
+    Next
+
+    If IsNull(ObjClass) Then
+        ObjClass = Object.Class(CallBack)
+    Endif
+
+    If ObjClass.Exist(FuncName) Then
+        NotifyVars.Notify(SymMem.Table[SymbolIndex], CallBack, FuncName, Timeout)
+    Else
+        Error.Raise("Unknown Function Name " & FuncName)
+    Endif
+
+End
+
+Public Sub NotifyStop(SymName As String)
+
+    Dim SymbolIndex As Variant = SymbolCache[SymName]
+
+    If Not SymbolIndex Then
+        Error.Raise("Unknown Variable " & Quote(SymName))
+    Endif
+    NotifyVars.NotifyStop(SymMem.Table[SymbolIndex])
+
+End
+
+
+
+'' Returns the Virtual Address of the symbol
+Public Sub {VarPtr}(SymName As String) As Variant
+
+    UpdateCache()
+    If Not SymbolCache.exist(SymName) Then
+        Error.Raise("Unknow Symbol " & SymName)
+    Else
+        Dim index As Long = SymbolCache[SymName]
+        Dim value As Variant = VarMem.varptr(SymMem.Table[index].Address)
+    Endif
+
+    Return value
+
+End
+
+''Returns a Virtual object pointing to the table entry
+Public Sub Entry(SymName As String) As Variant
+
+    UpdateCache()
+    If Not SymbolCache.exist(SymName) Then
+        Error.Raise("Unknow Symbol " & SymName)
+    Else
+        Dim index As Long = SymbolCache[SymName]
+        Dim value As Variant = SymMem.Table[index]
+    Endif
+
+    Return value
+
+End
+
+
+Private Sub Text_Read() As String
+
+    Dim Result As String = ""
+
+    Result &= "\nSymbol Table Listing, MaxLength = " & SymInfo.MaxCount & "/" & SymInfo.Count & ", Collisions = " & SymInfo.Collisions & ", Updated " & SymInfo.LastUpdate & "Phy Address " & Hex(SymTblMem.MemoryAddress, 8) & "\n"
+    For Each Var As Integer In SymbolCache
+        Result &= Format(SymMem.Table[Var].Hash, "####0") & ":" & Left(SymMem.Table[Var].Name.ToString() & Space(25), 25) & " : " & VarMem.text(SymMem.Table[Var].Address) & "\n"
+    Next
+    Return result
+
+End
+
+Public Sub {Exist}(SymName As String) As Boolean
+
+    UpdateCache()
+    Return SymbolCache.Exist(SymName)
+
+End
+
+'' Wait for a variable to appear with timeout
+Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
+
+    Dim starttime As Float = Timer
+
+    UpdateCache()
+
+    While Not SymbolCache.Exist(symname)
+        If timeout > 0 And If Timer - starttime >= timeout Then
+            Return False
+        Endif
+        UpdateCache()
+        Wait 0
+    Wend
+    Return True
+
+End
+
+Public Sub WaitForValue(SymName As String, Value As Variant, Optional timeout As Float = 0) As Boolean
+
+    Dim starttime As Float = Timer
+
+    UpdateCache()
+    While Not SymbolCache.Exist(symname)
+        If timeout > 0 And If Timer - starttime >= timeout Then
+            Return False
+        Endif
+        UpdateCache()
+        Wait 0
+    Wend
+
+    While Me[symname] <> Value
+        Wait 0
+        If timeout > 0 And If Timer - starttime >= timeout Then
+            Return False
+        Endif
+    Wend
+
+    Return True
+
+End
+
+Public Sub WaitValueChange(SymName As String, Value As Variant, Optional timeout As Float = 0) As Boolean
+
+    Dim starttime As Float = Timer
+
+    UpdateCache()
+    While Not SymbolCache.Exist(symname)
+        If timeout > 0 And If Timer - starttime >= timeout Then
+            Return False
+        Endif
+        UpdateCache()
+        Wait 0
+    Wend
+
+    While Me[symname] = Value
+        If timeout > 0 And If Timer - starttime >= timeout Then
+            Return False
+        Endif
+        Wait 0
+    Wend
+
+    Return True
+
+End
+
+Public Sub SortedList() As String[]
+
+    Dim RetList As New String[]
+
+    For i As Integer = 0 To SymInfo.Count - 1
+        If SymMem.Table[i].Used And SymMem.Table[i].Address > 0 Then
+            RetList.Add(SymMem.Table[i].Name.toString())
+        Endif
+    Next
+    RetList.Sort()
+    Return RetList
+
+End
+
+
+Public Sub _next() As Variant
+
+    If Enum.Index = Null Then
+        If SymInfo.count = 0 Then
+            Enum.Stop()
+            Return
+        Endif
+        Enum.Index = NextUsedSlot(-1)
+        $sKey = SymMem.Table[Enum.Index].Name.toString()
+    Else
+        Enum.index = NextUsedSlot(Enum.index)
+        If Enum.index = -1 Then
+            Enum.Stop()
+            Return
+        Endif
+        $sKey = SymMem.Table[Enum.Index].Name.toString()
+    Endif
+
+    Return VarMem[SymMem.Table[Enum.index].Address]
+
+End
+
+Private Sub NextUsedSlot(index As Long) As Long
+
+    Inc index
+    While Index < SymInfo.Count And SymMem.Table[index].Used = False
+        Inc index
+    Wend
+    If Index >= SymInfo.Count Then
+        index = -1
+    Endif
+    Return index
+
+End
+
+
+Private Function count_Read() As Integer
+
+    Return SymInfo.UsedCount
+
+End
+
+Private Function Max_Read() As Integer
+
+    Return SymInfo.UsedCount - 1
+
+End
+
+Private Function Length_Read() As Integer
+
+    Return SymInfo.UsedCount
+
+End
+
+Private Function Key_Read() As String
+
+    Return $sKey
+
+End
+
+Private Function Default_Read() As Variant
+
+    Return $vDefault
+
+End
+
+Private Sub Default_Write(Value As Variant)
+
+    $vDefault = Value
+
+End
+
+Private Function MaxSymbols_Read() As Integer
+
+    Return SymInfo.Count
+
+End
+
+
+Private Function Collisions_Read() As Integer
+
+    Return SymInfo.Collisions
+
+End
+
+Private Function MaxUsedSymbols_Read() As Integer
+
+    Return SymInfo.MaxCount
+
+End
+
+
+
+

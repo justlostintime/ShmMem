@@ -1,0 +1,141 @@
+' Gambas module file
+
+Public Sub main()
+
+  Dim myMem As New ShmMem(1500000)
+
+  With mymem
+    Print "Test Priority Queues ***************************************************************"
+    For i As Integer = 0 To 1000
+      Dim qa As New ShmQueue(myMem)
+      qa.enqueue("This is even higher 201", 201)
+      qa.enqueue("This is higher 100", 100)
+      qa.enqueue("This is higher 110", 110)
+      qa.enqueue("This is even higher 200", 200)
+
+      qa.enqueue("This is low 2", 2)
+      qa.enqueue("This is very low 1", 1)
+      qa.enqueue("This is low 2", 2)
+      qa.enqueue("This is very low 1", 1)
+      qa.enqueue("This is low 99", 99)
+      qa.enqueue("This is higher 100", 100)
+      qa.enqueue("This is even higher 300", 300)
+      qa.enqueue("This is very low 19", 19)
+      qa.enqueue("This is low 2", 2)
+      qa.enqueue("This is higher 100", 100)
+      qa.enqueue("This is even higher 200", 200)
+      qa.enqueue("This is very low 1", 1)
+
+      For Each v As Variant In qa
+        Print v
+      Next
+
+      While qa.count
+        qa.Pop()
+      Wend
+
+      qa.enqueue("This is low 99", 99)
+      qa.enqueue("This is higher 100", 100)
+      qa.enqueue("This is even higher 300", 300)
+      qa.enqueue("This is very low 19", 19)
+      qa.enqueue("This is low 2", 2)
+      qa.enqueue("This is higher 100", 100)
+      qa.enqueue("This is even higher 200", 200)
+      qa.enqueue("This is very low 1", 1)
+      ' myMem.varMnge._Print()
+      ' myMem.PrintTree()
+
+      Print "Dequeue the 300 priority entry:";; qa.Dequeue(300)
+
+      Dim Val As Variant = qa.DeQueue(300)
+
+      If Not VAl Then
+        Print "Correct No Entry Matches when already dequeued 300 priority item"
+      Else
+        Print "Failed the 300 priority item was already dequeued ";; Val
+      Endif
+
+      While qa.count
+        Print qa.dequeue()
+      Wend
+
+    Next
+
+    Print "End of priority queue test **********************************\nStart List test *******************************************"
+
+    Dim a As ShmList = New ShmList(myMem)
+    Dim b As ShmList
+
+    a.add("Hello doctor")
+    a.add("Hello World")
+    a.add(4.2)
+    a.add([1, 2, 3, 4, 5, 6])
+
+    For Each v As Variant In a
+      Print v
+    Next
+
+    a[1] = 3
+
+    For Each v As Variant In a
+      Print v
+    Next
+
+    Dim j As Integer
+    Print "Begin 1,000,000 Writes and reads from list ...... Please wait "
+    Dim StartTime As Float = Timer
+    For I As Integer = 0 To 1000000
+      a[1] = i
+      j = a[1]
+    Next
+
+    Print "Time to write read list data X 1,000,000";; Timer - StartTime
+
+    !Apple = a
+    b = !Apple
+    !Orange = !Apple
+
+    !Apple[1] = "Changed Correctly"
+    Print a[1], b[1], !Apple[1], !Orange[1], !Orange[3][4]
+
+    Print "End of list test ********************************\nStart FiFo and FiLo  test ******************************************"
+
+    Dim c As New ShmFiFo(myMem)
+    c.Push(1)
+    c.Push(2)
+    c.Push(3)
+    Print c.Pop(),
+      Print c.Pop(),
+      Print c.Pop()
+
+    Dim d As New ShmFiLo(myMem)
+    Dim e As ShmFiLo
+    d.Push(1)
+    d.Push(2)
+    d.Push(3)
+
+    !Banana = d
+    e = !Banana
+
+    Print d.Pop(),
+      Print d.Pop(),
+      Print d.Pop()
+
+    d.push("Item 1")
+    d.Push("Item 2")
+    Dim y As Variant = d.Copy()
+    d.Pop()
+    d.Pop()
+
+    !Banana = d
+    For Each v As Variant In y
+      Print v
+    Next
+
+    Print "End of FiFo Test ******************************************************\nBegin FiLo test ************************************************************"
+
+    myMem.varMnge._Print()
+
+  End With
+
+End

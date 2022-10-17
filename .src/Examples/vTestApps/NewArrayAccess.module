@@ -1,0 +1,27 @@
+' Gambas module file
+
+Fast Unsafe
+
+Public Sub main()
+
+    Dim MyMem As New ShmMem
+
+    With MyMem
+        !v = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+        .a = [1, 2, 3, 4, 5, 6, 7, 8]
+        Print .a[2]
+
+        !v[1] = 100
+
+        Print !v[1]
+        Dim a As Float = Timer
+        For i As Integer = 0 To 100000
+            MyMem["v", 3] = 100
+        Next
+
+        Print "Total time = 100000/"; Timer - a, !v[3]
+
+    End With
+
+End

@@ -1,0 +1,349 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Const VarMemDefault As Long = 2000000
+Const MaxSymbolsDefault As Integer = 8000
+Const TimeOutDefault As Float = 0.1
+
+Public varStore As ShmMemBlock
+Public varMnge As ShmManage
+Public MyVarMem As ShmVarStorage
+Public VarStoreName As String
+
+Public symStore As ShmMemBlock
+Public vars As ShmSymbolTable
+Public SymStoreName As String
+
+Property Read Count As Integer
+Property Read Max As Integer
+Property Read Length As Integer
+Private $sKey As String
+Property Read Key As String
+Property Debug As Boolean Use $bDebug
+Property DefaultDirectory As String Use $sDefaultDirectory
+
+
+'' Remove the memory by force
+Static Public Sub ForceDelete(SharedName As String)
+
+    Try shmMemBlock.ForceDelete(SharedName & "_Data")
+    Try shmMemBlock.ForceDelete(SharedName & "_Symbols")
+
+End
+
+
+'' Allocate the memory
+Public Sub _new(Optional VarMemLength As Long = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault)
+
+    $sDefaultDirectory = User.home &/ "vars"
+
+    If MemName <> "" Then
+        VarStoreName = Memname & "_Data"
+        SymStoreName = Memname & "_Symbols"
+        VarStore = New ShmMemBlock(VarMemLength, VarStoreName, LockTimeOut)
+        symStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), SymStoreName, LockTimeOut)
+    Else
+        VarStoreName = ""
+        SymStoreName = ""
+        VarStore = New ShmMemBlock(VarMemLength, MemName, LockTimeOut)
+        symStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), MemName, LockTimeOut)
+    Endif
+
+    VarMnge = New ShmManage(varStore)
+    MyVarMem = New ShmVarStorage(varMnge)
+    vars = New ShmSymbolTable(symStore, MyVarMem)
+
+End
+
+Public Sub _free()
+
+    Vars = Null
+    ' SymStore = Null
+    'MyVarMem = Null
+    varMnge = Null
+    'varstore = Null
+
+End
+
+Public Sub _property(...) As Boolean
+
+    Debug Param.count
+    Return True
+
+End
+
+Public Sub _unknown(...) As Variant
+
+    If Param.count = 0 Then
+        Return _get(Param.name)
+    Endif
+
+    _put(Param[0], Param.name)
+
+End
+
+
+Public Sub _get(SymName As String, ...) As Variant
+
+    Return vars[SymName]
+
+End
+
+Public Sub _put(value As Variant, SymName As String, ...)
+
+    If Param.count > 0 And If Param.count < 4 Then
+        Dim tmpvar As Variant = vars[SymName]
+        Select Case Param.count
+            Case 1
+                tmpvar[Param[0]] = value
+            Case 2
+                tmpvar[Param[0], Param[1]] = value
+            Case 3
+                tmpvar[Param[0], Param[1], Param[2]] = value
+            Case 4
+                tmpvar[Param[0], Param[1], Param[2], Param[3]] = value
+        End Select
+        vars[SymName] = tmpvar
+    Else
+        vars[SymName] = value
+    Endif
+
+End
+
+Public Sub {Free}(SymName As Variant)
+
+    Select Case TypeOf(SymName)
+        Case gb.integer, gb.pointer, gb.long, gb.Short
+            MyVarMem.FreeVirt(CPointer(SymName))
+        Case gb.string
+            vars.Free(SymName)
+    End Select
+
+End
+
+''-----------------------------------------------------------------------------------
+'' Read and write images and variables
+''-----------------------------------------------------------------------------------
+Public Sub SetPath(filePath As String, Optional defaultBaseName As String = "", defaultExtension As String = "") As String
+
+    Dim basename As String = File.BaseName(filePath)
+    Dim Extension As String = File.Ext(filePath)
+    Dim Directory As String = File.Dir(filepath)
+
+    If directory = "" Then directory = $sDefaultDirectory
+    If basename = "" Then basename = defaultBaseName
+    If extension = "" Then extension = defaultExtension
+    Return Directory &/ basename & IIf(extension <> "", "." & Extension, "")
+
+End
+
+Public Sub SaveImage(Optional FileName As String = Application.name & ".image")
+
+    Dim outfileName As String = SetPath(FileName)
+    Dim outfile As File
+
+    Try outfile = Open outfilename For Write Create
+    If Error Then
+        Error.propegate()
+    Endif
+    vars.Save(outfile)
+    Close outfile
+
+End
+
+Public Sub SaveVar(VarName As String, Optional filename As String = "")
+
+    Dim outfileName As String = SetPath(FileName, VarName, "var")
+    Dim outfile As File
+
+    Try outfile = Open outfilename For Write Create
+    If Error Then
+        Error.propegate()
+    Endif
+    vars.SaveVar(VarName, Outfile)
+    Close outfile
+
+End
+
+
+Public Sub LoadImage(Optional FileName As String = Application.name & ".image")
+
+    Dim infileName As String = SetPath(FileName)
+    Dim infile As File
+
+    Try infile = Open infilename For Read
+    If Error Then
+        Error.propegate()
+    Endif
+    vars.Load(infile)
+    Close infile
+
+End
+
+Public Sub LoadVar(FileName As String, Optional SymName As String = "")
+
+    Dim infileName As String = SetPath(FileName, "", "var")
+    Dim infile As File
+
+    Try infile = Open infilename For Read
+    If Error Then
+        Error.propegate()
+    Endif
+    vars.LoadVar(infile, SymName)
+    Close infile
+
+End
+
+
+Public Sub {VarPtr}(SymName As String) As Variant
+
+    Return vars.VarPtr(SymName)
+
+End
+
+Public Sub {SizeOf}(Value As Variant) As Long
+
+    Return MyVarMem.SizeOf(Value)
+
+End
+
+Public Sub {Print}()
+
+    Print vars.Text
+
+End
+'   Const VarMemDefault As Long = 2000000
+'   Const MaxSymbolsDefault As Integer = 8000
+'   Const TimeOutDefault As Float = 0.1
+'
+'   Public varStore As ShmMemBlock
+'   Public varMnge As ShmManage
+'   Public MyVarMem As ShmVarStorage
+'
+'   Public symStore As ShmMemBlock
+'   Public vars As ShmSymbolTable
+'   Public NotifyVars As ShmNotify
+
+Public Sub PrintAllInfo()
+
+    Print "***************************************** Full Memory Info***************************************************"
+    Print Subst("Default Memory Size &1MB, Max Symbol Table entries &2, Default Timeout &3", VarMemDefault / 1024, MaxSymbolsDefault, TimeOutDefault)
+    Print
+    Print Vars.text
+    Print
+    VarMnge._Print()
+    Print
+
+End
+
+
+Public Sub PrintTree()
+
+    Print MyVarMem.TextTree()
+
+End
+
+
+Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
+
+    Return vars.WaitFor(symname, timeout)
+
+End
+
+Public Sub WaitForValue(SymName As String, Value As Variant, Optional Timeout As Float = 0) As Boolean
+
+    Return vars.WaitForValue(symname, Value, timeout)
+
+End
+
+Public Sub WaitValueChange(SymName As String, Value As Variant, Optional Timeout As Float = 0) As Boolean
+
+    Return vars.WaitValueChange(symname, Value, timeout)
+
+End
+
+Public Sub Notify(SymName As String, NotifyObject As Object, Optional NotifyFunction As String = "")
+
+    vars.Notify(SymName, NotifyObject, NotifyFunction)
+
+End
+
+Public Sub NotifyStop(SymName As String)
+
+    vars.NotifyStop(SymName)
+
+End
+
+Public Sub _next() As Variant
+
+    Static SymList As String[]
+
+    If Enum.Index = Null Then
+        SymList = Vars.SortedList()
+        Enum.index = 0
+    Else
+        Inc Enum.Index
+        If Enum.index > SymList.max Then
+            Enum.Stop()
+            Return
+        Endif
+    Endif
+    $sKey = SymList[Enum.index]
+    Return Vars[SymList[Enum.Index]]
+
+End
+
+Public Sub Exist(SymName As String) As Boolean
+
+    Return Vars.Exist(SymName)
+
+End
+
+
+Private Function Count_Read() As Integer
+
+    Return Vars.count
+
+End
+
+Private Function Max_Read() As Integer
+
+    Return Vars.max
+
+End
+
+Private Function Length_Read() As Integer
+
+    Return vars.Count
+
+End
+
+Private Function Key_Read() As String
+
+    Return $sKey
+
+End
+
+'' Returns the actual Physical address after traslating the Virtual pointer
+Public Sub RealAddress(VirtAddress As Pointer) As Pointer
+
+    MyVarMem.RealAddress(VirtAddress)
+
+End
+
+'' Allocate a block of memory
+Public Sub {alloc}(Length As Pointer) As Pointer
+
+    Dim TheMem As Pointer
+
+    TheMem = MyVarMem.AllocVirt(Length)
+    Return TheMem
+
+End
+

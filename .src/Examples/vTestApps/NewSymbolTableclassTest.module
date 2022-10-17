@@ -1,0 +1,104 @@
+' Gambas module file
+
+Fast Unsafe
+'Extern strncpy(dest As Pointer, source As String, len As Long) In "libc:6"
+Private loopcount As Integer = 100000
+Private Letters As String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+Public Sub main()
+
+    Dim varStore As New ShmMemBlock(1128000)
+    Dim varMnge As New ShmManage(varStore)
+    Dim MyVarMem As New ShmVarStorage(varMnge)
+
+    Dim symStore As New ShmMemBlock(1000000)
+    Dim vars As New ShmSymbolTable(symStore, MyVarMem)
+
+    ' strncpy(Vars.SymMem.Table[0].Name.data, "Var1", 127)
+    Dim srcstr As Byte[] = Byte[].FromString("Var1")
+
+    For j As Integer = 0 To srcstr.Max
+        Vars.SymMem.Table[0].Name[j] = srcstr[j]
+    Next
+    Vars.SymMem.Table[0].Name[j] = 0
+
+    Print "Symbol Name :";; Quote(Vars.SymMem.Table[0].Name.tostring())
+    Dim gotit As Integer
+
+    vars!dog = 56
+    Gotit = vars!dog
+    Print "The Dogs Value is ";; vars!dog
+
+    Dim starttime As Float = Timer
+
+    For i As Integer = 0 To LoopCount
+        vars!dog = i
+        vars.Remove("dog")
+    Next
+
+    Print "Assign/free  symbol "; loopcount; "    Time :";; Timer - Starttime
+
+    With vars
+        !a = 1
+        !aa = 8
+        !AAA = 9
+        !aaaaa = 10
+        !b = 2
+        !c = 3
+        !d = 4
+        !e = 5
+        !fish = "hello"
+        !Dish = "Bobby"
+
+        Randomize (CInt(Timer * 31))
+
+        StartTime = Timer
+
+        For p As Integer = 0 To 5942
+            Dim wordin As String = ""
+            Dim WordLength As Integer = Rand(1, 20)
+            For Q As Integer = 0 To WordLength
+                Dim r As Integer = Rand(0, Letters.len - 1)
+                wordin &= Letters[R]
+            Next
+            vars[wordin] = p
+            p = vars[wordin]
+        Next
+
+        'For Each vStuff As Variant In Vars
+        '    Print vars.key, vStuff
+        'Next
+
+        Print "Assign Many variables("; 5942; ") to Symbol table ";; Timer - starttime
+
+        Print "Table length = "; Vars.Length
+        Print "Sorted List Count = "; Vars.SortedList().count
+
+        Vars.clear()
+
+        Print .text
+    End With
+
+    starttime = Timer
+    For i As Integer = 0 To LoopCount
+        vars!dog = 56
+    Next
+    Print "Assign Value to symbol "; loopcount; " Time :";; Timer - Starttime
+
+    Dim result As Integer
+    starttime = Timer
+    For i As Integer = 0 To LoopCount
+        result = vars!dog
+    Next
+    Print "Get Value from symbol "; Loopcount; "  Time :";; Timer - Starttime
+
+    varStore._free()
+
+    symStore._free()
+
+
+    Quit
+
+End
+
+

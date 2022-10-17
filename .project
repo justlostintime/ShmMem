@@ -1,0 +1,9 @@
+# Gambas Project File 3.0
+Title=Test Structures
+Startup=NewMemBlockClassTest
+Version=0.0.1
+TabSize=4
+Language=en_US
+Type=Component
+ForceBytecodeVersion=3.18
+Packager=1

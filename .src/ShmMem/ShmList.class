@@ -1,0 +1,592 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Fast Unsafe
+
+''' Defines the Shm datatype - list
+''' Lists are inherited by every other list based object
+
+
+Public Struct AllocHeader                   '' Standard header
+    Length As Long                          '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    {Next} As Pointer                       '' null if no more in list
+End Struct
+
+Public Struct dPointer
+    Length As Long                          '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    Value As Pointer                        '' The actual value for usage
+End Struct
+
+Public Struct dList                         '' A defined entry in list of objects
+    Length As Long                          '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    {Next} As Pointer                       '' Next in list or head of pool
+    Prev As Pointer                         '' previous in list or end of pool
+    sema As Pointer                         '' The locking semephor for each list
+    Global As Integer                       '' Defines if this is a global memory object or not
+    bDebug As Boolean                       '' turns on or off the debug control
+    RefCount As Long                        '' Number of refrences to this element
+    Value As Pointer                        '' Value of entry or count if pool
+End Struct
+
+Static Public cShmList As Integer = 20             '' The Constant identifying this class name must not be a valid datatype integer
+Static Public cShmListEntry As Integer = 21        '' The entry in a ShmList object type
+
+' Extern DListPtr(dest As Pointer, src As Pointer, Len As Integer) As DList In "libc:6" Exec "memcpy"
+
+Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
+Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
+'Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
+Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
+Extern sched_yield() As Integer In "libpthread:0"
+
+Private VirtualAddress As Pointer = 0             '' Pointer to the head of the list
+Public ListHead As DList                          '' Pointer to the actual list
+Public VarMem As ShmVarStorage                    '' The storage pool to used or referenced
+Public Key As Long                                '' During iterations this will be the item count
+
+Property Read max As Long                         '' max count for iteration
+Property Read count As Long                       '' Count of elements in this list
+Property Read value As Long                       '' Returns the virtual address of this list
+Property Read Type As Integer                     '' The type of this object
+Property Read Address As Pointer                  '' The address of the object
+Property Debug As Boolean                              '' Debugging helper
+Property Read AllLists As Variant[]               '' Returns a table of all active List{type} in memory
+
+Public SetHeadType As Integer = cShmList          '' The list header Class
+Public SetEntryType As Integer = cShmListEntry    '' The List Entry Class
+
+
+Static Public Sub _init()
+
+    ShmVarStorage.DefineClass("ShmList", cShmlist)
+    ShmVarStorage.DefineClass("ShmListEntry", cShmlistEntry)
+
+End
+
+
+Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, GlobalValue As Boolean = False)
+    '$bDebug = True
+
+    If Object.Class(VarStorage).name == "ShmMem" Then
+        VarMem = VarStorage.MyVarMem
+    Else
+        VarMem = VarStorage
+    Endif
+
+    Dim RealPtr As Pointer
+    If VirtAddress = 0 Then
+        ListHead = NewEntry()
+        VirtualAddress = ListHead.Address
+        ListHead.type = SetHeadType
+        ListHead.Global = GlobalValue
+        ListHead.sema = VarMem.Alloc(64)
+        sem_init(varmem.RealDataAddress(ListHead.sema), 1, 0)
+    Else
+        VirtualAddress = VirtAddress
+        RealPtr = VarMem.RealAddress(VirtAddress)
+        ' ListHead = DListPtr(RealPtr, RealPtr, 0)
+        ListHead = RealPtr
+        ListHead.type = SetHeadType
+    Endif
+
+    Inc ListHead.RefCount
+
+End
+
+Public Sub _Free(Optional OverRideGlobal As Boolean = False)
+
+    If OverRideGlobal And If Listhead <> Null Then ListHead.Global = False
+    If Listhead = Null Or If ListHead.Global Then
+        Return
+    Endif
+
+    Dec ListHead.RefCount
+    If ListHead.RefCount = 0 Then
+        ' sem_destroy(varmem.RealDataAddress(ListHead.sema))
+        ' varmem.Free(ListHead.sema)
+        Me.Free()
+    Endif
+
+End
+
+Public Sub EntryPtr(VirtAddress As Pointer) As DList
+
+    If VirtAddress <= 0 Then Return Null
+    Dim RealPtr As Pointer = VarMem.RealAddress(VirtAddress)
+    ' Return DListPtr(RealPtr, RealPtr, 0)
+    Return RealPtr
+
+End
+
+
+Public Sub NewEntry(Optional Value As Variant = Null) As DList
+
+    Dim NewVar As Pointer
+    Dim Entry As Dlist
+    Dim chkval As Variant
+    Dim VirtAddress As Pointer
+    Dim RealAddress As Pointer
+    Dim iType As Integer
+
+    VirtAddress = VarMem.Alloc(SizeOf(dList) - SizeOf(AllocHeader))
+    RealAddress = VarMem.RealAddress(VirtAddress)
+
+    ' Entry = DListPtr(RealAddress, RealAddress, 0)
+    entry = RealAddress
+
+    Entry.type = SetEntryType
+    Entry.value = 0
+    Entry.next = 0
+    Entry.prev = 0
+    Entry.RefCount = 0
+
+    If value Then
+        NewVar = VarMem.set(Value)
+        Entry.Value = NewVar
+        iType = TypeOf(value)
+    Else
+        NewVar = Entry.value
+        iType = 0
+    Endif
+
+    If NewVar > 0 Then
+        chkval = VarMem.Getpointer(itype, newvar)
+        If chkval.address <> newvar Then                                 ''' here until debugged
+            Stop
+        Endif
+    Endif
+    Return Entry
+
+End
+
+
+Public Sub add(Value As Variant)
+
+    Dim NewElement As DList
+    Dim LastEntry As Dlist
+    Dim RealAddress As Pointer
+
+    NewElement = NewEntry(Value)
+
+    If ListHead.bDebug Then Print Application.id, "Add ShmList VarMem.Lock ";; Value
+    VarMem.Lock()
+
+    If ListHead.Next = 0 Then
+        ListHead.Next = NewElement.Address
+        ListHead.prev = NewElement.Address
+    Else
+        RealAddress = VarMem.RealAddress(ListHead.prev)
+        ' LastEntry = DListPtr(RealAddress, RealAddress, 0)
+        LastEntry = RealAddress
+
+        ListHead.Prev = NewElement.Address
+        NewElement.prev = LastEntry.address
+        LastEntry.Next = NewElement.Address
+    Endif
+
+    Inc ListHead.Value                ' this holds the count of elements in this list
+
+    VarMem.UnLock()
+    If ListHead.bDebug Then Print Application.id, "Add ShmList VarMem.UnLock ";; value
+
+End
+
+Public Sub _Assign(VEntry As DPointer)
+
+    Inc ListHead.RefCount                        ' list head value represents the number of refrences to this entry
+    vEntry.Value = ListHead.Address              ' Assign this to the variable
+
+End
+
+
+Public Sub {free}()                             '' Free the entire list
+
+    Dim pList As DList[] = AsDListList()
+
+    sem_destroy(VarMem.RealDataAddress(ListHead.sema))
+    VarMem.Free(ListHead.sema)
+    varmem.Free(VirtualAddress)
+
+    For Each pEntry As DList In pList
+        FreeEntry(pEntry)
+    Next
+
+End
+
+Public Sub Clear()
+
+    Dim pList As DList[] = AsDListList()
+
+    For Each pEntry As DList In pList
+        FreeEntry(pEntry)
+    Next
+
+    ListHead.value = 0
+
+End
+
+
+Public Sub AsDlistList() As DList[]
+
+    Dim pList As New DList[]
+    Dim Source As Dlist = EntryPtr(ListHead.next)
+
+    While Source
+        pList.Add(Source)
+        Source = EntryPtr(Source.next)
+    Wend
+
+    Return plist
+
+End
+
+
+Private Sub FreeEntry(Entry As DList)
+
+    VarMem.Free(Entry.value)                     '' entry will always point to something
+    VarMem.Free(entry.address)                   '' Dispose of this item as well
+
+End
+
+Public Sub _get(Index As Integer) As Variant
+
+    Dim Result As Variant
+    Dim dPtr As Dlist
+
+    dPtr = SeekRec(Index)
+    If Dptr = Null Then
+        Return Null
+    Endif
+
+    If ListHead.bDebug Then Print Application.id, "_get ShmList VarMem.Lock " & Index
+    VarMem.Lock()
+    Result = VarMem[dPtr.value]
+    VarMem.Unlock()
+    If ListHead.bDebug Then Print Application.id, "_Get ShmList VarMem.UnLock " & Index
+    Return result
+
+End
+
+Public Sub _put(Value As Variant, Index As Integer)
+
+    Dim dPtr As Dlist
+
+    dPtr = SeekRec(Index)
+    If Dptr = Null Then
+        Error.Raise("Out Of Bounds ")
+    Endif
+
+    If ListHead.bDebug Then Print Application.id, "_put ShmList VarMem.Lock " & Index
+    VarMem.Lock()
+    VarMem[dPtr.value] = Value
+    VarMem.Unlock()
+    If ListHead.bDebug Then Print Application.id, "_put ShmList VarMem.UnLock " & Index
+
+End
+
+Public Sub insert(Index As Long, value As Variant, Optional priority As Integer = 0)
+
+    Dim Current As Dlist
+    Dim ptrPrev As DList
+    Dim NewItem As Dlist = NewEntry(Value)
+
+    NewItem.RefCount = Priority
+
+    If ListHead.bDebug Then Print Application.id, "Insert ShmList VarMem.Lock " & Index
+    VarMem.Lock()
+    If Index = 0 Then
+        If ListHead.Next = 0 Then
+            ListHead.next = NewItem.Address
+            ListHead.prev = NewItem.Address
+        Else
+            Current = EntryPtr(ListHead.next)
+            Current.prev = NewItem.address
+            NewItem.Next = Current.Address
+            ListHead.Next = NewItem.address
+        Endif
+    Else If Index = -1 Then
+        If ListHead.prev = 0 Then
+            ListHead.next = NewItem.Address
+            ListHead.prev = NewItem.Address
+        Else
+            Current = EntryPtr(ListHead.Prev)
+            Current.next = NewItem.Address
+            NewItem.Prev = Current.Address
+            ListHead.Prev = NewItem.address
+        Endif
+    Else
+        Current = SeekRec(Index)
+        If Not Current Then
+            VarMem.Unlock()
+            Error.Raise("Out Of Bounds")
+        Endif
+
+        If Current.Address = ListHead.next Then
+            Current.Prev = NewItem.Address
+            ListHead.next = NewItem.Address
+            NewItem.Next = Current.address
+        Else
+            ptrprev = EntryPtr(Current.prev)
+            Current.prev = NewItem.address
+            NewItem.next = Current.address
+            NewItem.prev = ptrPrev.Address
+            ptrPrev.Next = NewItem.address
+        Endif
+
+    Endif
+
+    Inc ListHead.Value
+
+    VarMem.Unlock()
+    If ListHead.bDebug Then Print Application.id, "Insert ShmList VarMem.UnLock " & Index
+
+End
+
+
+Private Sub SeekRec(Index As Integer) As DList
+
+    Dim Count As Integer
+    Dim Current As DList
+
+    If Index < 0 Or If Index >= ListHead.Value Then
+        Return Null
+    Endif
+
+    Current = EntryPtr(ListHead.next)
+
+    While Count < Index
+        Current = EntryPtr(Current.next)
+        Inc Count
+    Wend
+    If current = Null Then
+        Stop
+    Endif
+    Return Current
+
+End
+
+
+Public Sub remove(Optional Index As Long = -1) As Variant
+
+    Dim currentItem As DList
+    Dim Count As Long = 0
+    Dim Value As Variant
+    Dim ptrprev As Dlist
+    Dim ptrNext As Dlist
+
+    If ListHead.next = 0 Or Index >= CLong(ListHead.value) Then
+        Error.Raise("Out Of Bounds - remove Index = " & Index)
+    Endif
+
+    If ListHead.bDebug Then
+        Print Application.id, "Remove ShmList VarMem.Lock " & Index
+    Endif
+
+    varmem.Lock()
+
+    If Index = 0 Then
+        CurrentItem = EntryPtr(ListHead.next)
+    Else If Index < 0 Then
+        CurrentItem = EntryPtr(ListHead.prev)
+    Else
+        CurrentItem = EntryPtr(ListHead.next)
+        While Count < Index
+            CurrentItem = EntryPtr(CurrentItem.next)
+            Inc count
+        Wend
+    Endif
+
+    Dim addr As Pointer = CurrentItem.address
+    Value = VarMem[CurrentItem.value]                            ' get the value of the item being removed
+
+    If addr = ListHead.next Then
+        ListHead.next = CurrentItem.Next
+        If CurrentItem.next = 0 Then
+            ListHead.prev = 0
+        Endif
+    Else If addr = ListHead.prev Then
+        ListHead.prev = CurrentItem.prev
+        PtrPrev = EntryPtr(CurrentItem.prev)
+        ptrPrev.next = 0
+    Else
+        ptrnext = EntryPtr(currentItem.next)
+        ptrprev = EntryPtr(CurrentItem.prev)
+        ptrnext.prev = ptrprev.address
+        ptrprev.next = ptrnext.address
+    Endif
+
+    Dec ListHead.value
+
+    varmem.Unlock()
+
+    If ListHead.bDebug Then Print Application.id, "Remove ShmList VarMem.UnLock " & Index & " Value=" & value
+
+    FreeEntry(CurrentItem)
+
+    Return Value
+
+End
+
+Public Sub RemoveByVirt(VirtAddress As Pointer) As Variant
+
+    Dim currentItem As DList
+
+    If ListHead.next = 0 Then
+        Error.Raise("Empty List - Address Not Found " & VirtAddress)
+    Endif
+    Dim Value As Variant
+
+    If ListHead.bDebug Then Print Application.id, "RemoveByVirt ShmList VarMem.Lock " & VirtAddress
+    varmem.Lock()
+
+    CurrentItem = EntryPtr(ListHead.next)
+
+    While CurrentItem And CurrentItem.address <> VirtAddress
+        CurrentItem = EntryPtr(CurrentItem.next)
+    Wend
+
+    If Not CurrentItem Then
+        varmem.Unlock()
+        If ListHead.bDebug Then Print Application.id, "RemoveByVirt ShmList VarMem.UnLock " & VirtAddress
+        Error.Raise("Virtual Address Not Found " & VirtAddress)
+    Endif
+
+    Dim addr As Pointer = CurrentItem.address
+    Value = varmem[CurrentItem.value]
+
+    If addr = ListHead.next Then
+        ListHead = CurrentItem.Next
+        If CurrentItem.next = 0 Then
+            ListHead.prev = 0
+        Endif
+    Else If addr = ListHead.prev Then
+        ListHead.prev = CurrentItem.prev
+    Else
+        Dim ptrnext As Dlist = EntryPtr(currentItem.next)
+        Dim ptrprev As Dlist = EntryPtr(CurrentItem.prev)
+        ptrnext.prev = ptrprev.address
+        ptrprev.next = ptrnext.address
+    Endif
+
+    varmem.Unlock()
+    If ListHead.bDebug Then Print Application.id, "RemoveByVirt ShmList VarMem.UnLock " & VirtAddress
+    FreeEntry(CurrentItem)
+
+    Return value
+
+End
+
+Public Sub {Copy}() As Variant
+
+    Dim newlist As New ShmList(VarMem)
+
+    For Each v As Variant In Me
+        newlist.add(v)
+    Next
+
+    Return newlist
+
+End
+
+Public Sub _next() As Variant
+
+    Dim ListItem As DList
+
+    If IsNull(Enum.Index) Then
+
+        If ListHead.Value > 0 Then
+            ListItem = EntryPtr(ListHead.next)
+            Enum.Index = ListItem
+            Key = 0
+        Else
+            Enum.Stop
+            Return
+        Endif
+    Else
+        listItem = Enum.index
+        If ListItem.next = 0 Then
+            Enum.Stop
+            Return
+        Else
+            ListItem = EntryPtr(ListItem.next)
+            Inc key
+            Enum.index = listItem
+        Endif
+    Endif
+
+    Return VarMem[ListItem.value]
+
+End
+
+
+Private Function max_Read() As Long
+
+    Return ListHead.Value - 1
+
+End
+
+Private Function count_Read() As Long
+
+    Return ListHead.Value
+
+End
+
+
+Private Function value_Read() As Long
+
+    Return VirtualAddress
+
+End
+
+Private Function Type_Read() As Integer
+
+    Return SetHeadType
+
+End
+
+Private Function Address_Read() As Pointer
+
+    Return VirtualAddress
+
+End
+
+Private Function Debug_Read() As Boolean
+
+    Return ListHead.bDebug
+
+End
+
+Private Sub Debug_Write(Value As Boolean)
+
+    Print "Set debug to ";; value
+    ListHead.bDebug = Value
+
+End
+
+Private Function AllLists_Read() As Variant[]
+
+    Dim ListTable As New Variant[]
+
+    For Each mBlock As Variant In VarMem
+        If mBlock.type = SetHeadType Then
+            ListTable.Add(mBlock)
+        Endif
+    Next
+
+    Return ListTable
+
+End

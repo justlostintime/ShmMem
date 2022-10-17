@@ -1,0 +1,44 @@
+' Gambas module file
+
+Fast Unsafe
+
+Public Sub main()
+
+    Dim MyBlock As New ShmMemBlock(1000000)
+    Dim mymem As New ShmManage(MyBlock)
+    Dim StartTime As Float
+    Dim pp, xx, yy, aa As Long
+
+    Print "Starting Test....";
+    Flush
+    starttime = Timer
+
+    For i As Integer = 0 To 500000
+
+        pp = mymem.Alloc(500)
+        xx = mymem.Alloc(1000)
+        yy = mymem.Alloc(800)
+        aa = mymem.Alloc(700)
+
+        mymem.Free(xx)
+        mymem.Free(aa)
+        mymem.Free(yy)
+        mymem.Free(pp)
+
+        If i Mod 100000 = 0 Then Print i
+
+    Next
+
+    Dim Duration As Float = Timer - starttime
+    Print "Alloc and free Blocks ";; 500000 * 8;; "Times, Duration = "; Duration;; "Per second Operations: "; (500000 * 8) / Duration
+    mymem._Print()
+
+    pp = mymem.Alloc(500)
+    xx = mymem.Alloc(1000)
+    yy = mymem.Alloc(800)
+    aa = mymem.Alloc(700)
+    mymem._Print()
+
+End
+
+

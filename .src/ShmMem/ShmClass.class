@@ -1,0 +1,245 @@
+' Gambas class file
+
+Export
+Fast Unsafe
+''' This class must be inherited if classes which will be shared between tasks/processes
+''' If you do not use this class as the default then your non data usage class will fail
+''' when you try to save of load from the shared memory database
+''' or you can just define the _read and _write functions in your shared object class
+''' Inheriting this will at least save and create a new class every time, No Data saved
+
+'' This must be defined for any storable class
+'' it is used to verify the version of a stored object
+Static Public Const classversion As Integer = 1
+
+Static Public TypeToText As String[] = ["Binary", "Boolean", "Byte", "Short", "Integer", "Long", "Single", "Float", "Date", "String", "LongDate", "Pointer", "Variant", "Function", "Class", "NULL", "Object", "Not Array", "", "", "", "", "", ""]
+
+Private objectversion As Integer = -1
+
+'' This is called whenever the object is created
+'' Can be just created no information
+'' Can be created from a stream
+'' Can be created from a pointer
+Public Sub _new(Optional LoadFrom As Variant = Null)
+
+    Dim mFile As File = Null
+
+    objectversion = classversion
+
+    If IsNull(Loadfrom) Then Return
+
+    If TypeOf(LoadFrom) = gb.pointer Then
+        mFile = Memory LoadFrom For Read
+        _read(mfile)
+        Close mfile
+        Return
+    Else If TypeOf(LoadFrom) = gb.object And If Object.Class(Loadfrom).name = "File" Then
+        _read(LoadFrom)
+        Return
+    Endif
+
+    '' If the types are the same and the object is of a sharedclass parent
+    '' Copy all fields with matching names and types
+    '' will fail if property types dont match, will ignore any extra fields in the
+    '' otherobject. So be carefull in how you use this for objects
+
+    If TypeOf(LoadFrom) = gb.object Then ' verify if some parent of load from is SharedClass
+        If Object.Is(LoadFrom, "Sharedclass") Then
+            _copyfrom(LoadFrom)
+            Return
+        Endif
+    Endif
+
+    Error.Raise("Invalid object type specified for loading/copy " & Object.Class(loadfrom).name)
+
+End
+
+'' This is called whenever the object is destroyed
+Public Sub _free()
+
+End
+
+
+'' This will find every property of the object and try to\
+'' write it to the output stream
+'' Note: remember formats to a buffer ie memory stream
+''       are not the same as to a file stream
+Public Sub _write(mFile As File) 'do nothing by default
+
+    Dim v As Variant
+
+    Write #mFile, objectversion As Integer
+    For Each sym As String In Object.Class(Me).Symbols
+        If sym = "classversion" Then Continue
+        Try v = Object.GetProperty(Me, sym)
+        If Not Error Then
+            Write #mFile, v As Variant
+        Endif
+    Next
+
+End
+
+'' This will find every property of the object and try
+'' to read from the stream for any valid properties
+'' Note: remember formats to a buffer ie memory stream
+''       are not the same as to a file stream
+Public Sub _read(mFile As File)  'do nothing by default
+
+    Dim v As Variant
+    Dim OldVersion As Integer
+
+    OldVersion = Read #mFile As Integer
+
+    If _convertstream(OldVersion, mFile) Then Return ' conversion completed the read
+
+    For Each sym As String In Object.Class(Me).Symbols
+        If sym = "classversion" Then Continue
+        Try v = Object.GetProperty(Me, sym)
+        If Not Error Then
+            v = Read #mFile As Variant
+            Object.setproperty(Me, sym, v)
+        Endif
+    Next
+
+End
+
+'' This will return the length of storage required by the object
+Public Sub _serialize() As Integer
+
+    Dim mFile As File
+    Dim Len As Integer
+
+    mFile = Open Null For Write
+    _write(mFile)
+    len = Seek(mFile)
+    Close mFile
+    Return len
+
+End
+
+
+'' return the difference in the version numbers
+'' < 0 the version is greater than the objects version
+'' > 0 the class version is greater then the object version
+'' = 0 class and object have same version
+Private Sub CheckVersion(versionnumber As String) As Integer
+
+    Return objectversion - versionnumber
+
+End
+
+'' Compares two objects and verifies if the version is the same
+'' it will throw an error if the object versions are not comparable
+Public Sub _compare(OtherObject As Variant) As Integer
+
+    Dim otherVersion As Integer = -1
+    Dim v As Variant
+
+    Try otherversion = Object.GetProperty(OtherObject, "objectversion")
+    If Error Or If otherversion <> objectversion Then
+        Error.Raise("Object versions not equal or not found Compareded object class : " & Object.Class(OtherObject).name & "," & objectversion & "<>" & otherversion)
+    Endif
+
+    For Each sym As String In Object.Class(Me).Symbols
+
+        If sym = "classversion" Or sym = "objectversion" Then Continue
+
+        Try v = Object.GetProperty(Me, sym)
+        If Not Error Then
+            If v = Object.GetProperty(OtherObject, sym) Then Continue
+            If v > Object.GetProperty(OtherObject, sym) Then Return 1
+            If v < Object.GetProperty(OtherObject, sym) Then Return -1
+        Endif
+    Next
+
+    Return 0  ' if we get here then the objects are the same
+
+End
+
+'' returns a printable text representation of the object
+'' Does not include functions etc only data
+
+Public Sub ToString() As String
+
+    Dim v As Variant
+    Dim asString As String = "Class = " & Object.Class(Me).name & " version # = " & objectversion & "\n"
+    Dim classname As String
+
+    For Each sym As String In Object.Class(Me).Symbols
+        Try v = Object.GetProperty(Me, sym)
+        If Not Error Then
+            If TypeOf(v) = gb.object Then
+                classname = Object.Class(v).name
+                If Classes[classname].Exist("data") Then
+                    v = Hex(v.data) & "[]"
+                Else
+                    v = Hex(v.address)
+                Endif
+            Else
+                classname = "Native"
+            Endif
+            asString &= Subst("(&4) (&3) &1 = [&2]\n", Left(sym & Space(20), 15), v, Left(TypeToText[TypeOf(v)] & Space(15), 15), Left(classname & Space(15), 15))
+        Endif
+    Next
+    Return asString
+
+End
+
+
+'' does the conversion on the stream
+'' returns true if it was required or false if object
+'' read process can continue
+'' if this function returns true then the conversion function
+'' completed the loading of the object and mainline should not
+'' read anything more. This can convert from lower class version
+'' needs to decide what to do with a higher class version
+Private Sub _convertStream(versionnumber As Integer, mFile As File) As Boolean
+
+    Select Case versionnumber
+        Case ClassVersion ' indicate we did Not Read Or Do conversion As They are same version
+            Return False
+
+        Default
+            Return False
+
+    End Select
+
+    Return True
+
+End
+
+'' This function makes this object equal to other object
+'' with version conversion happening
+Private Sub _copyfrom(OtherObject As Variant)
+
+    Dim len As Integer
+    Dim buffer As Byte[]
+    Dim mFile As File
+
+    len = OtherObject._serialize()
+    buffer = New Byte[len + 100]
+    mFile = Memory Buffer.data For Read Write
+    OtherObject._write(mFile)
+    Seek #mFile, 0
+    _read(mFile)
+    Close mFile
+
+End
+
+Public Sub GetObjectVersion() As Integer
+
+    Return objectversion
+
+End
+
+
+'' does the conversion to the new format and returns the new object
+'' returns a copy if no conversion required
+
+Static Public Sub _convertObject(OtherObject As Variant) As Boolean
+
+    Return Object.Class(OtherObject).New(OtherObject)
+
+End
+
+

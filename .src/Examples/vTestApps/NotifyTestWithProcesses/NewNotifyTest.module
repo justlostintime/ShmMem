@@ -1,0 +1,64 @@
+' Gambas module file
+
+'Public Vars As ShmSymbolTable
+Public Vars As New ShmMem(1128000, "mydata")
+
+Public Sub main()
+
+  With vars
+    !dog = 8
+    !Cow = 6
+    !Done = 0
+    Dim Mtask As New NotifyBGTask
+    Dim Btask As New NotifyBGTask
+    !count = 100
+    .Notify("cow", Me)
+    While !count > 0
+      !Dog = 4
+      !Cow = 7
+      Wait 0.03
+      !Cow = 8
+      Wait
+      !Cow = "hello"
+      Wait
+      Dec !count
+    Wend
+
+    !Cow = 100
+
+  End With
+
+  Mtask.Wait()
+  BTask.Wait()
+
+  vars.NotifyStop("Cow")
+  vars.PrintAllInfo()
+
+End
+
+
+Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
+
+  Print Application.id, "FG";; VarName;; "=";; Value
+
+End
+
+Public Sub Cow_changed(varname As String, value As Variant, TimedOut As Boolean)
+
+  'Print Application.id, "FG";; VarName;; "=";; Value
+
+End
+
+Public Sub TheTask_Read(value As String)
+
+  Print value
+
+End
+
+Public Sub TheTask2_read(value As String)
+
+  Print value
+
+End
+
+

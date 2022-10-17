@@ -1,0 +1,724 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+
+Fast Unsafe
+
+Private varmem As ShmManage
+Private Storage As ShmMemBlock
+Static Public DefaultAlloc As Integer = 1024 '' Default increments used when allocating string and object memory
+
+Public Struct AllocHeader
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    {Next} As Pointer                      '' null if no more in list
+End Struct
+
+Public Struct dList                      '' A defined entry in list of objects
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    {Next} As Pointer                      '' Next in list or head of pool
+    Prev As Pointer                        '' previous in list or end of pool
+    sema As Pointer                        '' The locking semephor for each list
+    Global As Integer                      '' Defines if this is a global memory object or not
+    bDebug As Boolean                      '' Turns on debugging
+    RefCount As Long                       '' Number of refrences to this element
+    Value As Pointer                       '' Value of entry or count if pool
+End Struct
+
+Public Struct dInteger
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    Value As Integer                       '' The actual value for usage
+End Struct
+
+Public Struct dBoolean
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    Value As Boolean                       '' The actual value for usage
+End Struct
+
+Public Struct dLong
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    Value As Long                          '' The actual value for usage
+End Struct
+
+Public Struct dFloat
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    Value As Float                         '' The actual value for usage
+End Struct
+
+Public Struct dbyte
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    Value As Byte                          '' The actual value for usage
+End Struct
+
+Public Struct dShort
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    Value As Short                         '' The actual value for usage
+End Struct
+
+Public Struct dPointer
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    Value As Pointer                       '' The actual value for usage
+End Struct
+
+Public Struct dSingle
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    Value As Single                        '' The actual value for usage
+End Struct
+
+Public Struct dDate
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    Value As Date                          '' The actual value for usage
+End Struct
+
+Public Struct dStrObjInfo
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    ObjLen As Long                         '' length of the actual string/Object
+    WriteLen As Long                       '' The length of the actually written data
+End Struct
+
+Public Struct dStrObj
+    Length As Long                         '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    ObjLen As Long                         '' length of the actual string/Object
+    WriteLen As Long                       '' The length of the actually written data
+    Value[1000000] As Byte                 '' The actual value for usage asign as byte but we ref the value.data real address this is dummy
+End Struct
+
+Public Struct dIntArray                  '' Support for one dimentional arrays of single types
+    Length As Long                            '' Length including header
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Type As Integer                        '' Type of memory
+    Dims As Long                           '' Number of dimentions for this array
+    Elements As Long                       '' Number of elements
+    Value[1000000] As Integer              '' The actual value for usage is defined by length, this is dummy
+End Struct
+
+' Extern AllocInteger(dest As Pointer, src As Pointer, Len As Integer) As DInteger In "libc:6" Exec "memcpy"
+' Extern AllocBoolean(dest As Pointer, src As Pointer, Len As Integer) As DBoolean In "libc:6" Exec "memcpy"
+' Extern AllocByte(dest As Pointer, src As Pointer, Len As Integer) As DByte In "libc:6" Exec "memcpy"
+' Extern AllocShort(dest As Pointer, src As Pointer, Len As Integer) As DShort In "libc:6" Exec "memcpy"
+' Extern AllocLong(dest As Pointer, src As Pointer, Len As Integer) As DLong In "libc:6" Exec "memcpy"
+' Extern AllocSingle(dest As Pointer, src As Pointer, Len As Integer) As DSingle In "libc:6" Exec "memcpy"
+' Extern AllocFloat(dest As Pointer, src As Pointer, Len As Integer) As DFloat In "libc:6" Exec "memcpy"
+' Extern AllocDate(dest As Pointer, src As Pointer, Len As Integer) As DDate In "libc:6" Exec "memcpy"
+' Extern AllocStrObj(dest As Pointer, src As Pointer, Len As Integer) As DStrObj In "libc:6" Exec "memcpy"
+' Extern AllocPointer(dest As Pointer, src As Pointer, Len As Integer) As DPointer In "libc:6" Exec "memcpy"
+' Extern strncpy(dest As Pointer, source As String, len As Long) In "libc:6"
+
+Const StrData As Integer = 18
+Const ObjData As Integer = 19
+Const FreeBlock As Integer = -1
+
+Static Public UserClasses As New Collection(gb.ignoreCase)
+Static Public UserClassByName As New Collection(gb.ignorecase)
+
+
+
+Static Public DataTypes As String[] = ["*Free", "*Binary", "*Boolean", "*Byte", "*Short", "*Integer", "*Long", "*Single", "*Float", "*Date", "*String",
+    "", "*Pointer", "*Variant", "*Function", "*Class", "NULL", "*Object", "NotArray",
+    "StringData", "ObjectData", "", "", "", ""]
+
+Private $pKey As Pointer
+Property Read Key As String
+Property Read Count As Integer
+Property Read Length As Integer
+Property Read Max As Integer
+Property Debug As Boolean Use $bDebug
+
+Static Public Sub DefineClass(ClassName As String, ClassIndex As Integer)
+
+    UserClasses.Add(ClassName, ClassIndex)
+    UserClassByName.Add(ClassIndex, ClassName)
+
+End
+
+
+
+Static Public Sub GetTextType(Type As Integer) As String
+
+    If Type > ObjData Then
+        Return UserClasses[type]
+    Endif
+    Return Left(DataTypes[Type + 1] & Space(10), 10)
+
+End
+
+
+'' Creating this pool of variable storage for a specific memory block
+Public Sub _new(mem As ShmManage)
+
+    varmem = mem
+    Storage = mem.Storage
+
+End
+
+Public Sub _free()
+
+    varmem = Null
+
+End
+
+
+Private Sub AllocSimpleVar() As Pointer
+
+    Dim MyVar As Pointer
+
+    MyVar = varmem.Alloc(0)
+    If MyVar < varmem.ManagedInfo.StartOfMem Or If MyVar > varmem.ManagedInfo.EndOfMem Then
+        Stop
+    Endif
+    Return MyVar
+
+End
+
+Public Sub {Alloc}(Length As Long) As Pointer
+
+    Dim MyVar As Pointer
+
+    MyVar = varmem.Alloc(length)
+    Return MyVar
+
+End
+
+Public Sub AllocVirt(Length As Long) As Pointer
+
+    Return Me.Alloc(Length) + SizeOf(AllocHeader)
+
+End
+
+
+'' set the value of a variable, create a new one if VirtAddress is zero
+Public Sub set(value As Variant, Optional VirtAddress As Pointer = 0) As Pointer
+
+    Dim myvar As Pointer
+
+    If VirtAddress > 0 Then
+        If $bDebug Then Print Application.id, "set ShmVarStorage.exclusive " & value & ":" & VirtAddress
+        Storage.Exclusive()
+        MyVar = VirtAddress
+        _put(value, Myvar)
+        Storage.Release()
+        If $bDebug Then Print Application.id, "set ShmVarStorage.release " & value & ":" & VirtAddress
+    Else
+        If $bDebug Then Print Application.id, "set ShmVarStorage.exclusive " & value & ":" & VirtAddress
+        MyVar = AllocSimpleVar()
+        Storage.Exclusive()
+        _put(value, Myvar)
+        Storage.Release()
+        If $bDebug Then Print Application.id, "set ShmVarStorage.release " & value & ":" & VirtAddress
+    Endif
+    Return myvar
+
+End
+
+Public Sub _getType(virtAddress As Pointer, type As Integer) As Variant
+
+    Dim svptr As Variant
+
+    svptr = Getpointer(type, VirtAddress)
+
+    If VirtAddress <> svptr.Address Then
+        varmem._Print()
+        Error.Raise("Invalid variable address " & VirtAddress)
+    Endif
+
+    Select Case svptr.type
+        Case gb.String
+            Return getstring(svptr)
+        Case gb.Object
+            Return getObject(svptr)
+        Case -1
+            Return svptr.length
+        Case Else
+            Return svptr.value
+    End Select
+
+    Return
+
+End
+
+Public Sub _get(virtAddress As Pointer) As Variant
+
+    Dim vptr As AllocHeader = varmem.AllocPtr(VirtAddress)
+
+    Return _getType(VirtAddress, vptr.type)
+
+End
+
+Public Sub _puttype(value As Variant, VirtAddress As Pointer, mytype As Integer)
+
+    Dim tmpptr As Variant
+
+    Dim vptr As Variant = Getpointer(MyType, VirtAddress)
+
+    If VirtAddress <> vptr.Address Then
+        Error.Raise("Invalid variable address " & VirtAddress)
+    Endif
+
+    If vptr.type <> MyType Then
+        If vptr.type = gb.string Or If vptr.type = gb.object Then
+            tmpptr = Getpointer(vptr.type, VirtAddress)
+            If vptr.value > 0 Then
+                varmem.Free(tmpptr.value)
+                tmpptr.value = 0
+            Endif
+        Endif
+        vptr.type = mytype
+        vptr.value = 0
+    Endif
+
+    Select Case mytype
+        Case gb.String
+            tmpptr = Getpointer(vptr.type, VirtAddress)
+            putstring(value, vptr)
+        Case gb.Object
+            tmpptr = Getpointer(vptr.type, VirtAddress)
+            putObject(value, vptr)
+        Case Else
+            vptr.value = value
+    End Select
+
+End
+
+Public Sub _put(value As Variant, VirtAddress As Pointer)
+
+    _puttype(value, VirtAddress, TypeOf(value))
+
+End
+
+Private Sub putstring(value As String, vptr As DPointer)
+
+    Dim length As Long = (((value.Len + 1 + DefaultAlloc) / DefaultAlloc) * DefaultAlloc)
+
+    If vptr.value > 0 Then
+        Dim TmpPtr As DStrObj = GetPointer(StrData, vPtr.Value)
+        If tmpptr.ObjLen < length Then
+            varmem.free(vptr.Value)
+            vptr.value = 0
+        Endif
+    Endif
+
+    If vptr.value = 0 Then
+        Dim HeadLenExtra As Long = SizeOf(DStrObjInfo) - SizeOf(AllocHeader)
+        vptr.value = varmem.Alloc(length + HeadLenExtra)                      '' The String Header is 8 bytes longer
+        tmpptr = GetPointer(StrData, vptr.Value)
+        If tmpptr.length < length Then
+            Stop
+        Endif
+        TmpPtr.ObjLen = length
+        tmpptr.type = StrData
+    Endif
+
+    If TmpPtr.Length < DefaultAlloc Then
+        Stop
+    Endif
+
+    Dim copyLen As Integer = IIf(value.len + 1 < Length, value.len + 1, length - 1)
+    Dim srcstr As Byte[] = byte[].FromString(value)
+    For j As Integer = 0 To srcstr.Max
+        tmpptr.Value[j] = srcstr[j]
+    Next
+    tmpptr.Value[j] = 0
+    ' strncpy(tmpptr.Value.Data, value, copyLen)
+    tmpptr.WriteLen = copylen
+
+End
+
+Private Sub getstring(vptr As DPointer) As String
+
+    Dim tmpptr As Dstrobj = GetPointer(StrData, vptr.value)
+
+    If tmpptr.WriteLen > 1000000 Then
+        Return String@(tmpptr.Value.data)
+    Else
+        Return tmpptr.Value.ToString()
+    Endif
+
+End
+
+Private Sub PutObject(value As Variant, vptr As DPointer)
+
+    Dim length, ObjLen As Long
+
+    If Object.Class(Value).Exist("_Assign") Then
+        Object.Call(Value, "_Assign", [vPtr])
+        Return
+    Endif
+
+    ObjLen = Me.SizeOf(value)
+    Length = ((ObjLen + DefaultAlloc) / DefaultAlloc) * DefaultAlloc
+    If vptr.value > 0 Then
+        Dim tmpptr As DStrObj = GetPointer(ObjData, vptr.Value)
+        If tmpptr.ObjLen < length Then
+            varmem.free(vptr.Value)
+            vptr.value = 0
+        Endif
+    Endif
+    If vptr.value = 0 Then
+        Dim HeadLenExtra As Long = SizeOf(DStrObjInfo) - SizeOf(AllocHeader)
+        vptr.value = varmem.Alloc(length + HeadLenExtra)
+        tmpptr = GetPointer(ObjData, vptr.Value)
+        tmpptr.ObjLen = length
+        tmpptr.type = ObjData
+    Endif
+
+    Dim mfile As File
+    mfile = Memory tmpptr.Value.Data For Write
+    Write #mFile, value As Object
+    Close mFile
+    tmpptr.writelen = ObjLen
+
+End
+
+Private Sub getObject(vptr As DPointer) As Object
+
+    Dim tmpptr As DStrObj = GetPointer(ObjData, vptr.Value)
+
+    If UserClasses.Exist(tmpptr.Type) Then
+        Return Object.New(UserClasses[tmpptr.type], [Me, vptr.Value])
+    Endif
+
+    Dim MyObject As Object
+    Dim mfile As File
+    mfile = Memory tmpptr.Value.data For Read
+    Try MyObject = Read #mFile As Object
+    If Error Then
+        Error.Raise("Object read/Access failed")
+    Endif
+    Close mFile
+    Return MyObject
+
+End
+
+Public Sub {Free}(Virtaddress As Pointer)
+
+    Dim vptr As DPointer = GetPointer(gb.pointer, VirtAddress)
+    Dim type As Integer = vptr.type
+
+    If type = gb.string Or If type = gb.object Then
+        varmem.free(vptr.value)
+        vptr.value = 0
+    Endif
+    varmem.free(VirtAddress)
+
+End
+
+Public Sub FreeVirt(Virtaddress As Pointer)
+
+    Me.Free(VirtAddress - SizeOf(AllocHeader))
+
+End
+
+
+Public Sub RealAddress(VirtAddress As Pointer) As Pointer
+
+    Return varmem.RealAddress(VirtAddress)
+
+End
+
+Public Sub RealDataAddress(VirtAddress As Pointer) As Pointer
+
+    Return varmem.RealDataAddress(VirtAddress)
+
+End
+
+
+
+Public Sub Getpointer(Type As Integer, VirtAddress As Pointer) As Variant
+
+    Dim realaddr As Pointer = varmem.RealAddress(VirtAddress)
+
+    Select Case Type
+        Case gb.Integer
+            Dim sInteger As DInteger = realaddr
+            Return sInteger
+            'Return AllocInteger(realAddr, RealAddr, 0)
+        Case gb.Long
+            Dim sLong As Dlong = realAddr
+            Return sLong
+            'Return AllocLong(realAddr, RealAddr, 0)
+        Case gb.Boolean
+            Dim sBoolean As DBoolean = RealAddr
+            Return sBoolean
+            'Return AllocBoolean(realAddr, RealAddr, 0)
+        Case gb.Byte
+            Dim sByte As Dbyte = RealAddr
+            Return sByte
+            ' Return AllocByte(realAddr, RealAddr, 0)
+        Case gb.Short
+            Dim sShort As Dshort = realAddr
+            Return sShort
+            ' Return AllocShort(realAddr, RealAddr, 0)
+        Case gb.Single
+            Dim sSingle As DSingle = realAddr
+            Return sSingle
+            ' Return AllocSingle(realAddr, RealAddr, 0)
+        Case gb.Float
+            Dim sFloat As Dfloat = realAddr
+            Return sFloat
+            ' Return AllocFloat(realAddr, RealAddr, 0)
+        Case gb.Date
+            Dim sDate As Ddate = RealAddr
+            Return sDate
+            ' Return AllocDate(realAddr, RealAddr, 0)
+        Case gb.Pointer
+            Dim sPointer As Dpointer = realAddr
+            Return sPointer
+            ' Return AllocPointer(realAddr, RealAddr, 0)
+        Case gb.String
+            Dim sString As DPointer = realAddr
+            Return sString
+            ' Return AllocPointer(realAddr, RealAddr, 0)
+        Case gb.Object
+            Dim sObject As DPointer = realAddr
+            Return sObject
+            ' Return AllocPointer(realAddr, RealAddr, 0)
+        Case StrData, ObjData
+            Dim sStrObj As DStrObj = RealAddr
+            Return sStrObj
+            ' Return AllocStrObj(realAddr, RealAddr, 0)
+
+        Case Else
+            Return varmem.AllocPtr(VirtAddress)
+
+    End Select
+
+End
+
+Public Sub {Lock}()
+
+    If $bDebug Then Print Application.id, "Lock ShmVarStorage.exclusive "
+    varmem.Storage.Exclusive()
+
+End
+
+Public Sub {Unlock}()
+
+    varmem.Storage.Release()
+    If $bDebug Then Print Application.id, "UnLock ShmVarStorage.release "
+
+End
+
+Public Sub {VarPtr}(VirtAddress As Pointer) As Variant
+
+    Dim svptr As Variant
+    Dim vptr As AllocHeader = varmem.AllocPtr(VirtAddress)
+
+    svptr = Getpointer(vptr.type, VirtAddress)
+    Return svptr
+
+End
+
+'' return the actual storage required for any data type
+'' objects must have a _write public function
+Static Public Sub {SizeOf}(data As Variant) As Integer
+
+    Dim rdType As Integer = TypeOf(Data)
+    Dim rdLen As Integer = 0
+
+    Select Case rdType
+        Case gb.String
+            rdLen = data.len + 1   ' will record data length and terminator zero
+
+        Case gb.Object
+            rdLen = ObjectSizeOf(data)
+
+        Case gb.Class
+            Error.Raise("Sizeof(): Class type not supported")
+            rdLen = 0
+
+        Default
+            rdLen = SizeOf(rdType)  ' will record data type
+
+    End Select
+
+    Return rdLen
+
+End
+
+'' Used the Objects _write function to get the size of the object
+Static Private Sub ObjectSizeOf(data As Variant) As Integer
+
+    Dim mFile As File
+    Dim rdLen As Integer = 0
+
+    mFile = Open Null For Write
+    Try Write #mfile, data As Object
+    If Error Then
+        Error.Raise("Unable to write object to memory," & Error.text)
+    Endif
+
+    rdLen = Seek(mFile)
+    Close mFile
+
+    Return rdLen
+
+End
+
+Public Sub _next() As Variant
+
+    Static aPtr As AllocHeader
+
+    If Enum.index = Null Then
+        aPtr = varmem.AllocPtr(varmem.ManagedInfo.StartOfMem)
+        Enum.index = 0
+    Else
+        If Aptr.Address + aptr.length >= varmem.ManagedInfo.EndOfMem Then
+            Enum.Stop()
+            Return
+        Endif
+        aptr = varmem.AllocPtr(aPtr.Address + aPtr.length)
+        Inc Enum.index
+    Endif
+    $pKey = aPtr.Address
+
+    If UserClasses.Exist(aPtr.Type) Then
+        Return Object.New(UserClasses[aptr.type], [Me, aPtr.address])
+    Endif
+
+    Return Getpointer(aPtr.type, aPtr.address)
+
+End
+
+
+Private AlreadyUsed As Collection
+
+Public Sub text(VirtAddress As Pointer, Optional Indent As String = "", SetTree As Boolean = False) As String
+    'ObjLen As Long                       '' length of the actual string/Object
+    'WriteLen As Long                     '' The length of the actually written data
+    'Value[1000000] As Byte
+
+    Dim result As String = ""
+    Dim sPtr As Variant
+
+    Dim vptr As Variant = GetPointer(gb.long, VirtAddress)
+
+    vptr = GetPointer(vptr.type, VirtAddress)
+    If settree Then
+        AlreadyUsed[vptr.address] = True
+
+    Endif
+
+    Result &= Indent & Subst("@&1, Len&2, &3", Hex(vptr.Address, 10), Format(vptr.Length, "####0"), GetTextType(vptr.Type))
+
+    Select Case vptr.type
+        Case FreeBlock
+            Result &= ", Free Block"
+
+        Case StrData, ObjData
+            Result &= Left(vPtr.value.ToString(), 10)
+
+        Case gb.String
+            sPtr = GetPointer(StrData, vptr.value)
+            If SetTree Then AlreadyUsed[sPtr.address] = True
+            Result &= Subst("@&1, Blk&2, Len&3, Value=&4", Hex(sPtr.address, 10), Format(sPtr.ObjLen, "######0"), Format(sPtr.WriteLen, "######0"), Left(sPtr.value.ToString(), 10))
+
+        Case gb.Object
+            Dim MyObject As Object = getObject(vPtr)
+            Dim OName As String = Object.Class(MyObject).name
+            sPtr = GetPointer(StrData, vptr.value)
+            If SetTree Then AlreadyUsed[sPtr.address] = True
+            Result &= Subst("@&1, Blk&2, Len&3, Class=&4", Hex(sPtr.address, 10), Format(sPtr.ObjLen, "######0"), Format(sPtr.WriteLen, "######0"), OName)
+
+        Case 0  ' binary object
+            Result &= "Defined Binary"
+
+        Case Else
+            If UserClasses.Exist(vptr.Type) Then
+                Dim xObject As Variant = Object.New(UserClasses[vptr.type], [Me, vPtr.Address])
+                result &= ", Value = " & xObject.value
+            Else
+                result &= ", Value = " & vptr.value
+            Endif
+
+    End Select
+
+    Return result
+
+End
+
+Public Sub TextTree(Optional VirtAddress As Pointer = 0, Indent As Integer = 0) As String
+
+    Dim vptr As AllocHeader
+    Dim sIndent As String = IIf(indent > 0, "|" & Space(Indent * 2), "")
+    Dim OutBuffer As String = ""
+
+    If VirtAddress = 0 Then
+        vptr = varmem.AllocPtr(varmem.ManagedInfo.StartOfMem)
+        AlreadyUsed = New Collection
+        AlreadyUsed.default = False
+    Endif
+
+    While vptr.address + vptr.length < varmem.ManagedInfo.EndOfMem
+
+        If Not AlreadyUsed[vptr.address]
+            Select Case vptr.Type
+                Case gb.String
+
+                Case gb.Object
+
+                Case Else
+                    OutBuffer &= text(vptr.address) & "\n"
+            End Select
+        Endif
+        If vptr.length = 0 Then Break
+        vptr = varmem.AllocPtr(vptr.address + vptr.length)
+
+    Wend
+    Return OutBuffer
+
+End
+
+Private Function key_Read() As String
+
+    Return Str(CLong($pKey))
+
+End
+
+Private Function Count_Read() As Integer
+
+    Return varmem.ManagedInfo.BlockCount
+
+End
+
+Private Function Length_Read() As Integer
+
+    Return varmem.ManagedInfo.BlockCount
+
+End
+
+Private Function Max_Read() As Integer
+
+    Return varmem.ManagedInfo.BlockCount - 1
+
+End

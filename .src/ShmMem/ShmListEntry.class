@@ -1,0 +1,131 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Fast Unsafe
+
+Public Struct AllocHeader                 '' Standard header
+    Length As Long                          '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    {Next} As Pointer                       '' null if no more in list
+End Struct
+
+Public Struct dPointer
+    Length As Long                          '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    Value As Pointer                        '' The actual value for usage
+End Struct
+
+Public Struct dList                       '' A defined entry in list of objects
+    Length As Long                          '' Length including header
+    Address As Pointer                   '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    {Next} As Pointer                      '' Next in list or head of pool
+    Prev As Pointer                          '' previous in list or end of pool
+    sema As Pointer                         '' The locking semephor for each list
+    Global As Integer                       '' Defines if this is a global memory object or not
+    bDebug As Boolean                  '' turns on or off the debug control
+    RefCount As Long                      '' Number of refrences to this element
+    Value As Pointer                        '' Value of entry or count if pool
+End Struct
+
+' Extern DListPtr(dest As Pointer, src As Pointer, Len As Integer) As DList In "libc:6" Exec "memcpy"
+
+Private VarMem As ShmVarStorage           '' The storage pool to be used or referenced
+Private Entry As DList                    '' The pointer to the list
+Property Value As Variant                 '' The actual value of the entry
+Property Read Address As Pointer          '' The virtual address of the entry
+Property Read Type As Integer             '' The Type of this block
+Property Read RefCount As Long            '' The Number of refrences or used as a tag/priority field
+Property Debug As Boolean Use $bDebug
+
+
+Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0)
+
+    '$bDebug = True
+    If Object.Class(VarStorage).name == "ShmMem" Then
+        VarMem = VarStorage.MyVarMem
+    Else
+        VarMem = VarStorage
+    Endif
+
+    If VirtAddress = 0 Then
+        NewEntry()
+    Else
+        Dim RealPtr As Pointer
+        RealPtr = VarMem.RealAddress(VirtAddress)
+        ' entry = DListPtr(RealPtr, RealPtr, 0)
+        entry = RealPtr
+    Endif
+
+End
+
+Public Sub NewEntry(Optional Value As Variant = Null) As DList
+
+    Dim NewVar As Pointer
+    Dim VirtAddress As Pointer
+    Dim RealAddress As Pointer
+
+    VirtAddress = VarMem.Alloc(SizeOf(dList) - SizeOf(AllocHeader))
+    RealAddress = VarMem.RealAddress(VirtAddress)
+    ' Entry = DListPtr(RealAddress, RealAddress, 0)
+    entry = RealAddress
+    Entry.type = VarMem.UsedClassByName(Object.Class(Me).name)
+    Entry.value = 0
+
+    If value Then
+        NewVar = VarMem.set(Value)
+        Entry.Value = NewVar
+    Endif
+
+    Return entry
+
+End
+
+Private Function Value_Read() As Variant
+
+    Dim result As Variant
+
+    If $bDebug Then Print Application.id, "Value_Read ListEntry VarMem.Lock "
+    VarMem.Lock()
+    Result = VarMem[entry.value]
+    VarMem.Unlock()
+    If $bDebug Then Print Application.id, "Value_Read ListEntry VarMem.UnLock "
+    Return result
+
+End
+
+Private Sub Value_Write(Value As Variant)
+
+    If $bDebug Then Print Application.id, "Value_Write ListEntry VarMem.Lock "
+    VarMem.Lock()
+    VarMem[entry.value] = value
+    VarMem.Unlock()
+    If $bDebug Then Print Application.id, "Value_Write ListEntry VarMem.UnLock "
+
+End
+
+Private Function Type_Read() As Integer
+
+    Return entry.Type
+
+End
+
+Private Function Address_Read() As Pointer
+
+    Return entry.Address
+
+End
+
+Private Function RefCount_Read() As Long
+
+    Return entry.RefCount
+
+End

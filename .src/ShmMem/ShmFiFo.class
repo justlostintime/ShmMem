@@ -1,0 +1,43 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Fast Unsafe
+
+Inherits ShmList
+
+
+Static Private cShmFiFo As Integer = 22
+Static Private cShmFiFoEntry As Integer = 23
+
+Static Public Sub _init()
+
+    ShmVarStorage.DefineClass("ShmFiFo", cShmFiFo)
+    ShmVarStorage.DefineClass("ShmFiFoEntry", cShmFiFoEntry)
+
+End
+
+Public Sub _new()
+
+    Super.SetHeadType = cShmFiFo                                 '' The list header Class
+    Super.SetEntryType = cShmFiFoEntry                           '' The List Entry Class
+    Super.ListHead.Type = cShmFiFo
+
+End
+
+Public Sub Push(Value As Variant)
+
+    Me.add(Value)
+
+End
+
+Public Sub Pop() As Variant
+
+    Return Me.remove(0)
+
+End

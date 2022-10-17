@@ -1,0 +1,39 @@
+' Gambas class file
+
+Inherits Task
+Public work As Shmmem
+
+Public Sub main() As Integer
+
+  'Dim work As New ShmMem(4200000, "Work")
+
+  With work
+    '!TheQ.Debug = True
+    Dim theq As Variant = !TheQ
+    Print "BG starts, Q length = ";; TheQ.count
+    Print "BG Queue contains:"
+    For Each g As Variant In TheQ
+      Print g, "Priorty ="; TheQ.key
+      Flush
+    Next
+    Print "BG End Queue"
+    Flush
+    Wait 0.001
+    Print "bg begin popping values"
+    While TheQ.Count
+      Print "Popping =";; TheQ.pop()
+    Wend
+  End With
+
+  Print "Bg Ends"
+  Flush
+  Wait 1
+
+Catch
+  Print "bg error ";; Error.text
+  Flush
+  Wait 0.001
+  Return -9
+
+End
+

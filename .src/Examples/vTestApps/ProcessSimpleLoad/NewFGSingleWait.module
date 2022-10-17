@@ -1,0 +1,16 @@
+' Gambas module file
+
+shm As New ShmMem(200000)
+
+Public Sub main()
+
+  With shm
+    !hello = 1
+    Dim mytask As New NewBGSingleWait
+    mytask.shm = shm                                          ' both use the same unnamed shared memory
+    Wait 0
+    Wait 2.0
+    Print "Done task running = ";; mytask.running;; mytask.value
+  End With
+
+End

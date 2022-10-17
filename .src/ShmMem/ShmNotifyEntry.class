@@ -1,0 +1,96 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Fast Unsafe
+
+Public Struct AllocHeader                   '' Standard header
+    Length As Long                          '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    {Next} As Pointer                       '' null if no more in list
+End Struct
+
+Public Struct dPointer
+    Length As Long                          '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    Value As Pointer                        '' The actual value for usage
+End Struct
+
+Public Struct Symbol
+    Name[128] As Byte                       '' Max length of any variable name
+    Used As Boolean                         '' This slot is in use
+    NotifyBlock As Pointer                  '' pointer to chain of pids waiting to be notifies when This symbol changes
+    Address As Long                         '' virtual address of the value, 0 means no value yet
+    Hash As Long                            '' When we start using a hash for this table
+    NameLength As Integer                   '' NameLength
+End Struct
+
+Public NotifyObject As Object
+Public NotifyFunc As String
+Public NotifyTimeout As Integer
+Public NotifyVar As Symbol
+Public VarName As String
+Public VarMemory As ShmVarStorage
+Public StartTime As Float
+Private VarClock As Timer
+Private OneShot As Boolean
+
+Event VarChanged(VarDef As ShmNotifyEntry)
+Event VarTimedOut(VarDef As ShmNotifyEntry)
+
+'' Dispatch Functions must look like
+'' MyChange(SymSource as ShmMem, SymName as String, Value as Variant, TimedOut as boolean)
+
+Public Sub _new(SymName As Symbol, CallObject As Object, CallFunc As String, VarMem As ShmVarStorage, Optional fTimeout As Long = 0, Once As Boolean = False)
+
+    NotifyObject = CallObject
+    NotifyFunc = CallFunc
+    NotifyVar = SymName
+    NotifyTimeOut = fTimeOut
+    VarMemory = VarMem
+    VarName = SymName.Name.ToString()
+
+    If fTimeOut > 0 Then
+        VarClock = New Timer As "VarTimeout"
+        VarClock.Delay = fTimeout
+        VarClock.Enabled()
+    Endif
+
+End
+
+Public Sub VarTimeOut_Timer()
+
+    Dim Result As Boolean
+
+    result = Raise VarTimedOut(NotifyVar)
+    VarClock.Stop()
+
+End
+
+Public Sub NewVal()
+
+    Raise VarChanged(Me)
+
+End
+
+
+Public Sub Dispatch(Failed As Boolean)
+
+    VarMemory.Lock()
+    Dim value As Variant = VarMemory[NotifyVar.Address]
+    VarMemory.Unlock()
+    Dim ParmList As Variant[] = [VarName, value, Failed]
+
+    Object.Call(NotifyObject, NotifyFunc, ParmList)
+
+End
+
+
+

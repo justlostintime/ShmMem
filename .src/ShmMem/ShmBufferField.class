@@ -1,0 +1,34 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Fast Unsafe
+
+Property DataType As Integer Use $DataType = gb.Binary
+Property Offset As Pointer Use $Offset = 0
+Property Length As Pointer Use $Length = 0
+Property Buffer As ShmBuffer Use $Buffer = Null
+Property Name As String Use $Name = ""
+
+
+Public Sub _new(oBuffer As ShmBuffer, Element As String, ElementOffset As Pointer, ElementLength As Integer)
+
+    $Offset = ElementOffset
+    $Length = ElementLength
+    $Buffer = oBuffer
+    $Name = Element
+
+End
+
+Public Sub _free()
+
+    $Buffer = Null
+
+End
+
+

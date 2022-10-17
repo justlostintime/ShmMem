@@ -1,0 +1,59 @@
+' Gambas module file
+
+Public Sub Main()
+
+  ShmMem.ForceDelete("Work")
+  Dim work As New ShmMem(4200000, "Work")
+
+  With work
+    !TheQ = New ShmQueue(work)
+
+    !Testy1 = "hello world"
+    !Testy2 = 1
+    !Testy3 = 2.6
+    !TheQ.enqueue("1", 0)
+    !TheQ.enqueue("23", 6)
+    !TheQ.enqueue("S2", 5)
+    !TheQ.EnQueue("3", 4)
+    !TheQ.enqueue("S4", 3)
+    !TheQ.enqueue("5", 100)
+
+    Print "Queue contains:"
+    For Each g As Variant In !TheQ
+      Print g
+    Next
+    Print "End Queue, Start Dqueue"
+
+    While !TheQ.Count
+      Print "Popping =";; !TheQ.dequeue()
+    Wend
+    Print "End Dqueue"
+    !TheQ.enqueue("1", 0)
+    !TheQ.enqueue("23", 6)
+    !TheQ.enqueue("6", 5)
+    !TheQ.EnQueue("32", 8)
+    !TheQ.enqueue("s12", 3)
+    !TheQ.enqueue("5", 100)
+
+    .PrintAllInfo()
+
+    Print "Queue contains:"
+    For Each g As Variant In !TheQ
+      Print g
+    Next
+
+    Dim mytask As New NewBGDequeue
+    mytask.work = work
+    Wait 0.001
+
+    mytask.Wait()
+
+    .PrintAllInfo()
+
+  End With
+Catch
+  Print "error";; Error.Text
+
+End
+
+

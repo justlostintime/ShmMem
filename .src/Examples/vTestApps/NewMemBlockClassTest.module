@@ -1,0 +1,136 @@
+' Gambas module file
+
+Public Struct LongStruct
+    Value As Long
+End Struct
+
+' Extern memcpy(dest As Pointer, src As Pointer, Len As Integer) As Integer In "libc:6"
+' Extern LongPtr(dest As Pointer, src As Pointer, Len As Integer) As LongStruct In "libc:6" Exec "memcpy"
+
+Public Sub main()
+
+    Dim MyBlock, MyNamedblock As ShmMemBlock
+    Dim len As Long
+    Dim llongptr As Longstruct
+    Dim StartTime As Float
+    Dim LoopCount As Integer = 100
+    Dim LongLoop As Long = 100
+
+    Starttime = Timer
+    For i As Integer = 0 To LoopCount
+        MyBlock = New ShmMemBlock(1100000)
+        MyBlock = Null
+        Wait
+    Next
+    Print "Create/Del anonymous Block                time X  "; LoopCount; " : "; Timer - starttime
+
+    Starttime = Timer
+
+    For i As Integer = 0 To LoopCount
+        MyNamedBlock = New ShmMemBlock(1234567, "MyMemory", True)
+        MyNamedBlock = Null
+        Wait
+    Next
+
+    Print "Create/Del named Block                    time X  "; LoopCount; " : "; Timer - starttime
+
+    MyBlock = New ShmMemBlock(250000)
+
+    ' llongptr = LongPtr(MyBlock.DataAddress, MyBlock.DataAddress, 0)
+    llongptr = MyBlock.DataAddress
+
+    Len = MyBlock.DataLength
+    Starttime = Timer
+    For i = 0 To LongLoop
+        len = MyBlock.BlockInfo.DataLength
+        Len = MyBlock.DataLength
+        Len = MyBlock.length
+        len = llongptr.value
+    Next
+    Print "Retrieve all fields of the shmblock info  time X "; longloop; " : "; Timer - starttime
+
+    starttime = Timer
+    For i = 0 To longloop
+        llongptr.value = i
+        len = llongptr.Value
+    Next
+    Print "Read/write value using Ptr to struct      time X "; longloop; " : "; Timer - starttime
+
+    MyBlock = New ShmMemBlock(1000000)
+    Dim mymem As New ShmManage(MyBlock)
+    Dim memptr As New Long[]
+    memptr.Add(mymem.Alloc(100))
+    mymem._PrintFreeList()
+
+    Print "************************* Allocate 61 Blocks"
+    For i As Integer = 1 To 60
+        memptr.Add(mymem.Alloc(i))
+    Next
+    mymem._Print()
+
+    For Each TextType As Variant In mymem
+        Print mymem.key, TextType, TextType.Address, ShmVarStorage.GetTextType(TextType.Type), TextType.length
+    Next
+
+    Print "************************ Release every other block"
+    For i = 0 To memptr.max Step 2
+        mymem.free(memptr[i])
+        memptr[i] = 0
+    Next
+    mymem._Print()
+
+    Print "********************** Release the rest of the blocks"
+    For i = memptr.max DownTo 0
+        If memptr[i] > 0 Then mymem.free(memptr[i])
+    Next
+    mymem._Print()
+
+    Print " Re Allocate the block memory"
+    MyBlock = New ShmMemBlock(1000000)
+    mymem = New ShmManage(MyBlock)
+    Dim MyVars As New ShmVarStorage(MyMem)
+
+    Dim x As Integer = 1024
+    Dim var_x As Long = MyVars.set(x)
+    Dim var_y As Long = MyVars.set(5678)
+    Dim Var_z As Long = MyVars.set(3.45)
+    Dim Var_a As Long = MyVars.set(Now)
+
+    Dim y As Integer = MyVars[var_x]
+    'Print MyVars[var_x], MyVars[var_y], MyVars[var_z], MyVars[var_a]
+
+    starttime = Timer
+    For i As Integer = 0 To longloop
+        MyVars[Var_y] = i
+    Next
+    Print "Write using ShmVarStorage                 time X "; longloop; " : "; Timer - starttime
+
+    starttime = Timer
+    For i As Integer = 0 To longloop
+        MyVars._puttype(i, Var_y, gb.integer)
+    Next
+    Print "Write using ShmVarStorage force data type time X "; longloop; " : "; Timer - starttime
+
+    starttime = Timer
+    For i As Integer = 0 To LongLoop
+        y = MyVars[Var_y]
+    Next
+    Print "Read using ShmVarStorage                  time X "; longloop; " : "; Timer - starttime
+
+    starttime = Timer
+    For i As Integer = 0 To LongLoop
+        y = MyVars._getType(Var_y, gb.integer)
+    Next
+    Print "Read using ShmVarStorage Force data type  time X "; longloop; " : "; Timer - starttime
+
+
+    starttime = Timer
+    For i As Integer = 0 To LongLoop
+        MyVars.Lock()
+        y = MyVars._getType(Var_y, gb.integer)
+        MyVars.Unlock()
+    Next
+    Print "Read using ShmVarStorage And Lock/unlock  time X "; longloop; " : "; Timer - starttime
+
+End
+

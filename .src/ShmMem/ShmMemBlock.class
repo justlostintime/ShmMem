@@ -1,0 +1,377 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Fast Unsafe
+
+Extern mmap(MapPoint As Pointer, MapLength As Integer, prot As Integer, flags As Integer, fd As Integer, offset As Integer) As Pointer In "libc:6"
+Extern munmap(MapPoint As Pointer, MapLength As Integer) As Integer In "libc:6"
+Extern shm_open(name As String, oflag As Integer, mode As Integer) As Integer In "librt:1"
+Extern shm_unlink(name As String) As Integer In "librt:1"
+Extern ftruncate(FileHandle As Integer, length As Integer) As Integer In "libc:6"
+Extern mremap(MapPoint As Pointer, MapLength As Integer, NewMapLength As Integer, flags As Integer) As Pointer In "libc:6"
+Extern strerror(err As Integer) As Pointer In "libc:6"
+
+'Extern rWrite(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "write"
+'Extern rRead(handel As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
+Extern rClose(Handle As Integer) As Integer In "libc:6" Exec "close"
+
+
+Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
+Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
+'Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
+Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
+Extern sched_yield() As Integer In "libpthread:0"
+
+Static Private Const PROT_READ As Integer = &H01
+Static Private Const PROT_WRITE As Integer = &H02
+Static Private Const MAP_SHARED As Integer = &H01
+Static Private Const MAP_ANONYMOUS As Integer = &H020
+
+Static Private Const O_ACCMODE As Integer = &O0003
+Static Private Const O_RDONLY As Integer = &O00
+Static Private Const O_WRONLY As Integer = &O01
+Static Private Const O_RDWR As Integer = &O02
+Static Private Const O_CREAT As Integer = &O0100
+Static Private Const O_EXCL As Integer = &O0200
+Static Private Const EEXIST As Integer = 11
+
+Static DefaultPermissions As Integer = &O660
+
+Public Struct MemBlockHeader                            '' Memory block header
+    SemLock[64] As Byte                                   '' Semaphor used to lock this memory when sharing
+    InUseCounter As Integer                               '' the number of applications using this Memory
+    MemoryLength As Long                                  '' length of the shared memory
+    MemoryBlockSize As Long                               '' How much to add each time memory is extended
+    LockTimeOut As Float                                  '' How long to wait for a timeout on wait sem call
+    DataAddress As Pointer                                '' Address usable by application
+    DataLength As Long                                    '' length of data portion of the the block
+End Struct
+
+' Extern SetBlockInfo(dest As Pointer, src As Pointer, Len As Integer) As MemBlockHeader In "libc:6" Exec "memcpy"
+
+Public Const DefaultLength As Long = 4000000            '' Default length of allocated chunk of memory 4Meg
+
+Public MemoryHandle As Integer = -1                     '' Handle of named shared memory segment
+Public MemoryAddress As Pointer                         '' Real memory address of this shared memory
+Public Name As String = ""                              '' Name used for this memory block, blank if unnamed
+
+Public MemoryLength As Long                             '' Length of actual allocated memory
+Public MemoryBlockSize As Long                          '' The size of memory used to extend this if needed
+Private SemLock As Pointer = Null                       '' Address of the semephore for this memory segment
+Public DataAddress As Pointer                           '' The address of memory usable by the application
+Public DataLength As Long                               '' Length of user accessable area
+Public LockTimeout As Float = 0                         '' The length of time before reporting race condition
+
+Public BlockInfo As MemBlockHeader                      '' The information stored in the header of the memory
+
+Private NewMemoryBlock As Boolean = True                '' Used to indicate if we are accessing an already created named block
+Private MyAppId As Long = 0                             '' The app used if we spawn a task that requires the sem lock
+
+Property Read length As Long                            '' Length of user space
+Property Read address As Pointer                        '' address of user space
+Property Debug As Boolean Use $bDebug
+
+Public Sub _print()
+
+    Print "Memory Address : "; Hex(MemoryAddress, 9)
+    Print "Memory Length  : "; MemoryLength;; BlockInfo.MemoryLength
+    Print "Data Address   : "; Hex(DataAddress, 9);; "As Offset from Start Of Shared Memory Segment ";; Hex(BlockInfo.DataAddress, 9)
+    Print "Data Length    : "; DataLength;; BlockInfo.DataLength
+    Print "Header Length  : "; SizeOf(MemBlockHeader)
+    Print "Sem Lock Addr  : "; Hex(SemLock, 9)
+    If name <> "" Then Print "Name           : "; Name
+    Print "Lock TimeOut   : "; LockTimeOut;; BlockInfo.LockTimeOut
+    Print "New Mem Block  : "; NewMemoryBlock
+    Print "Memory Handle  : "; IIf(MemoryHandle = -1, "No Handle, Not Using Named Shared Memory", MemoryHandle)
+    Print
+
+End
+
+Static Public Sub ForceDelete(SharedName As String)
+
+    Try shm_unlink(SharedName)
+
+End
+
+
+Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As String = "", WaitTimeout As Float = 2.1)
+
+    $bDebug = True
+
+    MemoryLength = SharedLength + SizeOf(MemBlockHeader)
+    Name = SharedName
+
+    If SharedName = "" Then
+        If $bDebug Then Print Object.Class(Me).Name;; " Map unnamed segment"
+        MemoryAddress = MapMemory(MemoryLength)
+    Else
+        If $bDebug Then Print Object.Class(Me).Name;; "Map Named Segment "; SharedName
+        MemoryAddress = CreateNamedMem(SharedName, MemoryLength)
+    Endif
+
+    If $bDebug Then Print Object.Class(Me).Name;; " Memory has been mapped"
+
+    If NewMemoryBlock Then
+
+        If $bDebug Then Print Object.Class(Me).Name;; " Define new block "
+
+        SemLock = MemoryAddress
+
+        If sem_init(SemLock, 1, 0) Then
+            Try munmap(MemoryAddress, MemoryLength)
+            If name <> "" Then
+                Try shm_unlink(Name)
+                Try rClose(MemoryHandle)
+            Endif
+            Error.Raise("Failed to create Lock for :" & Name & System.Error & " : " & String@(strerror(System.Error)))
+        Endif
+
+        If $bDebug Then Print Object.Class(Me).Name;; " Initial Lock of block"
+
+        ' BlockInfo = SetBlockInfo(MemoryAddress, MemoryAddress, 0)
+        BlockInfo = MemoryAddress
+
+        BlockInfo.InUseCounter = 1
+        BlockInfo.MemoryLength = MemoryLength
+        BlockInfo.MemoryBlockSize = SharedLength
+        MemoryBlockSize = SharedLength
+        DataAddress = SemLock + SizeOf(MemBlockHeader)
+        BlockInfo.DataAddress = SizeOf(MemBlockHeader)
+        DataLength = SharedLength
+        BlockInfo.DataLength = DataLength
+        LockTimeout = WaitTimeOut
+        BlockInfo.LockTimeOut = LockTimeout
+
+        If $bDebug Then Print Object.Class(Me).Name;; " Block initialization Completed"
+
+        sem_post(SemLock)
+
+    Else
+
+        If $bDebug Then Print Object.Class(Me).Name;; " OPen Existing mem block"
+
+        SemLock = MemoryAddress
+        sem_wait(SemLock)
+
+        ' BlockInfo = SetBlockInfo(MemoryAddress, MemoryAddress, 0)
+        BlockInfo = MemoryAddress
+
+        Inc BlockInfo.InUseCounter
+        MemoryBlockSize = BlockInfo.MemoryBlockSize
+        DataAddress = SemLock + BlockInfo.DataAddress
+        DataLength = BlockInfo.DataLength
+        LockTimeOut = BlockInfo.LockTimeOut
+        If MemoryLength <> BlockInfo.MemoryLength Then
+            RemapNamed(BlockInfo.MemoryLength)                 '' called when the requested length does not match the actual length
+            MemoryLength = BlockInfo.MemoryLength
+        Endif
+        sem_post(SemLock)
+    Endif
+
+    MyAppId = Application.id
+
+    If $bDebug Then Print Object.Class(Me).Name;; " _new Completed"
+
+End
+
+Public Sub _free()
+
+    If name <> "" Then
+        Dec BlockInfo.InUseCounter
+        Try rClose(MemoryHandle)
+        If BlockInfo.InUseCounter = 0 Then
+            Try shm_unlink(Name)
+        Endif
+        Try sem_destroy(SemLock)
+        Try munmap(MemoryAddress, MemoryLength)
+    Else
+        Try sem_destroy(SemLock)
+        Try munmap(MemoryAddress, MemoryLength)
+    Endif
+
+    If $bDebug Then Print Object.Class(Me).Name;; " _free() Completed"
+
+End
+
+'' Map a block of named or unnamed memory into the address space of the app
+Public Sub MapMemory(BlockSize As Long) As Pointer
+
+    Dim MemPointer As Pointer
+
+    If MemoryHandle = -1 Then
+        MemPointer = mmap(Null, BlockSize, (PROT_READ Or PROT_WRITE), (MAP_SHARED Or MAP_ANONYMOUS), MemoryHandle, 0) 'Or MAP_ANONYMOUS
+    Else
+        MemPointer = mmap(Null, BlockSize, (PROT_READ Or PROT_WRITE), MAP_SHARED, MemoryHandle, 0) 'Or MAP_ANONYMOUS
+    Endif
+
+    If MemPointer = -1 Then
+        If MemoryHandle <> -1 Then
+            Try rClose(MemoryHandle)
+            If Name <> "" Then
+                Try shm_unlink(Name)
+            Endif
+        Endif
+
+        Debug MemPointer, System.Error, String@(strerror(System.Error))
+        Stop
+        Error.Raise("System Error:" & System.Error & " : " & String@(strerror(System.Error)))
+    Endif
+
+    Return MemPointer
+
+End
+
+'' Allocate the block of named memory right away
+Public Sub CreateNamedMem(Optional MemName As String = User.name & Application.name, MemSize As Integer = DefaultLength, forceCleanup As Boolean = False) As Pointer
+
+    If ForceCleanup Then           ' try to clean up any leftover stuff
+        Try shm_unlink(MemName)
+    Endif
+
+    If $bDebug Then Print Object.Class(Me).Name;; " Call map named segment"
+
+    MemoryHandle = shm_open(MemName, O_CREAT Or O_RDWR Or O_EXCL, DefaultPermissions)     ' return an error if its already there
+
+    If $bDebug Then Print Object.Class(Me).Name;; " Call map named segment complete"
+
+
+    If MemoryHandle = -1 Then
+        If $bDebug Then Print Object.Class(Me).Name;; " Memory already created, then just map it"
+        MemoryHandle = shm_open(MemName, O_RDWR, DefaultPermissions)
+        If MemoryHandle = -1 Then
+            Error.Raise("Unable to open Named Shared Memory" & MemName & " " & Str(System.error) & " " & String@(strerror(System.error)))
+        Endif
+        NewMemoryBlock = False
+    Else If ftruncate(MemoryHandle, MemSize) = -1 Then
+        If $bDebug Then Print Object.Class(Me).Name;; " ftrunc failed!"
+        Error "Unable to ftruncate the Memory area " & MemName & " " & Str(System.error) & " " & String@(strerror(System.error))
+        rClose(MemoryHandle)
+        shm_unlink(MemName)
+        Error.Raise("Unable to ftruncate memory" & MemName & " " & Str(System.error) & " " & String@(strerror(System.error)))
+    Endif
+
+    If $bDebug Then Print Object.Class(Me).Name;; "Do real mapping of allocated storage"
+
+    Return MapMemory(MemSize)
+
+End
+
+'' Called to have the mapped area match the actual shared area
+Public Sub RemapNamed(NewLength As Long)
+
+    Dim p As Pointer
+
+    P = mremap(MemoryAddress, MemoryLength, NewLength, 0)           '' resize but don't allow to move
+    If p = -1 Or p <> MemoryAddress Then
+        Stop
+    Endif
+
+End
+
+Private InLock As Integer = 0
+
+Public Sub Exclusive()
+
+    If InLock Then
+        If $bDebug Then Print Application.id;; " In Lock no wait ";; InLock;; Blockinfo.DataLength
+        Inc InLock
+        Return
+    Endif
+
+    If $bDebug Then Print Application.id;; "Real Wait  ";; InLock;; Blockinfo.DataLength
+    Inc InLock
+    sem_wait(SemLock)
+
+End
+
+
+Public Sub ExclusiveTimeout()
+
+    If InLock Then
+        If $bDebug Then Print Application.id;; " In Lock Timeout no wait ";; InLock;; Blockinfo.DataLength
+        Inc InLock
+        Return
+    Endif
+
+    Dim counter As Float = Timer
+    While sem_trywait(SemLock)
+        sched_yield()
+        If Timer - counter > LockTimeout Then
+            Error.Raise("Mutex race condition !!! :" & IIf(name = "", "Anonymous", name))
+        Endif
+    Wend
+    If $bDebug Then Print Application.id;; " In Lock Timeout wait ";; InLock;; Blockinfo.DataLength
+    Inc InLock
+
+End
+
+Public Sub Release()
+
+    If inlock > 1 Then
+        If $bDebug Then Print Application.id;; "In Lock Release ";; InLock;; Blockinfo.DataLength
+        Dec Inlock
+        Return
+    Endif
+
+    If $bDebug Then Print Application.id;; "Release memory";; InLock;; Blockinfo.DataLength
+    Dec InLock
+    sem_post(SemLock)
+    sched_yield()
+
+End
+
+Public Sub AllocChunk()
+
+    Dim p As Pointer
+
+    P = mremap(MemoryAddress, MemoryLength, (MemoryLength + MemoryBlockSize), 1)
+
+    If p <> MemoryAddress Then
+        If p = -1 Then
+            Error.Raise("Extend Shared Memory Failed error:" & Str(p) & " system error =" & Str(System.Error))
+        Else
+            MemoryAddress = p
+            SemLock = MemoryAddress
+            DataAddress = SemLock + SizeOf(MemBlockHeader)
+            DataLength += MemoryBlockSize
+            MemoryLength += MemoryBlockSize
+            BlockInfo.MemoryLength = MemoryLength
+            BlockInfo.DataLength = DataLength
+        Endif
+    Else
+        DataLength += MemoryBlockSize
+        MemoryLength += MemoryBlockSize
+        BlockInfo.MemoryLength = MemoryLength
+        BlockInfo.DataLength = DataLength
+    Endif
+
+    _print()
+
+Catch
+    Error Error.text, Error.where
+    Stop
+
+End
+
+
+Private Function length_Read() As Long
+
+    Return Blockinfo.DataLength
+
+End
+
+Private Function address_Read() As Pointer
+
+    Return BlockInfo.DataAddress
+
+End
+
+

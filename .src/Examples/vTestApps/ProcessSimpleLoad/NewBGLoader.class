@@ -1,0 +1,41 @@
+' Gambas class file
+
+Inherits Task
+Public myindex As Integer = 0
+
+Public Sub main() As String
+
+    Print Application.id;; " BG Task Begins"
+    Dim vmem As New ShmMem(1000000, "jiffy")
+
+    Dim counter As Long = -1
+
+    With vmem
+        While True
+
+            If Not .WaitValueChange("Wiggle", counter, 4.5) Then
+                Print Application.id;; MyIndex;; " Timed out Waiting for change"
+                If !AllDone == "Yes" Then
+                    Print Application.id;; MyIndex;; "All done recieved , Wiggle =";; !Wiggle
+                    Break
+                Endif
+            Else
+                Print Application.id;; MyIndex;; "Wiggle =";; !Wiggle
+                If !AllDone == "Yes" Then
+                    Print Application.id;; MyIndex;; "All done recieved , Wiggle =";; !Wiggle
+                    Break
+                Endif
+                counter = !Wiggle
+            Endif
+
+        Wend
+
+    End With
+
+    Return Hex(Application.id) & " " & Str(MyIndex) & " Done Counter =" & Str(counter)
+
+Catch
+    Print Application.id;; "Error:";; Error.text;; Error.where
+
+End
+

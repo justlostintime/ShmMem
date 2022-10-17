@@ -1,0 +1,38 @@
+' Gambas module file
+
+Fast Unsafe
+
+Public Sub main()
+
+    Dim StartTime As Float = Timer
+
+    Dim MyBlock As New ShmMemBlock(1000000)
+    Dim mymem As New ShmManage(MyBlock)
+    Dim MyVars As New ShmVarStorage(MyMem)
+
+    Dim MyList As New ShmList(MyVars)
+
+    MyList.add("hello kitty")
+    MyList.add("Good bye")
+
+    Dim x As Integer = 1024
+    Dim var_x As Pointer = MyVars.set(x)
+    Dim var_y As Pointer = MyVars.set(5678)
+    Dim Var_z As Pointer = MyVars.set(3.45)
+    Dim Var_a As Pointer = MyVars.set(Now)
+    Dim Str_a As Pointer = MyVars.set("Hello world")
+
+    Dim y As Integer = MyVars[var_x]
+    Print y, MyVars[Str_a]
+
+    Print "Total time for all operations "; Timer - StartTime
+
+    For Each peach As Variant In MyVars
+        Print Right("        " & MyVars.key, 8); " = "; Left(Object.Class(peach).name & Space(15), 15);; Left(MyVars.GetTextType(peach.type) & Space(10), 10);; "$"; Hex(peach.address, 8)
+    Next
+
+    MyMem._Print()
+
+End
+
+

@@ -1,0 +1,200 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Fast Unsafe
+''' Defines the Shm datatype - list
+''' Lists are inherited by every other list based object
+
+Public Const ChangeSignal As Integer = 16      '' Sigsys = 31, SigUSr2 = 12, sig16 is unused too
+Private InitSignal As Integer = 0              '' force the init on first call of Notify
+
+Public Struct AllocHeader                      '' Standard header
+    Length As Long                               '' Length including header
+    Address As Pointer                           '' The virtual address of this block, speed pointer conversion
+    Type As Integer                              '' Type of memory
+    {Next} As Pointer                              '' null if no more in list
+End Struct
+
+Public Struct dPointer
+    Length As Long                              '' Length including header
+    Address As Pointer                          '' The virtual address of this block, speed pointer conversion
+    Type As Integer                             '' Type of memory
+    Value As Pointer                            '' The actual value for usage
+End Struct
+
+Public Struct Symbol
+    Name[128] As Byte                          '' Max length of any variable name
+    Used As Boolean                            '' This slot is in use
+    NotifyBlock As Pointer                     '' pointer to chain of pids waiting to be notifies when This symbol changes
+    Address As Long                            '' virtual address of the value, 0 means no value yet
+    Hash As Long                               '' When we start using a hash for this table
+    NameLength As Integer                      '' NameLength
+End Struct
+
+Extern signal(sig As Integer, sighandler As Pointer) As Pointer In "libc:6"
+Extern sKill(sigpid As Integer, Sig As Integer) As Integer In "libc:6" Exec "kill"
+Extern sched_yield() As Integer In "libpthread:0"
+
+Private VarMem As ShmVarStorage
+Private NotifyQueue As ShmQueue
+Private NotifyVars As Collection
+Private MyAppId As Long = 0
+
+
+'' Create a new notify queue for this symbol table
+'' This is called by the Symbol table to create the notify queue
+Public Sub _New(VariableMemory As ShmVarStorage)
+
+    VarMem = VariableMemory
+
+End
+
+Public Sub _free()
+
+    If NotifyQueue = Null Then
+        Return
+    Endif
+
+    NotifyQueue.free()
+
+End
+
+'' This function is called upon the first call to create  notify
+'' for a variable
+Private Sub SetSignal()
+
+    InitSignal = Application.id
+    signal(ChangeSignal, _signal)
+    InitSignal = True
+
+End
+
+Public Sub Notify(SymEntry As Symbol, CallBack As Object, CallFunc As String, Optional timeout As Long = 0)         '' Timeout of zero means wait for ever
+
+    Dim PidQueue As ShmQueue
+    Dim VarInfo As ShmNotifyEntry
+
+    If Not InitSignal Then
+        SetSignal()
+    Endif
+
+    If Application.id <> MyAppID Then
+        NotifyVars = New Collection(gb.ignorecase)
+        NotifyQueue = New ShmQueue(VarMem, 0, True)                                 ' Create a queue for variable changes per task/process
+        MyAppId = Application.id
+    Endif
+
+    If SymEntry.NotifyBlock = 0 Then
+        PidQueue = New ShmQueue(VarMem, 0, True)
+        SymEntry.NotifyBlock = PidQueue.Address
+    Else
+        PidQueue = New ShmQueue(VarMem, SymEntry.NotifyBlock)
+    Endif
+
+    If Not PidQueue.Exist(NotifyQueue.Address) Then
+        PidQueue.Enqueue(Application.id, NotifyQueue.Address)
+    Endif
+
+    VarInfo = New ShmNotifyEntry(SymEntry, CallBack, CallFunc, VarMem, Timeout) As "VarInfo"
+    NotifyVars.Add(VarInfo, SymEntry.Name.tostring())
+
+
+End
+
+Public Sub VarInfo_VarTimedOut(VarInfo As ShmNotifyEntry)
+
+    VarInfo.Dispatch(False)
+
+End
+
+Public Sub VarInfo_VarChanged(VarInfo As ShmNotifyEntry)
+
+    VarInfo.Dispatch(True)
+
+End
+
+
+Public Sub NotifyStop(SymEntry As Symbol)
+
+    Dim PidQueue As ShmQueue
+    Dim SymName As String
+
+    If SymEntry.NotifyBlock = 0 Then
+        Return
+    Endif
+
+    SymName = SymEntry.Name.tostring()
+    If NotifyVars.Exist(SymName) Then
+        NotifyVars.remove(SymName)
+    Endif
+
+    PidQueue = New ShmQueue(VarMem, SymEntry.NotifyBlock)
+
+    If PidQueue.Exist(NotifyQueue.Address) Then
+        PidQueue.Dequeue(NotifyQueue.Address)
+        NotifyQueue.free()
+    Endif
+
+    If PidQueue.count = 0 Then
+        SymEntry.NotifyBlock = 0
+        PidQueue.free()
+    Endif
+
+End
+
+'' This is where the signal arrives when generated from
+'' Any Application
+
+Public Sub _signal(Sig As Integer)                  '' Signal handler for user defined signal
+
+    If sig <> ChangeSignal Then Return
+
+    While NotifyQueue.count
+        Dim VarName As Variant = NotifyQueue.Pop()
+        NotifyVars[VarName].Newval()
+    Wend
+
+End
+'' Called by the symbol table when ever a variable changes value
+'' This only supports variables not direct memory values
+
+Public Sub SignalEach(Sym As Symbol)
+
+    Dim PidQueue As ShmQueue
+    Dim UserQueue As ShmQueue
+    Dim Result As Integer
+
+    If Sym.NotifyBlock = 0 Then Return
+
+    PidQueue = New ShmQueue(VarMem, Sym.NotifyBlock)
+
+    For Each Pid As Integer In PidQueue
+        userqueue = New ShmQueue(VarMem, PidQueue.key)
+        userqueue.Add(Sym.name.tostring())
+    Next
+
+    For Each Pid As Integer In PidQueue
+
+        Result = sKill(Pid, ChangeSignal)
+
+        If result <> 0 Then                              ' if it is an invalid pid then clean this stuff up
+            PidQueue.DeQueue(PidQueue.address)
+            ' userqueue = New ShmQueue(VarMem, PidQueue.key)
+            ' userqueue.clear()
+            ' VarMem.Free(userqueue.Address)
+        Endif
+        Sched_Yield()
+    Next
+
+End
+
+
+
+
+

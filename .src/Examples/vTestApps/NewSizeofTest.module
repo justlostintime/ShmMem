@@ -1,0 +1,74 @@
+' Gambas module file
+
+Public Struct TestStruct
+    MyInt As Integer
+    MyLong As Long
+    MyShort As Short
+    MyString As String
+End Struct
+
+' test all the possible sizeof types etc
+Public Sub main()
+
+    Dim vmem As New ShmMem(128000)
+
+    Dim iLen As Integer
+    Dim strArray As String[] = ["Hello", "Bold", "Sold", "froddo", "Pipe"]
+    Dim intArray As Integer[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+    Dim longArray As Long[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    Dim shortArray As Short[] = [2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8]
+    Dim MyStruct As TestStruct = New TestStruct
+
+    Dim intTest As Integer = 800
+    Dim NullTest As Variant = Null
+    Dim ptrTest As Pointer = 10000
+    Dim longTest As Long = 1
+    Dim dateTest As Date = Now
+    Dim floatTest As Float = 67.89
+
+    Dim MyObject As SharedObjectExample = New SharedObjectExample
+
+    Dim CollectionTest As Collection = New Collection
+
+    CollectionTest.Add(1, "one")
+    CollectionTest.Add("This Is A string", "Two")
+    CollectionTest.Add(strArray, "Three")
+    CollectionTest.Add(MyObject, "four")
+    CollectionTest.Add(dateTest, "five")
+    CollectionTest.Add(ptrTest, "six")
+
+    Print "Begin TestMemSizeof #########################################################################################"
+
+    MyStruct.MyString = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+    Dim TestCases As Collection = New Collection
+    TestCases.Add(intTest, "Int")
+    TestCases.Add(nullTest, "Null")
+    TestCases.Add(ptrTest, "Pointer")
+    TestCases.Add(LongTest, "Long")
+    TestCases.Add(dateTest, "Date")
+    TestCases.Add(FloatTest, "Float")
+    TestCases.Add(strArray, "String Array[]")
+    TestCases.Add(intArray, "Integer Array[]")
+    TestCases.Add(longArray, "Long Array[]")
+    TestCases.Add(shortArray, "Short Array[]")
+    TestCases.Add(myObject, "MyObject[]")
+    TestCases.Add(CollectionTest, "Variable collection[]")
+    TestCases.Add(MyStruct, "Struct type")
+
+
+
+
+
+    For Each i As Variant In TestCases
+
+        'Print " Test Case Begins for " & TestCases.key
+        iLen = vmem.SizeOf(i)
+        Print Subst("    Sizeof for &1 returned length of &2", Left(TestCases.key & Space(25), 25), Format(ilen, "###0"))
+    Next
+
+    Print "End TestMemSizeof #########################################################################################"
+
+End
+
+

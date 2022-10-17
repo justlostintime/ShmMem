@@ -1,0 +1,18 @@
+' Gambas module file
+
+Public Sub main()
+
+  Dim vmem As New ShmMem
+
+  vmem!goat = "hello mom"
+  Print vmem!goat
+  vmem!cat = "This cat"
+  Print vmem!cat
+
+  vmem.Print()
+
+  vmem = Null
+
+  Wait
+
+End

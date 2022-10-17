@@ -1,0 +1,116 @@
+' Gambas class file
+
+Inherits ShmClass
+'Fast Unsafe
+' this a sample class of objects which can be shared between tasks
+' Nothing  is fast about this !
+
+Public ThisString As String = "one two three four and five"
+Public ThisNumber As Integer = 4
+Public ThisArray As String[] = ["bob", "jane", "Rabbit"]
+Public ReadString As String[] = ["Not Assigned Yet"]
+Public LengthOf As Integer = 0
+
+
+' Public Sub _serialize() As Integer
+'   Dim iLen As Integer = 0
+'   iLen += mem.SizeOf(ThisString) ' add one because write does when output
+'   iLen += mem.SizeOf(ThisNumber)
+'   iLen += mem.SizeOf(ThisArray)
+'   Return iLen
+'
+' End
+'
+' Public Sub _read(mFile As Stream)
+'
+'   ThisString = Read #mFile As String
+'   ThisNumber = Read #mFile As Integer
+'   ReadString = Read #mFile As String[]
+'   ThisArray = ReadString
+'
+' End
+
+' Public Sub _write(mFile As Stream)
+'
+'   Write #mFile, ThisString As String
+'   Write #mFile, ThisNumber As Integer
+'   Write #mFile, ThisArray As String[]
+'
+' End
+
+Public Sub _sizeof() As Integer
+
+    Dim MFile As Stream
+    Dim iLen As Integer
+
+    mFile = Open Null For Write
+    Write #mFile, ThisString As String
+    Write #mFile, ThisNumber As Integer
+    Write #mFile, ThisArray As String[]
+    iLen = Seek(MFile)
+    Close #mFile
+    Return iLen
+
+End
+
+Public Sub _property() As Boolean
+
+    Return True
+
+End
+
+
+Public Sub _unknown(...) As Variant
+
+    If Param.count = 0 Then
+        Print Param.name, "no data"
+        Return
+    Endif
+    Select Case Upper(Param.name)
+        Case "SETTHISSTRING"
+            If Param.count > 0 Then
+                ThisString = Param[0]
+            Else
+                Return ThisString
+            Endif
+        Case "SETTHISNUMBER"
+            ThisNumber = Param[0]
+        Case "SETTHISARRAY"
+            ThisArray = Param[0]
+    End Select
+
+    Return Me
+
+End
+
+Public Sub _Call() As String
+
+    Dim retString As String = ""
+
+    retString &= "ThisString = \"" & ThisString & "\"\n"
+    retString &= "ThisNumber = " & Str(thisnumber) & "\n"
+    retString &= "ThisArray = ["
+    For Each s As String In ThisArray
+        retString &= "\"" & s & "\" "
+    Next
+    retString &= "]"
+
+    retString &= "ReadString = ["
+    For Each s As String In ReadString
+        retString &= "\"" & s & "\" "
+    Next
+    retString &= "]"
+
+    Return retString
+
+End
+
+Public Sub set(a As String[]) As SharedObjectExample
+
+    ThisArray = a.Copy()
+
+    Return Me
+
+End
+
+

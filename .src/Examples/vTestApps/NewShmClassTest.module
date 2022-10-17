@@ -1,0 +1,95 @@
+' Gambas module file
+
+' Public Struct dInteger
+'   Length As Long                       '' Length including header
+'   Address As Long                      '' The virtual address of this block, speed pointer conversion
+'   Type As Integer                      '' Type of memory
+'   Value As Integer                     '' The actual value for usage
+' End Struct
+Fast Unsafe
+
+smem As ShmMem
+loopcount As Integer = 1000000
+
+Public Sub main()
+
+    Dim MyVar As Variant
+
+    smem = New ShmMem(1280000, "test")
+    smem!cats = 45
+    Dim result As Integer
+    Dim StartTime As Float = Timer
+    For i As Integer = 0 To loopcount
+        smem!cats = 45
+    Next
+    Print "Named write Lock/Unlock Value X " & loopcount & "   time :";; Timer - Starttime
+
+    StartTime = Timer
+    For i As Integer = 0 To loopcount
+        result = smem!cats + 2
+    Next
+    Print "Named Read Lock/UnlockValue X " & loopcount & "     time :";; Timer - Starttime
+
+    MyVar = smem.VarPtr("cats")
+
+    StartTime = Timer
+    For i As Integer = 0 To loopcount
+        result = MyVar.value
+    Next
+    Print "Named Pointer Read Value X " & loopcount & "        time :";; Timer - Starttime
+
+    StartTime = Timer
+    For i As Integer = 0 To loopcount
+        MyVar.value = i
+    Next
+    Print "Named Pointer write Value X " & loopcount & "       time :";; Timer - Starttime
+
+    smem = New ShmMem
+
+    smem!cats = 45
+
+    StartTime = Timer
+    For i As Integer = 0 To loopcount
+        smem!cats = 45 * i
+    Next
+    Print "Write lock/unlock Value X " & loopcount & "         time :";; Timer - Starttime;; smem!cats
+
+    StartTime = Timer
+    For i As Integer = 0 To loopcount
+        result = smem!cats + 2 * i
+    Next
+    Print "Read Lock/Unlock Value X " & loopcount & "          time :";; Timer - Starttime;; smem!cats
+
+    smem!goat = "this is a small goat and it will eat all your grass"
+
+    StartTime = Timer
+    For i As Integer = 0 To loopcount
+        smem!goat = "this is a small goat and it will eat all your grass"
+    Next
+    Print "Write lock/unlock String X " & loopcount & "        time :";; Timer - Starttime;; smem!goat
+
+    Dim sResult As String
+
+    StartTime = Timer
+    For i As Integer = 0 To loopcount
+        sResult = smem!goat
+    Next
+    Print "Read lock/unlock String X " & loopcount & "         time :";; Timer - Starttime;; smem!goat
+
+    StartTime = Timer
+    For i As Integer = 0 To loopcount
+        smem!goat = "this is a small goat and it will eat all your grass"
+        smem!goat = i
+    Next
+    Print "Change Type int -> str ->int X " & loopcount & "    time :";; Timer - Starttime;; smem!goat
+
+    smem!Fox = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    smem!Hen = ["a", "b", "c"]
+    smem!Riot = ["Baton": 1, "Hood": 2, "Gun": 4]
+
+
+    smem!goat = "this is a small goat and it will eat all your grass"
+    smem.Print()
+
+End
+

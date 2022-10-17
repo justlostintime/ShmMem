@@ -1,0 +1,173 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Fast Unsafe
+
+Inherits ShmList
+
+Public Struct dList                       '' A defined entry in list of objects
+    Length As Long                          '' Length including header
+    Address As Pointer                   '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    {Next} As Pointer                      '' Next in list or head of pool
+    Prev As Pointer                          '' previous in list or end of pool
+    sema As Pointer                         '' The locking semephor for each list
+    Global As Integer                       '' Defines if this is a global memory object or not
+    bDebug As Boolean                  '' turns on or off the debug control
+    RefCount As Long                      '' Number of refrences to this element
+    Value As Pointer                        '' Value of entry or count if pool
+End Struct
+
+Static Private cShmQueue As Integer = 26
+Static Private cShmQueueEntry As Integer = 27
+
+Static Public Sub _init()
+
+    ShmVarStorage.DefineClass("ShmQueue", cShmQueue)
+    ShmVarStorage.DefineClass("ShmQueueEntry", cShmQueueEntry)
+
+End
+
+Public Sub _new()
+
+    Super.SetHeadType = cShmQueue                                 '' The list header Class
+    Super.SetEntryType = cShmQueueEntry                           '' The List Entry Class
+    Super.ListHead.Type = cShmQueue
+
+End
+
+Public Sub Push(Value As Variant)
+
+    Me.add(Value)
+
+End
+
+Public Sub Pop() As Variant
+
+    Return Me.remove(0)
+
+End
+
+Private LastIndex As Integer = 0
+
+Public Sub EnQueue(Value As Variant, Optional Priority As Integer = 0)
+
+    If priority = 0 Then
+        Me.add(value)
+        Return
+    Endif
+
+    Super.VarMem.Lock()
+    SeekPriority(Priority)
+    Super.Insert(LastIndex, Value, Priority)
+    Super.VarMem.Unlock()
+
+End
+
+Public Sub DeQueue(Optional Priority As Integer = -1) As Variant
+
+    Dim value As Variant
+
+    Super.VarMem.Lock()
+    If Priority = -1 Then
+        Value = Me.remove(0)
+        Super.VarMem.Unlock()
+        Return value
+    Endif
+
+    Dim Entry As Dlist = SeekPriority(Priority, True)
+    If Not entry Then
+        Value = Null
+    Else
+        Value = Super.remove(LastIndex)
+    Endif
+    Super.VarMem.Unlock()
+    Return value
+
+End
+
+Private Sub SeekPriority(Priority As Integer, Optional bMatch As Boolean = False) As DList
+
+    Dim Index As Long = 0
+    Dim current As Dlist = Super.EntryPtr(Super.ListHead.Next)
+
+    While current
+        If bMatch Then
+            If Current.RefCount = Priority Then
+                Break
+            Endif
+        Else If current.RefCount < Priority Then                       ' RefCount will hold the priority
+            Break
+        Endif
+
+        Current = Super.EntryPtr(current.Next)
+        Inc Index
+    Wend
+
+    If Index >= Super.ListHead.Value Then
+        Index = -1
+    Endif
+
+    LastIndex = Index
+    ' Debug "Seek Index = ";; LastIndex;; "Priority = ";; Priority
+
+    Return Current
+
+End
+
+Public Sub Exist(Priority As Integer) As Boolean
+
+    SeekPriority(Priority, True)
+    If LastIndex = -1 Then
+        Return False
+    Endif
+
+    Return True
+
+End
+
+Public Sub _next() As Variant
+
+    Dim ListItem As DList
+    Dim Listof As DList = Super.Listhead
+
+    If IsNull(Enum.Index) Then
+        If Super.ListHead.Value > 0 Then
+            Enum.index = Super.EntryPtr(Super.ListHead.next)
+            Listitem = Enum.index
+            Super.key = Listitem.RefCount                                             ' sets the key to be the items priority in the queue
+        Else
+            Enum.Stop
+            Return
+        Endif
+    Else
+        listitem = Enum.index
+        If ListItem.next = 0 Then
+            Enum.Stop
+            Return
+        Else
+            listitem = Enum.index
+            ListItem = Super.EntryPtr(ListItem.next)
+            Super.key = ListItem.RefCount
+            Enum.Index = listitem
+        Endif
+    Endif
+
+
+    Return Super.VarMem[ListItem.value]
+
+Catch
+    Print "ShmQueue Next error ";; Error.text;; Error.where
+    Print Hex(listitem)
+
+End
+
+
+
+

@@ -1,0 +1,562 @@
+' Gambas class file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+Export
+Fast Unsafe
+
+Public Storage As ShmMemBlock
+
+Public Struct AllocHeader
+    Length As Long                          '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    {Next} As Pointer                       '' null if no more in list
+End Struct
+
+Public Struct InfoHeader
+    Length As Long                          '' Length of this data
+    StartOfMem As Pointer                   '' Start of first block of memory
+    EndOfMem As Pointer                     '' End of memory so we dont have to keep calculating it
+    BlockCount As Long                      '' Number of actual blocks allocated, including free blocks, never less than one
+    LastChanged As Float                    '' When the collection last changed
+    FreeList As Pointer                     '' First element in the free list chain
+End Struct
+
+Extern memset(Dest As Pointer, value As Integer, length As Integer) As Pointer In "libc:6"
+' Extern AllocInfo(dest As Pointer, src As Pointer, Len As Integer) As AllocHeader In "libc:6" Exec "memcpy"
+' Extern InfoInfo(dest As Pointer, src As Pointer, Len As Integer) As InfoHeader In "libc:6" Exec "memcpy"
+Extern rWrite(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "write"
+Extern rRead(handel As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
+Extern rClose(Handle As Integer) As Integer In "libc:6" Exec "close"
+
+Enum memfree = -1, membinary = 0
+
+Public ManagedInfo As InfoHeader
+Private LastChanged As Float = 0
+
+Property Read Count As Long
+Property Read Length As Long
+Property Read MAX As Long
+Private $lKey As String
+Property Read Key As String
+Property Debug As Boolean Use $bDebug
+
+
+Public Sub _new(MemBlock As ShmMemBlock, Optional CreateManagement As Boolean = True)
+
+    ' $bDebug = True
+
+    Storage = MemBlock
+    If $bDebug Then Print Application.id, "_new 1 ShmManage.exclusive "
+    Storage.Exclusive()
+
+    ' ManagedInfo = InfoInfo(Storage.DataAddress, Storage.DataAddress, 0)
+    ManagedInfo = Storage.DataAddress
+
+    Storage.Release()
+
+    If $bDebug Then Print Application.id, "_new 1 ShmManage.Release "
+
+    If Not CreateManagement Then
+        Return
+    Endif
+
+    If ManagedInfo.StartOfMem = 0 Then                           ' check if this area has already been initialized
+        If $bDebug Then Print Application.id, "_new 2 ShmManage.exclusive "
+        Storage.Exclusive()
+        ManagedInfo.FreeList = SizeOf(InfoHeader)
+        ManagedInfo.length = Storage.DataLength
+        ManagedInfo.StartOfMem = ManagedInfo.FreeList
+        ManagedInfo.EndOfMem = Storage.DataLength - 1
+        ManagedInfo.BlockCount = 1
+        ManagedInfo.LastChanged = Timer
+        InitFreeList()
+        Storage.Release()
+        If $bDebug Then Print Application.id, "_new 2 ShmManage.exclusive "
+    Endif
+
+End
+
+Public Sub AllocPtr(VirtAddress As Pointer) As AllocHeader
+
+    If VirtAddress = 0 Then
+        Return Null
+    Endif
+
+    ' Dim pRealAddr As Pointer = Storage.DataAddress + VirtAddress
+    ' Return AllocInfo(RealAddr, RealAddr, 0)
+    Return Storage.DataAddress + VirtAddress
+
+End
+
+'' Returns a real pointer to the actual address of the allocated address block
+Public Sub RealAddress(VirtAddress As Pointer) As Pointer
+
+    ' Dim p As Pointer = Storage.DataAddress + VirtAddress
+
+    Return Storage.DataAddress + VirtAddress
+
+End
+
+Public Sub RealDataAddress(VirtAddress As Pointer) As Pointer
+
+    ' Dim p As Pointer = Storage.DataAddress + VirtAddress + SizeOf(AllocHeader)
+
+    Return Storage.DataAddress + VirtAddress + SizeOf(AllocHeader)
+
+
+End
+
+
+
+Private Sub InitFreeList()
+
+    Dim FirstBlock As Allocheader
+
+    FirstBlock = AllocPtr(ManagedInfo.FreeList)
+    FirstBlock.Address = ManagedInfo.FreeList
+    FirstBlock.Length = ManagedInfo.Length - ManagedInfo.FreeList
+    FirstBlock.next = 0
+    FirstBlock.type = memfree
+
+End
+
+
+Private Sub RemoveFree(VirtAddr As Pointer)
+
+    'If $bDebug Then Print Application.id, "RemoveFree ShmManage.exclusive " & VirtAddr
+    'Storage.Exclusive()
+
+    Dim vptr As AllocHeader = AllocPtr(ManagedInfo.freeList)
+    Dim virt As AllocHeader = AllocPtr(VirtAddr)
+
+    If vptr = Null Or If virt = Null Then
+        ' Storage.Release()
+        'If $bDebug Then Print Application.id, "RemoveFree ShmManage.release " & VirtAddr
+        Error.Raise("Null Pointer " & Str(vptr) & ":")
+    Endif
+
+    If VirtAddr = vptr.address Then
+        ManagedInfo.FreeList = vptr.next
+        vptr.type = membinary
+        vptr.next = 0
+        ' Storage.Release()
+        'If $bDebug Then Print Application.id, "RemoveFree ShmManage.release " & VirtAddr
+        Return
+    Else
+        While vptr.next <> 0
+            If vptr.next = VirtAddr Then
+                vptr.next = virt.next
+                virt.next = 0
+                virt.type = membinary
+                '   Storage.Release()
+                '   If $bDebug Then Print Application.id, "RemoveFree ShmManage.release " & VirtAddr
+                Return
+            Endif
+            vptr = AllocPtr(vptr.next)
+        Wend
+        'Storage.Release()
+        'If $bDebug Then Print Application.id, "RemoveFree ShmManage.release " & VirtAddr
+    Endif
+
+    Error.Raise("Address not a member of free list:" & VirtAddr)
+
+End
+
+Private Sub AddFree(VirtAddr As Pointer)
+
+    Dim virt As Allocheader
+    Dim ClearLength As Long
+
+    If virtaddr >= ManagedInfo.EndOfMem Or Virtaddr < ManagedInfo.StartOfMem Then
+        Error.Raise("Out Of Bounds : " & VirtAddr)
+    Endif
+
+    'If $bDebug Then Print Application.id, "AddFree ShmManage.exclusive " & VirtAddr
+    'Storage.Exclusive()
+
+    virt = AllocPtr(VirtAddr)
+    clearLength = virt.length - SizeOf(AllocHeader)
+
+    If virt.address <> VirtAddr Or virt.Length = 0 Then
+        ' Storage.Release()
+        'If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+        Error.Raise("Invalid memory Block detected")
+    Endif
+
+    virt.type = memfree
+
+    If ClearLength < 9 Then
+        memset(RealAddress(virtAddr + SizeOf(AllocHeader)), 0, ClearLength) ' for security clear the mem upon release
+    Else
+        virt.next = 0
+    Endif
+
+    ManagedInfo.LastChanged = Timer
+    If ManagedInfo.freelist = 0 Then
+        'virt.next = 0
+        ManagedInfo.freelist = virtaddr
+        'Storage.Release()
+        'If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+        Return
+    Endif
+
+    Dim vptr As AllocHeader = AllocPtr(ManagedInfo.FreeList)
+    Dim prev As AllocHeader = vptr
+
+    If VirtAddr < vptr.address Then
+        If virtAddr + virt.Length = vptr.Address Then
+            virt.length += vptr.Length
+            virt.next = vptr.Next
+            ManagedInfo.FreeList = virt.address
+            Dec ManagedInfo.BlockCount
+            ' Storage.Release()
+            'If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+            Return
+        Else
+            virt.next = vptr.address
+            ManagedInfo.FreeList = VirtAddr
+            'Storage.Release()
+            'If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+            Return
+        Endif
+    Endif
+
+    While vptr
+
+        If vptr.address = virtaddr Then
+            '   Storage.Release()
+            '  If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+            Error.Raise("Double release of memory block : " & Str(virtaddr))
+        Endif
+
+        If vptr.address + vptr.length = virtaddr Then         '' the mem is at the end of the current pointer
+            vptr.length += virt.Length
+            If vptr.address + vptr.length = vptr.next Then
+                prev = AllocPtr(vptr.next)
+                vptr.next = prev.next
+                vptr.length += prev.length
+                Dec ManagedInfo.BlockCount
+            Endif
+            Dec ManagedInfo.BlockCount
+            '  Storage.Release()
+            ' If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+            Return
+        Else If virtaddr < vptr.Address Then
+            If virtaddr + virt.length = vptr.Address Then
+                prev.next = virtaddr
+                virt.next = vptr.next
+                virt.length += vptr.length
+                Dec ManagedInfo.BlockCount
+                '  Storage.Release()
+                ' If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+                Return
+            Else
+                prev.next = virtaddr
+                virt.next = vptr.address
+                'Storage.Release()
+                'If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+                Return
+            Endif
+        Else If virtaddr > vptr.Address
+            If virtaddr + virt.length = vptr.next Then
+                prev = AllocPtr(vptr.next)
+                virt.next = prev.Next
+                virt.length += prev.Length
+                vptr.next = virtaddr
+                Dec ManagedInfo.BlockCount
+                'Storage.Release()
+                'If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+                Return
+            Endif
+        Endif
+        prev = vptr
+        vptr = AllocPtr(vptr.next)
+    Wend
+
+    prev.next = virtaddr
+    virt.next = 0
+    'Storage.Release()
+    'If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+
+End
+
+Private Sub BestFit(DataLen As Long) As AllocHeader
+
+    Dim CloseFit As AllocHeader = Null
+
+    Dim vptr As AllocHeader
+
+    vptr = AllocPtr(ManagedInfo.FreeList)
+
+    While vptr
+        If vptr.length >= DataLen Then
+            If Closefit = Null Then
+                CloseFit = vptr
+            Else If vptr.length - DataLen < CloseFit.length - dataLen Then
+                CloseFit = vptr
+            Endif
+        Endif
+        vptr = AllocPtr(vptr.Next)
+    Wend
+
+    Return CloseFit
+
+End
+
+
+Public Sub Alloc(dataLen As Long) As Pointer                       '' returns a virtual memory address
+
+    Dim MyBlock As Pointer
+    Dim BlkPtr As AllocHeader
+
+    DataLen += SizeOf(AllocHeader)
+
+    If $bDebug Then Print Application.id, "Alloc ShmManage.exclusive " & dataLen
+    Storage.Exclusive()
+
+    BlkPtr = BestFit(dataLen)                                     '' get the block with the best fit for this allocation
+    If BlkPtr = Null Or If BlkPtr.length < datalen Then
+        Stop
+        _Print()
+        Error.Raise("Out Of Variable Memory")
+    Endif
+
+    ManagedInfo.LastChanged = Timer
+    If Not BlkPtr Then
+        Storage.Release()
+        If $bDebug Then Print Application.id, "Alloc ShmManage.release " & datalen
+        Return 0
+    Endif
+
+    MyBlock = blkptr.address
+    If blkptr.length <= (dataLen + 512) Then                      '' we dont want To fragment too much
+        RemoveFree(MyBlock)
+        BlkPtr.next = 0
+        BlkPtr.type = membinary
+    Else
+        RemoveFree(MyBlock)
+        Dim extraBlock As AllocHeader = AllocPtr(MyBlock + DataLen)
+        extraBlock.length = BlkPtr.length - datalen
+        If extraBlock.length = 0 Then
+            Stop
+        Endif
+        extraBlock.Address = MyBlock + DataLen
+        extraBlock.next = 0
+        BlkPtr.length = dataLen
+        AddFree(extraBlock.address)
+        Inc ManagedInfo.BlockCount
+    Endif
+
+    Storage.Release()
+    If $bDebug Then Print Application.id, "Alloc ShmManage.release " & datalen
+
+    If MyBlock <> blkptr.address Then
+        Stop
+    Endif
+
+    If myBlock >= ManagedInfo.EndOfMem Or MyBlock < ManagedInfo.StartOfMem Then
+        Stop
+        Error.Raise("Alloc Address Out Of Bounds : " & MyBlock)
+    Endif
+
+    Return myblock
+
+End
+
+Public Sub free(VirtAddress As Pointer)
+
+    If $bDebug Then Print Application.id, "Free ShmManage.exclusive " & VirtAddress
+    Storage.Exclusive()
+
+    AddFree(VirtAddress)
+
+    Storage.Release()
+    If $bDebug Then Print Application.id, "Free ShmManage.release " & VirtAddress
+
+End
+
+Public Sub _PrintFreeList()
+
+    Dim vptr As AllocHeader = AllocPtr(ManagedInfo.freelist)
+
+    Print "Free List "
+    Dim total As Long = 0
+    Dim Blocks As Long = 0
+    While vptr
+        total += vptr.length
+        Inc blocks
+        Print Subst("Start : &1 Length :  &2 Next : &3 Type : &4", Format(CLong(vptr.address), "########0"), Format(vptr.length, "########0"), Format(CLong(vptr.next), "########0"), ShmVarStorage.GetTextType(vptr.type))
+        vptr = AllocPtr(vptr.next)
+    Wend
+    Print Subst("                  Total  : &1, Blocks : &2", Format(total, "#########0"), blocks)
+
+End
+
+
+Public Sub _PrintBlocks(Optional vVarStorage As ShmVarStorage = Null)
+
+    Dim vptr As AllocHeader = AllocPtr(ManagedInfo.StartOfMem)
+
+    Print "**** Mem Block List"
+    Dim total As Long = 0
+    Dim Used As Long = 0
+    Dim UsedBlocks As Long = 0
+    Dim Blocks As Long = 0
+    Dim freeMem As Long = 0
+    Dim FreeBlocks As Long = 0
+    Do
+        total += vptr.length
+        If vptr.type <> -1 Then
+            Used += vptr.length
+            Inc UsedBlocks
+        Else
+            FreeMem += vptr.length
+            Inc freeBlocks
+        Endif
+        Inc blocks
+        If vVarStorage Then
+            Print vVarStorage.text(vptr.address)
+        Else
+            Print Subst("Start : &1 Length :  &2 Type :(&4) &3", Hex(vptr.address, 10), Format(vptr.length, "########0"), ShmVarStorage.GetTextType(vptr.type), Format(vptr.type, "-##0"))
+        Endif
+
+        If vptr.address + vptr.length > ManagedInfo.EndOfMem Then
+            Break
+        Endif
+        If vptr.length = 0 Then Break
+        vptr = AllocPtr(vptr.address + vptr.length)
+    Loop
+    Print Subst("                 In Use  : &1, Blocks : &2", Format(Used, "#########0"), Usedblocks)
+    Print Subst("                   Free  : &1, Blocks : &2", Format(FreeMem, "#########0"), Freeblocks)
+    Print Subst("                  Total  : &1, Blocks : &2/&3", Format(total, "#########0"), blocks, ManagedInfo.BlockCount)
+
+End
+
+Public Sub _PrintInfo()
+
+    Print Subst("Start of mem &1, End of mem &2, Length &3\nFreeList Head &4", Format(CLong(ManagedInfo.StartOfMem), "########0"), Format(CLong(ManagedInfo.EndOfMem), "########0"), ManagedInfo.Length, CLong(ManagedInfo.FreeList))
+
+End
+
+Public Sub _Print(Optional vVarStorage As ShmVarStorage = Null)
+
+    Storage._Print()
+    _PrintInfo()
+    _PrintBlocks(vVarStorage)
+    _PrintFreeList()
+
+End
+
+'' a function which mat be called to dump the content of any memory area to a file
+'' The default location if no name specified is the users desktop as dumpfile
+Public Sub DumpMem(mPointer As Pointer, IntLength As Integer, Optional Filename As String = User.home & "/Desktop/dumpfile")
+
+    Dim mFile As File
+
+    If File.Dir(Filename) = "" Then
+        filename = User.home & "/Desktop/" & filename
+    Endif
+
+    mFile = Open filename For Write Create
+
+    rWrite(mFile.handle, mPointer, IntLength)
+
+    Close mFile
+
+End
+
+'' Dump all the memory for this mem object
+Public Sub DumpAllMem()
+
+    DumpMem(Storage.MemoryAddress, Storage.MemoryLength)
+
+End
+
+'' Dump a section of virtual memory
+Public Sub DumpVirt(Virtaddress As Pointer, Length As Integer)
+
+    DumpMem(RealAddress(VirtAddress), Length)
+
+End
+
+Static Private oList As String[]
+
+Public Sub _get(Block As String) As Variant
+
+    If LastChanged <> ManagedInfo.LastChanged Then
+        oList = BlockCollection()
+    Endif
+    Dim index As Long = oList.Find(Block)
+    If index < 0 Then
+        Error.Raise("Invalid block address")
+    Endif
+
+    Return AllocPtr(oList[index])
+
+End
+
+Public Sub _next() As Variant
+
+    If Enum.index = Null Then
+        oList = BlockCollection()
+        Enum.index = 0
+    Else
+        Inc Enum.index
+        If Enum.index > oList.Max Then
+            Enum.Stop()
+            Return
+        Endif
+    Endif
+
+    $lKey = oList[Enum.index]
+    Return AllocPtr(Val(oList[Enum.index]))
+
+End
+
+Private Sub BlockCollection() As String[]
+
+    Dim Blocks As New String[]
+    Dim vptr As AllocHeader = AllocPtr(ManagedInfo.StartOfMem)
+
+    Do
+        Blocks.Add(Str(CLong(vptr.address)))
+        If vptr.address + vptr.length > ManagedInfo.EndOfMem Then
+            Break
+        Endif
+        If vptr.length = 0 Then Break
+        vptr = AllocPtr(vptr.address + vptr.length)
+    Loop
+    LastChanged = ManagedInfo.LastChanged
+    Return Blocks
+
+End
+
+Private Function Count_Read() As Long
+
+    Return ManagedInfo.BlockCount
+
+End
+
+Private Function Length_Read() As Long
+
+    Return ManagedInfo.BlockCount
+
+End
+
+Private Function MAX_Read() As Long
+
+    Return ManagedInfo.BlockCount - 1
+
+End
+
+Private Function Key_Read() As String
+
+    Return $lKey
+
+End
