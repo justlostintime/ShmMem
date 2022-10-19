@@ -4,40 +4,40 @@ Public Vars As ShmSymbolTable
 
 Public Sub main()
 
-  Dim varStore As New ShmMemBlock(1128000, "mydata")
-  ' varStore.debug = True
+    Dim varStore As New ShmMemBlock(1128000, "mydata")
+    ' varStore.debug = True
 
-  Dim varMnge As New ShmManage(varStore)
-  'varMnge.debug = True
-  Dim MyVarMem As New ShmVarStorage(varMnge)
-  'MyVarMem.Debug = True
+    Dim varMnge As New ShmManage(varStore)
+    'varMnge.debug = True
+    Dim MyVarMem As New ShmVarStorage(varMnge)
+    'MyVarMem.Debug = True
 
-  Dim symStore As New ShmMemBlock(1000000, "mysyms")
-  'symStore.Debug = True
+    Dim symStore As New ShmMemBlock(1000000, "mysyms")
+    'symStore.Debug = True
 
-  vars = New ShmSymbolTable(symStore, MyVarMem)
-  'vars.debug = True
+    vars = New ShmSymbolTable(symStore, MyVarMem)
+    'vars.debug = True
 
-  With vars
-    !Cow = 2
-    Print Application.id, "BG Begins,";;
-    .Notify("cow", Me)
-    Print "Notify Set"
-    While True
-      Wait 0.01
-    Wend
+    With vars
+        !Cow = 2
+        Print Application.id, "BG Begins,";;
+        .Notify("cow", Me)
+        Print "Notify Set"
+        While True
+            Wait 0.01
+        Wend
 
-  End With
+    End With
 
 Catch
-  Print Application.id, "BG Error =";; Error.text, Error.where
+    Print Application.id, "BG Error =";; Error.text, Error.where
 
 End
 
 Public Sub cow_changed(VarName As String, VarValue As Variant, TimedOut As Boolean)
 
-  Print Application.id, "BG Cow Changed ", VarName, "=", VarValue
-  If VarValue == 100 Then Quit 0
+    Print Application.id, "BG Cow Changed ", VarName, "=", VarValue
+    If VarValue == 100 Then Quit 0
 
 End
 

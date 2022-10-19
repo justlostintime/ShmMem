@@ -5,16 +5,16 @@ Public shm As ShmMem
 
 Public Sub main() As String
 
-  Print "BG task starts"
-  With shm
+    Print "BG task starts"
+    With shm
 
-    Print "This is from the FG process:";; !hello
-    Flush
+        Print "This is from the FG process:";; !hello
+        Flush
 
-  End With
-  Return "BG says Completed test"
+    End With
+    Return "BG says Completed test"
 
 Catch
-  Error Error.test, Error.where
+    Error Error.test, Error.where
 
 End

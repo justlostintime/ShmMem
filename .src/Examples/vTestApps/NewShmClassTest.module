@@ -6,7 +6,7 @@
 '   Type As Integer                      '' Type of memory
 '   Value As Integer                     '' The actual value for usage
 ' End Struct
-Fast Unsafe
+' Fast Unsafe
 
 smem As ShmMem
 loopcount As Integer = 1000000

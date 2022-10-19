@@ -1,7 +1,7 @@
 ' Gambas class file
 
 Inherits ShmClass
-
+Fast Unsafe
 Private x As Integer = 24
 Public y As String = "This is a silly string"
 Public pp As String[] = ["This is ", "a", "big", "thing", "to", "do"]

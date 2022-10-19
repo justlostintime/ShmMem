@@ -114,7 +114,8 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
         MemoryAddress = MapMemory(MemoryLength)
     Else
         If $bDebug Then Print Object.Class(Me).Name;; "Map Named Segment "; SharedName
-        MemoryAddress = CreateNamedMem(SharedName, MemoryLength)
+        Static tmpname As String = SharedName
+        MemoryAddress = CreateNamedMem(tmpname, MemoryLength)
     Endif
 
     If $bDebug Then Print Object.Class(Me).Name;; " Memory has been mapped"
@@ -156,7 +157,7 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
 
     Else
 
-        If $bDebug Then Print Object.Class(Me).Name;; " OPen Existing mem block"
+        If $bDebug Then Print Object.Class(Me).Name;; " Open Existing mem block"
 
         SemLock = MemoryAddress
         sem_wait(SemLock)
@@ -179,6 +180,9 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
     MyAppId = Application.id
 
     If $bDebug Then Print Object.Class(Me).Name;; " _new Completed"
+
+Catch
+    Stop
 
 End
 

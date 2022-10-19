@@ -2,17 +2,17 @@
 
 Public Sub main()
 
-  Dim vmem As New ShmMem
+    Dim vmem As New ShmMem
 
-  vmem!goat = "hello mom"
-  Print vmem!goat
-  vmem!cat = "This cat"
-  Print vmem!cat
+    vmem!goat = "hello mom"
+    Print vmem!goat
+    vmem!cat = "This cat"
+    Print vmem!cat
 
-  vmem.Print()
+    vmem.Print()
 
-  vmem = Null
+    vmem = Null
 
-  Wait
+    Wait
 
 End

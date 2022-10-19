@@ -5,29 +5,29 @@ isRunning As Boolean = True
 
 Public Sub main() As String
 
-  With NewNotifyTest.vars
-    Print Application.id, "BG Begins,";;
-    .Notify("cow", Me)
-    Print "Notify Set"
-    While isRunning
-      Wait Next
-    Wend
-    Wait 0.03
-    .NotifyStop("cow")
-  End With
+    With NewNotifyTest.vars
+        Print Application.id, "BG Begins,";;
+        .Notify("cow", Me)
+        Print "Notify Set"
+        While isRunning
+            Wait Next
+        Wend
+        Wait 0.03
+        .NotifyStop("cow")
+    End With
 
-  Return "Done"
+    Return "Done"
 
 Catch
-  Print Application.id, "BG Error =";; Error.text, Error.where
+    Print Application.id, "BG Error =";; Error.text, Error.where
 
 End
 
 Public Sub cow_changed(VarName As String, VarValue As Variant, TimedOut As Boolean)
 
-  With NewNotifyTest.vars
-    'Print Application.id, "BG Cow Changed ", VarName, "=", VarValue, "Count =", !Count
-    If VarValue == 100 Then isRunning = False
-  End With
+    With NewNotifyTest.vars
+        'Print Application.id, "BG Cow Changed ", VarName, "=", VarValue, "Count =", !Count
+        If VarValue == 100 Then isRunning = False
+    End With
 
 End

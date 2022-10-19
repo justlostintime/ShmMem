@@ -1,5 +1,7 @@
 ' Gambas module file
 
+Fast Unsafe
+
 Public Struct LongStruct
     Value As Long
 End Struct
