@@ -5,8 +5,6 @@ RedirectStderr=False
 UseHttpServer=False
 Remote=False
 Environment=["GB_NO_JIT=1","GB_JIT_DEBUG=1"]
-RemoteEnvironment=[]
-Arguments=[]
 
 [DebugWindow]
 Count=0

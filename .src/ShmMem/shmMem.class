@@ -7,7 +7,6 @@
 '  See project license file.
 
 Export
-Fast Unsafe
 Const VarMemDefault As Long = 2000000
 Const MaxSymbolsDefault As Integer = 8000
 Const TimeOutDefault As Float = 0.1
