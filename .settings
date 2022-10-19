@@ -17,7 +17,7 @@ NoTestModule=False
 Path="/home/brian/bin/shmmem.gambas"
 
 [FCommit]
-LastCommit="Update project information\n* NEW: Updated project information"
+LastCommit="Set everything to fast unsafe\n* NEW: everything to fast unsafe"
 
 [OpenFile]
 Count=0
