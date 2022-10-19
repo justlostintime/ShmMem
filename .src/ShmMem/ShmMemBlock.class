@@ -104,7 +104,7 @@ End
 
 Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As String = "", WaitTimeout As Float = 2.1)
 
-    $bDebug = True
+    ' $bDebug = True
 
     MemoryLength = SharedLength + SizeOf(MemBlockHeader)
     Name = SharedName
