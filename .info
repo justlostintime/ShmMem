@@ -200,6 +200,14 @@ b
 #ShmFiFo
 ShmList
 C
+cShmFiFo
+V
+i
+
+cShmFiFoEntry
+V
+i
+
 _init
 M
 
@@ -222,6 +230,14 @@ C
 #ShmFiLo
 ShmList
 C
+cShmFiLo
+V
+i
+
+cShmFiLoEntry
+V
+i
+
 _init
 M
 
@@ -261,6 +277,11 @@ r
 l
 
 'Returns the virtual address of this list
+Tag
+p
+s
+
+'memo tag for debug and identity purposed
 cShmList
 V
 i
@@ -305,7 +326,7 @@ AllLists
 r
 Variant[]
 
-'Returns a table of all active List{type} in memory
+'Returns a table of all active List{types} in memory
 SetHeadType
 v
 i
@@ -324,6 +345,12 @@ _new
 m
 
 (VarStorage)v[(VirtAddress)p(GlobalValue)b]
+'Returns a new allocated list if address is 0, else returns the exsisting list at the specified address
+'VarStorage is the pointer to the address to allocate the list from
+'VirtAddress is the address of an exsiting list, which is returned as a listObject type
+'GlobalValue is used to allow this list to be private or a global value
+'Returns the list as a list
+'Increments the refrence counter for this list
 NewEntry
 m
 dList
@@ -344,7 +371,7 @@ dList
 add
 m
 
-(Value)v
+(Value)v[(TagInfo)s]
 _Assign
 m
 
@@ -368,7 +395,7 @@ m
 insert
 m
 
-(Index)l(Value)v[(priority)i]
+(Index)l(Value)v[(priority)i(TagInfo)s]
 remove
 m
 v
@@ -384,6 +411,10 @@ v
 _next
 m
 v
+
+textTree
+m
+s
 
 #ShmListEntry
 
@@ -403,6 +434,11 @@ p
 v
 
 'The actual value of the entry
+Tag
+p
+s
+
+'user defined tag for this entry
 RefCount
 r
 l
@@ -412,6 +448,7 @@ Debug
 p
 b
 
+'Turn on or off debugging for this entry
 _new
 m
 
@@ -645,6 +682,10 @@ _New
 m
 
 (VariableMemory)ShmVarStorage;
+'The memory block to be used for creating queues
+'the shared memory queue used to store requests
+'The local copy of all variables to be notified of
+'This variable defines the current tasks identity
 'Create a new notify queue for this symbol table
 'This is called by the Symbol table to create the notify queue
 _free
@@ -739,6 +780,14 @@ m
 #ShmQueue
 ShmList
 C
+cShmQueue
+V
+i
+
+cShmQueueEntry
+V
+i
+
 _init
 M
 
@@ -758,7 +807,7 @@ v
 EnQueue
 m
 
-(Value)v[(Priority)i]
+(Value)v[(Priority)i(TagValue)s]
 DeQueue
 m
 v
@@ -1102,6 +1151,9 @@ varStore
 v
 ShmMemBlock
 
+'default memory size is 2 meg
+'default variable memory space 8000 entries
+'Default sem timeout
 varMnge
 v
 ShmManage
@@ -1220,7 +1272,7 @@ m
 PrintAllInfo
 m
 
-
+[(Title)s]
 PrintTree
 m
 

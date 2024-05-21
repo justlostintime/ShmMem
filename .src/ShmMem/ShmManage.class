@@ -31,8 +31,8 @@ Extern memset(Dest As Pointer, value As Integer, length As Integer) As Pointer I
 ' Extern AllocInfo(dest As Pointer, src As Pointer, Len As Integer) As AllocHeader In "libc:6" Exec "memcpy"
 ' Extern InfoInfo(dest As Pointer, src As Pointer, Len As Integer) As InfoHeader In "libc:6" Exec "memcpy"
 Extern rWrite(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "write"
-Extern rRead(handel As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
-Extern rClose(Handle As Integer) As Integer In "libc:6" Exec "close"
+' Extern rRead(handel As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
+' Extern rClose(Handle As Integer) As Integer In "libc:6" Exec "close"
 
 Enum memfree = -1, membinary = 0
 
@@ -45,7 +45,6 @@ Property Read MAX As Long
 Private $lKey As String
 Property Read Key As String
 Property Debug As Boolean Use $bDebug
-
 
 Public Sub _new(MemBlock As ShmMemBlock, Optional CreateManagement As Boolean = True)
 
@@ -109,10 +108,7 @@ Public Sub RealDataAddress(VirtAddress As Pointer) As Pointer
 
     Return Storage.DataAddress + VirtAddress + SizeOf(AllocHeader)
 
-
 End
-
-
 
 Private Sub InitFreeList()
 
@@ -125,7 +121,6 @@ Private Sub InitFreeList()
     FirstBlock.type = memfree
 
 End
-
 
 Private Sub RemoveFree(VirtAddr As Pointer)
 
@@ -309,7 +304,6 @@ Private Sub BestFit(DataLen As Long) As AllocHeader
 
 End
 
-
 Public Sub Alloc(dataLen As Long) As Pointer                       '' returns a virtual memory address
 
     Dim MyBlock As Pointer
@@ -398,7 +392,6 @@ Public Sub _PrintFreeList()
 
 End
 
-
 Public Sub _PrintBlocks(Optional vVarStorage As ShmVarStorage = Null)
 
     Dim vptr As AllocHeader = AllocPtr(ManagedInfo.StartOfMem)
@@ -423,7 +416,17 @@ Public Sub _PrintBlocks(Optional vVarStorage As ShmVarStorage = Null)
         If vVarStorage Then
             Print vVarStorage.text(vptr.address)
         Else
-            Print Subst("Start : &1 Length :  &2 Type :(&4) &3", Hex(vptr.address, 10), Format(vptr.length, "########0"), ShmVarStorage.GetTextType(vptr.type), Format(vptr.type, "-##0"))
+            Dim textType As String = ShmVarStorage.GetTextType(vptr.type)
+            Print Subst("Start : &1 Length :  &2 Type :(&4) &3", Hex(vptr.address, 10), Format(vptr.length, "########0"), Left(textType & Space(15), 15), Format(vptr.type, "-##0"))
+            If texttype == "shmlist" Or texttype == "shmqueue" Or texttype == "shmqueueentry" Or texttype == "shmlistentry" And If vVarStorage <> Null Then
+                Dim vlist As Variant
+                If vVarStorage Then
+                    vlist = vVarStorage.Getpointer(vptr.type, vptr.address)
+                    Print "|"; vlist.tag; "|"
+                Endif
+            Else
+                Print
+            Endif
         Endif
 
         If vptr.address + vptr.length > ManagedInfo.EndOfMem Then

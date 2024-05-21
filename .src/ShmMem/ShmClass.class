@@ -59,7 +59,6 @@ Public Sub _free()
 
 End
 
-
 '' This will find every property of the object and try to\
 '' write it to the output stream
 '' Note: remember formats to a buffer ie memory stream
@@ -116,7 +115,6 @@ Public Sub _serialize() As Integer
     Return len
 
 End
-
 
 '' return the difference in the version numbers
 '' < 0 the version is greater than the objects version
@@ -185,7 +183,6 @@ Public Sub ToString() As String
 
 End
 
-
 '' does the conversion on the stream
 '' returns true if it was required or false if object
 '' read process can continue
@@ -232,7 +229,6 @@ Public Sub GetObjectVersion() As Integer
 
 End
 
-
 '' does the conversion to the new format and returns the new object
 '' returns a copy if no conversion required
 
@@ -241,5 +237,3 @@ Static Public Sub _convertObject(OtherObject As Variant) As Boolean
     Return Object.Class(OtherObject).New(OtherObject)
 
 End
-
-

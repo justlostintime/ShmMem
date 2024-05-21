@@ -7,9 +7,9 @@
 '  See project license file.
 
 Export
-Const VarMemDefault As Long = 2000000
-Const MaxSymbolsDefault As Integer = 8000
-Const TimeOutDefault As Float = 0.1
+Const VarMemDefault As Long = 2000000                              '' default memory size is 2 meg
+Const MaxSymbolsDefault As Integer = 8000                        '' default variable memory space 8000 entries
+Const TimeOutDefault As Float = 0.1                                       '' Default sem timeout
 
 Public varStore As ShmMemBlock
 Public varMnge As ShmManage
@@ -28,7 +28,6 @@ Property Read Key As String
 Property Debug As Boolean Use $bDebug
 Property DefaultDirectory As String Use $sDefaultDirectory
 
-
 '' Remove the memory by force
 Static Public Sub ForceDelete(SharedName As String)
 
@@ -36,7 +35,6 @@ Static Public Sub ForceDelete(SharedName As String)
     Try shmMemBlock.ForceDelete(SharedName & "_Symbols")
 
 End
-
 
 '' Allocate the memory
 Public Sub _new(Optional VarMemLength As Long = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault)
@@ -87,7 +85,6 @@ Public Sub _unknown(...) As Variant
     _put(Param[0], Param.name)
 
 End
-
 
 Public Sub _get(SymName As String, ...) As Variant
 
@@ -171,7 +168,6 @@ Public Sub SaveVar(VarName As String, Optional filename As String = "")
 
 End
 
-
 Public Sub LoadImage(Optional FileName As String = Application.name & ".image")
 
     Dim infileName As String = SetPath(FileName)
@@ -199,7 +195,6 @@ Public Sub LoadVar(FileName As String, Optional SymName As String = "")
     Close infile
 
 End
-
 
 Public Sub {VarPtr}(SymName As String) As Variant
 
@@ -230,25 +225,23 @@ End
 '   Public vars As ShmSymbolTable
 '   Public NotifyVars As ShmNotify
 
-Public Sub PrintAllInfo()
+Public Sub PrintAllInfo(Optional Title As String = "")
 
-    Print "***************************************** Full Memory Info***************************************************"
+    Print "***************************************** Full Memory Info " & title & "***************************************************"
     Print Subst("Default Memory Size &1MB, Max Symbol Table entries &2, Default Timeout &3", VarMemDefault / 1024, MaxSymbolsDefault, TimeOutDefault)
     Print
     Print Vars.text
     Print
-    VarMnge._Print()
+    VarMnge._Print(MyVarMem)
     Print
 
 End
-
 
 Public Sub PrintTree()
 
     Print MyVarMem.TextTree()
 
 End
-
 
 Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
 
@@ -286,6 +279,9 @@ Public Sub _next() As Variant
 
     If Enum.Index = Null Then
         SymList = Vars.SortedList()
+        If SymList.Count = 0 Then
+            Enum.Stop()
+        Endif
         Enum.index = 0
     Else
         Inc Enum.Index
@@ -304,7 +300,6 @@ Public Sub Exist(SymName As String) As Boolean
     Return Vars.Exist(SymName)
 
 End
-
 
 Private Function Count_Read() As Integer
 
@@ -346,4 +341,3 @@ Public Sub {alloc}(Length As Pointer) As Pointer
     Return TheMem
 
 End
-

@@ -1,0 +1,36 @@
+' Gambas module file
+
+Public vmem As ShmMem
+
+Public Sub Main()
+
+    shmMem.ForceDelete("mydata")
+    vmem = New ShmMem(1128000, "mydata")
+
+    With vmem
+        !Sample = 1
+        !Sample = "string 1"
+        !Sample = 4
+        !Sample = "string2"
+        !Sample = 5
+        !Sample = "string 3"
+        !Sample = 6
+    End With
+    vmem.PrintAllInfo()
+
+    vmem = Null
+
+    shmMem.ForceDelete("mydata")
+    vmem = New ShmMem(1128000, "mydata")
+    With vmem
+
+        !Sample = "string 1"
+        !Sample = 4
+        !Sample = "string2"
+        !Sample = 5
+        !Sample = "string 3"
+
+    End With
+    vmem.PrintAllInfo()
+
+End

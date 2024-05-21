@@ -16,4 +16,3 @@ Public Sub callme()
     Print "x="; x
 
 End
-

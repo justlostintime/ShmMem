@@ -11,7 +11,7 @@ Fast Unsafe
 
 Inherits ShmList
 
-Public Struct dList                       '' A defined entry in list of objects
+Public Struct dList                         '' A defined entry in list of objects
     Length As Long                          '' Length including header
     Address As Pointer                   '' The virtual address of this block, speed pointer conversion
     Type As Integer                         '' Type of memory
@@ -20,12 +20,13 @@ Public Struct dList                       '' A defined entry in list of objects
     sema As Pointer                         '' The locking semephor for each list
     Global As Integer                       '' Defines if this is a global memory object or not
     bDebug As Boolean                  '' turns on or off the debug control
+    Tag[16] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                      '' Number of refrences to this element
     Value As Pointer                        '' Value of entry or count if pool
 End Struct
 
-Static Private cShmQueue As Integer = 26
-Static Private cShmQueueEntry As Integer = 27
+Static Public cShmQueue As Integer = 26
+Static Public cShmQueueEntry As Integer = 27
 
 Static Public Sub _init()
 
@@ -37,7 +38,7 @@ End
 Public Sub _new()
 
     Super.SetHeadType = cShmQueue                                 '' The list header Class
-    Super.SetEntryType = cShmQueueEntry                           '' The List Entry Class
+    Super.SetEntryType = cShmQueueEntry                        '' The List Entry Class
     Super.ListHead.Type = cShmQueue
 
 End
@@ -56,16 +57,16 @@ End
 
 Private LastIndex As Integer = 0
 
-Public Sub EnQueue(Value As Variant, Optional Priority As Integer = 0)
+Public Sub EnQueue(Value As Variant, Optional Priority As Integer = 0, TagValue As String = "")
 
     If priority = 0 Then
-        Me.add(value)
+        Me.add(value, TagValue)
         Return
     Endif
 
     Super.VarMem.Lock()
     SeekPriority(Priority)
-    Super.Insert(LastIndex, Value, Priority)
+    Super.Insert(LastIndex, Value, Priority, TagValue)
     Super.VarMem.Unlock()
 
 End
@@ -135,7 +136,7 @@ End
 Public Sub _next() As Variant
 
     Dim ListItem As DList
-    Dim Listof As DList = Super.Listhead
+    '    Dim Listof As DList = Super.Listhead
 
     If IsNull(Enum.Index) Then
         If Super.ListHead.Value > 0 Then
@@ -159,7 +160,6 @@ Public Sub _next() As Variant
         Endif
     Endif
 
-
     Return Super.VarMem[ListItem.value]
 
 Catch
@@ -167,7 +167,3 @@ Catch
     Print Hex(listitem)
 
 End
-
-
-
-

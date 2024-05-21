@@ -125,7 +125,6 @@ Public Sub main()
     Next
     Print "Read using ShmVarStorage Force data type  time X "; longloop; " : "; Timer - starttime
 
-
     starttime = Timer
     For i As Integer = 0 To LongLoop
         MyVars.Lock()
@@ -135,4 +134,3 @@ Public Sub main()
     Print "Read using ShmVarStorage And Lock/unlock  time X "; longloop; " : "; Timer - starttime
 
 End
-

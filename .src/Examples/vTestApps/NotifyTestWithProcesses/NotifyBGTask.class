@@ -2,32 +2,60 @@
 
 Inherits Task
 isRunning As Boolean = True
+'Public Vars As ShmSymbolTable
+Public Vars As Shmmem
+' Public Logfile As File
+' Public LogfileName As String
 
 Public Sub main() As String
 
-    With NewNotifyTest.vars
+    ' LogfileName = User.home &/ "Desktop" &/ "log_" & application.id
+    'logfile = Open LogFileName For Write Create
+    ' Vars = New ShmMem(1128000, "mydata")
+    Vars = NewNotifyTest.Vars
+
+    With vars
         Print Application.id, "BG Begins,";;
-        .Notify("cow", Me)
-        Print "Notify Set"
+
+        .Notify("Cow", Me)
+        .Notify("Done", Me)
+
+        ' Vars.PrintAllInfo("For PID " & Application.id)
+
+        ' Print "Notify Set for 'cow'"
+        '   Print #LogFile, "Notify Set for 'cow and done'"
+
         While isRunning
             Wait Next
         Wend
-        Wait 0.03
-        .NotifyStop("cow")
-    End With
 
+        Wait 0.03
+
+        .NotifyStop("cow")
+        .NotifyStop("done")
+
+        '  Print #LogFile, "BG Task exits"
+
+    End With
+    'Close LogFile
     Return "Done"
 
 Catch
-    Print Application.id, "BG Error =";; Error.text, Error.where
+    Print Application.id;; "BG Error =";; Error.text, Error.where
+    'Print Application.id, "Logfile:"; LogFileName;; "BG Error =";; Error.text, Error.where
+    'Print #Logfile, Application.id, "BG Error =";; Error.text, Error.where
 
 End
 
 Public Sub cow_changed(VarName As String, VarValue As Variant, TimedOut As Boolean)
 
-    With NewNotifyTest.vars
-        'Print Application.id, "BG Cow Changed ", VarName, "=", VarValue, "Count =", !Count
-        If VarValue == 100 Then isRunning = False
-    End With
+    'Print #LogFIle, varname;; "=";; VarValue;; " Fetched value = "; Vars!Cow
+
+End
+
+Public Sub done_changed(VarName As String, VarValue As Variant, TimedOut As Boolean)
+
+    'Print #LogFile, "Recieved Done directive, starting exit procedure"
+    isRunning = False
 
 End

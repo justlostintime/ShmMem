@@ -13,6 +13,7 @@ loopcount As Integer = 1000000
 
 Public Sub main()
 
+    Print "Begin Test"
     Dim MyVar As Variant
 
     smem = New ShmMem(1280000, "test")
@@ -87,9 +88,7 @@ Public Sub main()
     smem!Hen = ["a", "b", "c"]
     smem!Riot = ["Baton": 1, "Hood": 2, "Gun": 4]
 
-
     smem!goat = "this is a small goat and it will eat all your grass"
     smem.Print()
 
 End
-

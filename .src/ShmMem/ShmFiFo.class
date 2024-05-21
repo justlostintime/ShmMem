@@ -11,9 +11,8 @@ Fast Unsafe
 
 Inherits ShmList
 
-
-Static Private cShmFiFo As Integer = 22
-Static Private cShmFiFoEntry As Integer = 23
+Static Public cShmFiFo As Integer = 22
+Static Public cShmFiFoEntry As Integer = 23
 
 Static Public Sub _init()
 

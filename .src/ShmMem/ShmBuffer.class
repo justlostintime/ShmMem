@@ -27,7 +27,6 @@ Property Read Bounds As Long[]                                  '' return an arr
 Public SetHeadType As Integer = cShmBuffer               '' The Buffer  header Class
 Public SetEntryType As Integer = cShmBufferEntry    '' The Buffer Entry Class
 
-
 Static Public Sub _init()
 
     ShmVarStorage.DefineClass("ShmBuffer", cShmBuffer)
@@ -91,7 +90,6 @@ Public Sub _free()
 
 End
 
-
 Sub GetOffset(Dims As Variant) As Pointer       '' calculate the offset based upon array structure
 
     Dim i As Long = 0
@@ -109,7 +107,6 @@ Sub GetOffset(Dims As Variant) As Pointer       '' calculate the offset based up
     Return location
 
 End
-
 
 Public Sub _property(...) As Boolean
 
@@ -139,16 +136,11 @@ Public Sub {Define}(Element As String, ElementLength As Integer, ...)           
 
 End
 
-
 Public Sub _put(Value As Variant, ...)                        '' Indexes are always in the form of bytes/field elements if more that one dimension
-
-
 
 End
 
 Public Sub _get(...) As Variant
-
-
 
 End
 

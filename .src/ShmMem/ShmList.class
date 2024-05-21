@@ -12,63 +12,63 @@ Fast Unsafe
 ''' Defines the Shm datatype - list
 ''' Lists are inherited by every other list based object
 
-
-Public Struct AllocHeader                   '' Standard header
-    Length As Long                          '' Length including header
+Public Struct AllocHeader              '' Standard header
+    Length As Long                              '' Length including header
     Address As Pointer                      '' The virtual address of this block, speed pointer conversion
-    Type As Integer                         '' Type of memory
-    {Next} As Pointer                       '' null if no more in list
+    Type As Integer                             '' Type of memory
+    {Next} As Pointer                          '' null if no more in list
 End Struct
 
 Public Struct dPointer
-    Length As Long                          '' Length including header
+    Length As Long                              '' Length including header
     Address As Pointer                      '' The virtual address of this block, speed pointer conversion
-    Type As Integer                         '' Type of memory
-    Value As Pointer                        '' The actual value for usage
+    Type As Integer                             '' Type of memory
+    Value As Pointer                            '' The actual value for usage
 End Struct
 
-Public Struct dList                         '' A defined entry in list of objects
-    Length As Long                          '' Length including header
+Public Struct dList                             '' A defined entry in list of objects
+    Length As Long                              '' Length including header
     Address As Pointer                      '' The virtual address of this block, speed pointer conversion
-    Type As Integer                         '' Type of memory
-    {Next} As Pointer                       '' Next in list or head of pool
-    Prev As Pointer                         '' previous in list or end of pool
-    sema As Pointer                         '' The locking semephor for each list
-    Global As Integer                       '' Defines if this is a global memory object or not
-    bDebug As Boolean                       '' turns on or off the debug control
-    RefCount As Long                        '' Number of refrences to this element
-    Value As Pointer                        '' Value of entry or count if pool
+    Type As Integer                             '' Type of memory
+    {Next} As Pointer                          '' Next in list or head of pool
+    Prev As Pointer                              '' previous in list or end of pool
+    sema As Pointer                             '' The locking semephor for each list
+    Global As Integer                           '' Defines if this is a global memory object or not
+    bDebug As Boolean                      '' turns on or off the debug control
+    Tag[16] As Byte                              '' a user text tag for this list, can be used to identify nameless queues
+    RefCount As Long                          '' Number of refrences to this element
+    Value As Pointer                            '' Value of entry or count if pool
 End Struct
 
-Static Public cShmList As Integer = 20             '' The Constant identifying this class name must not be a valid datatype integer
+Static Public cShmList As Integer = 20                  '' The Constant identifying this class name must not be a valid datatype integer
 Static Public cShmListEntry As Integer = 21        '' The entry in a ShmList object type
 
 ' Extern DListPtr(dest As Pointer, src As Pointer, Len As Integer) As DList In "libc:6" Exec "memcpy"
 
 Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
-Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
-Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
-'Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
-Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
+' Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
+' Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
+' Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
+' Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
-Extern sched_yield() As Integer In "libpthread:0"
+' Extern sched_yield() As Integer In "libpthread:0"
 
-Private VirtualAddress As Pointer = 0             '' Pointer to the head of the list
-Public ListHead As DList                          '' Pointer to the actual list
+Private VirtualAddress As Pointer = 0              '' Pointer to the head of the list
+Public ListHead As DList                                         '' Pointer to the actual list
 Public VarMem As ShmVarStorage                    '' The storage pool to used or referenced
-Public Key As Long                                '' During iterations this will be the item count
+Public Key As Long                                                   '' During iterations this will be the item count
 
-Property Read max As Long                         '' max count for iteration
-Property Read count As Long                       '' Count of elements in this list
-Property Read value As Long                       '' Returns the virtual address of this list
-Property Read Type As Integer                     '' The type of this object
+Property Read max As Long                                '' max count for iteration
+Property Read count As Long                             '' Count of elements in this list
+Property Read value As Long                             '' Returns the virtual address of this list
+Property Read Type As Integer                        '' The type of this object
 Property Read Address As Pointer                  '' The address of the object
 Property Debug As Boolean                              '' Debugging helper
-Property Read AllLists As Variant[]               '' Returns a table of all active List{type} in memory
+Property Read AllLists As Variant[]                 '' Returns a table of all active List{types} in memory
+Property Tag As String                                        '' memo tag for debug and identity purposed
 
 Public SetHeadType As Integer = cShmList          '' The list header Class
 Public SetEntryType As Integer = cShmListEntry    '' The List Entry Class
-
 
 Static Public Sub _init()
 
@@ -77,9 +77,14 @@ Static Public Sub _init()
 
 End
 
+'' Returns a new allocated list if address is 0, else returns the exsisting list at the specified address
+'' VarStorage is the pointer to the address to allocate the list from
+'' VirtAddress is the address of an exsiting list, which is returned as a listObject type
+'' GlobalValue is used to allow this list to be private or a global value
+'' Returns the list as a list
+'' Increments the refrence counter for this list
 
 Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, GlobalValue As Boolean = False)
-    '$bDebug = True
 
     If Object.Class(VarStorage).name == "ShmMem" Then
         VarMem = VarStorage.MyVarMem
@@ -109,13 +114,12 @@ End
 
 Public Sub _Free(Optional OverRideGlobal As Boolean = False)
 
-    If OverRideGlobal And If Listhead <> Null Then ListHead.Global = False
-    If Listhead = Null Or If ListHead.Global Then
-        Return
-    Endif
-
+    If Listhead = Null Then Return
+    If OverRideGlobal Then ListHead.Global = False
     Dec ListHead.RefCount
-    If ListHead.RefCount = 0 Then
+    If ListHead.Global Then Return    '' dont delete global used lists
+
+    If ListHead.RefCount <= 0 Then
         ' sem_destroy(varmem.RealDataAddress(ListHead.sema))
         ' varmem.Free(ListHead.sema)
         Me.Free()
@@ -131,7 +135,6 @@ Public Sub EntryPtr(VirtAddress As Pointer) As DList
     Return RealPtr
 
 End
-
 
 Public Sub NewEntry(Optional Value As Variant = Null) As DList
 
@@ -173,14 +176,20 @@ Public Sub NewEntry(Optional Value As Variant = Null) As DList
 
 End
 
-
-Public Sub add(Value As Variant)
+Public Sub add(Value As Variant, Optional TagInfo As String = "")
 
     Dim NewElement As DList
     Dim LastEntry As Dlist
     Dim RealAddress As Pointer
 
     NewElement = NewEntry(Value)
+
+    If TagInfo <> "" Then
+        If TagInfo.len < NewElement.Tag.Length Then TagInfo = Left(TagInfo & Space(NewElement.Tag.Length), NewElement.Tag.Length)
+        For i As Integer = 0 To NewElement.tag.length - 1
+            NewElement.Tag[i] = Asc(Taginfo[i])
+        Next
+    Endif
 
     If ListHead.bDebug Then Print Application.id, "Add ShmList VarMem.Lock ";; Value
     VarMem.Lock()
@@ -212,7 +221,6 @@ Public Sub _Assign(VEntry As DPointer)
 
 End
 
-
 Public Sub {free}()                             '' Free the entire list
 
     Dim pList As DList[] = AsDListList()
@@ -239,7 +247,6 @@ Public Sub Clear()
 
 End
 
-
 Public Sub AsDlistList() As DList[]
 
     Dim pList As New DList[]
@@ -253,7 +260,6 @@ Public Sub AsDlistList() As DList[]
     Return plist
 
 End
-
 
 Private Sub FreeEntry(Entry As DList)
 
@@ -298,11 +304,18 @@ Public Sub _put(Value As Variant, Index As Integer)
 
 End
 
-Public Sub insert(Index As Long, value As Variant, Optional priority As Integer = 0)
+Public Sub insert(Index As Long, value As Variant, Optional priority As Integer = 0, TagInfo As String = "")
 
     Dim Current As Dlist
     Dim ptrPrev As DList
     Dim NewItem As Dlist = NewEntry(Value)
+
+    If TagInfo <> "" Then
+        If TagInfo.len < NewItem.Tag.Length Then TagInfo = Left(TagInfo & Space(NewItem.Tag.Length), NewItem.Tag.Length)
+        For i As Integer = 0 To NewItem.tag.length - 1
+            NewItem.Tag[i] = Asc(Taginfo[i])
+        Next
+    Endif
 
     NewItem.RefCount = Priority
 
@@ -356,7 +369,6 @@ Public Sub insert(Index As Long, value As Variant, Optional priority As Integer 
 
 End
 
-
 Private Sub SeekRec(Index As Integer) As DList
 
     Dim Count As Integer
@@ -372,13 +384,13 @@ Private Sub SeekRec(Index As Integer) As DList
         Current = EntryPtr(Current.next)
         Inc Count
     Wend
+
     If current = Null Then
         Stop
     Endif
     Return Current
 
 End
-
 
 Public Sub remove(Optional Index As Long = -1) As Variant
 
@@ -388,8 +400,9 @@ Public Sub remove(Optional Index As Long = -1) As Variant
     Dim ptrprev As Dlist
     Dim ptrNext As Dlist
 
-    If ListHead.next = 0 Or Index >= CLong(ListHead.value) Then
-        Error.Raise("Out Of Bounds - remove Index = " & Index)
+    If ListHead.next = Null Or Index >= CLong(ListHead.value) Then
+        Return Null
+        ' Error.Raise("Out Of Bounds - remove Index = " & Index)
     Endif
 
     If ListHead.bDebug Then
@@ -404,10 +417,18 @@ Public Sub remove(Optional Index As Long = -1) As Variant
         CurrentItem = EntryPtr(ListHead.prev)
     Else
         CurrentItem = EntryPtr(ListHead.next)
+
         While Count < Index
             CurrentItem = EntryPtr(CurrentItem.next)
+            If CurrentItem = Null Then Break
             Inc count
         Wend
+
+    Endif
+
+    If CurrentItem = Null Then
+        varmem.Unlock()
+        Return Null
     Endif
 
     Dim addr As Pointer = CurrentItem.address
@@ -532,7 +553,6 @@ Public Sub _next() As Variant
 
 End
 
-
 Private Function max_Read() As Long
 
     Return ListHead.Value - 1
@@ -544,7 +564,6 @@ Private Function count_Read() As Long
     Return ListHead.Value
 
 End
-
 
 Private Function value_Read() As Long
 
@@ -588,5 +607,35 @@ Private Function AllLists_Read() As Variant[]
     Next
 
     Return ListTable
+
+End
+
+Private Function Tag_Read() As String
+
+    Return "|" & Trim(ListHead.Tag.ToString()) & "|"
+
+End
+
+Private Sub Tag_Write(Value As String)
+
+    Dim rValue As String = Left(value & Space(ListHead.Tag.length), ListHead.Tag.length)
+
+    'Print "set tag = "; Value;; "{"; rValue; "}"
+    For i As Integer = 0 To ListHead.Tag.length - 1
+        ListHead.Tag[i] = Asc(rValue[i])
+    Next
+    ' ListHead.Tag.FromString(rValue)
+    'Print ListHead.Tag.ToString()
+
+End
+
+Public Sub textTree() As String
+
+    Dim Indent As String = "    "
+    Dim entry As ShmListEntry
+
+    For Each entry In Me
+
+    Next
 
 End

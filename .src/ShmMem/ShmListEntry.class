@@ -9,21 +9,21 @@
 Export
 Fast Unsafe
 
-Public Struct AllocHeader                 '' Standard header
-    Length As Long                          '' Length including header
-    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
-    Type As Integer                         '' Type of memory
+Public Struct AllocHeader           '' Standard header
+    Length As Long                           '' Length including header
+    Address As Pointer                   '' The virtual address of this block, speed pointer conversion
+    Type As Integer                          '' Type of memory
     {Next} As Pointer                       '' null if no more in list
 End Struct
 
 Public Struct dPointer
     Length As Long                          '' Length including header
-    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Address As Pointer                   '' The virtual address of this block, speed pointer conversion
     Type As Integer                         '' Type of memory
     Value As Pointer                        '' The actual value for usage
 End Struct
 
-Public Struct dList                       '' A defined entry in list of objects
+Public Struct dList                         '' A defined entry in list of objects
     Length As Long                          '' Length including header
     Address As Pointer                   '' The virtual address of this block, speed pointer conversion
     Type As Integer                         '' Type of memory
@@ -32,20 +32,21 @@ Public Struct dList                       '' A defined entry in list of objects
     sema As Pointer                         '' The locking semephor for each list
     Global As Integer                       '' Defines if this is a global memory object or not
     bDebug As Boolean                  '' turns on or off the debug control
-    RefCount As Long                      '' Number of refrences to this element
+    Tag[16] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
+    RefCount As Long                      '' Number of refrences to this element or used to set the queue entry priority
     Value As Pointer                        '' Value of entry or count if pool
 End Struct
 
 ' Extern DListPtr(dest As Pointer, src As Pointer, Len As Integer) As DList In "libc:6" Exec "memcpy"
 
-Private VarMem As ShmVarStorage           '' The storage pool to be used or referenced
-Private Entry As DList                    '' The pointer to the list
-Property Value As Variant                 '' The actual value of the entry
-Property Read Address As Pointer          '' The virtual address of the entry
-Property Read Type As Integer             '' The Type of this block
-Property Read RefCount As Long            '' The Number of refrences or used as a tag/priority field
-Property Debug As Boolean Use $bDebug
-
+Private VarMem As ShmVarStorage                        '' The storage pool to be used or referenced
+Private Entry As DList                                                     '' The pointer to the list
+Property Value As Variant                                            '' The actual value of the entry
+Property Read Address As Pointer                            '' The virtual address of the entry
+Property Read Type As Integer                                   '' The Type of this block
+Property Read RefCount As Long                               '' The Number of refrences or used as a tag/priority field
+Property Debug As Boolean Use $bDebug             '' Turn on or off debugging for this entry
+Property Tag As String                                                  '' user defined tag for this entry
 
 Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0)
 
@@ -127,5 +128,20 @@ End
 Private Function RefCount_Read() As Long
 
     Return entry.RefCount
+
+End
+
+Private Function Tag_Read() As String
+
+    Return "|" & Trim(entry.Tag.ToString()) & "|"
+
+End
+
+Private Sub Tag_Write(Value As String)
+
+    If value.len < entry.Tag.Length Then value = Left(value & Space(entry.Tag.Length), entry.Tag.Length)
+    For i As Integer = 0 To entry.Tag.Length - 1
+        entry.Tag[i] = Asc(Value[i])
+    Next
 
 End

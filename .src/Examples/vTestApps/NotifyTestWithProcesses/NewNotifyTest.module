@@ -1,41 +1,64 @@
 ' Gambas module file
 
 'Public Vars As ShmSymbolTable
-Public Vars As New ShmMem(1128000, "mydata")
+Public Vars As Shmmem
 
 Public Sub main()
+
+    shmMem.ForceDelete("mydata")
+    Vars = New ShmMem(1128000, "mydata")
 
     With vars
         !dog = 8
         !Cow = 6
-        !Done = 0
+        !Done = False
+        !count = 0
+
+        .Notify("Dog", Me)
+        .Notify("Cow", Me)
+        .Notify("Done", Me)
+
+        ' Vars.PrintAllInfo()
+
         Dim Mtask As New NotifyBGTask
+        Wait 5.0
         Dim Btask As New NotifyBGTask
-        !count = 100
-        .Notify("cow", Me)
-        While !count > 0
-            !Dog = 4
-            !Cow = 7
+        Wait 5.0
+
+        While !count < 10
+            !Dog = !count
+            !Cow = !count
             Wait 0.03
-            !Cow = 8
-            Wait
-            !Cow = "hello"
-            Wait
-            Dec !count
+            !Cow = "hello " & !count
+            Wait 0.03
+            Inc !count
         Wend
 
-        !Cow = 100
+        !Done = True
+        Wait 0.2
 
+        Mtask.Wait()
+        BTask.Wait()
+
+        vars.PrintAllInfo()
+        !Done = "Step one"
+        vars.PrintAllInfo()
+        !Done = 16
+        vars.PrintAllInfo()
+        !Done = "fast cars"
+        vars.PrintAllInfo()
+        !Done = 20
+        vars.PrintAllInfo()
+        !Done = "more stuff"
+        vars.PrintAllInfo()
     End With
-
-    Mtask.Wait()
-    BTask.Wait()
-
     vars.NotifyStop("Cow")
+    vars.NotifyStop("Dog")
+    vars.NotifyStop("Done")
+
     vars.PrintAllInfo()
 
 End
-
 
 Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
 
@@ -45,7 +68,13 @@ End
 
 Public Sub Cow_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    'Print Application.id, "FG";; VarName;; "=";; Value
+    Print Application.id, "FG";; VarName;; "=";; Value
+
+End
+
+Public Sub Done_Changed(varname As String, value As Variant, TimedOut As Boolean)
+
+    Print Application.id, "FG";; VarName;; "=";; Value
 
 End
 
@@ -60,5 +89,3 @@ Public Sub TheTask2_read(value As String)
     Print value
 
 End
-
-

@@ -40,7 +40,7 @@ Public VarName As String
 Public VarMemory As ShmVarStorage
 Public StartTime As Float
 Private VarClock As Timer
-Private OneShot As Boolean
+' Private OneShot As Boolean
 
 Event VarChanged(VarDef As ShmNotifyEntry)
 Event VarTimedOut(VarDef As ShmNotifyEntry)
@@ -80,7 +80,6 @@ Public Sub NewVal()
 
 End
 
-
 Public Sub Dispatch(Failed As Boolean)
 
     VarMemory.Lock()
@@ -91,6 +90,3 @@ Public Sub Dispatch(Failed As Boolean)
     Object.Call(NotifyObject, NotifyFunc, ParmList)
 
 End
-
-
-

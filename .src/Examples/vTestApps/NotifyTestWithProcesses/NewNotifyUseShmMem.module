@@ -28,9 +28,9 @@ Public Sub main()
         !Cow = 6
         !Done = 0
 
-        'Dim Ntask As New NotifyBGTask As "TheTask"
+        ' Dim Ntask As New NotifyBGTask As "TheTask"
         ' Dim Ntask2 As New NotifyBGTask As "TheTask2"
-        Wait 2.00
+        ' Wait 2.00
         vars.Notify("dog", Me)
         vars.Notify("Cow", Me)
         'vars.NotifyStop("dog")
@@ -43,7 +43,7 @@ Public Sub main()
         TheQueues = MyQueue.AllLists
 
         'Stop
-        Dim count As Long = 100000
+        Dim count As Long = 10
 
         While count > 0
             !Dog = 4
@@ -87,5 +87,3 @@ Public Sub TheTask2_read(value As String)
     Print value
 
 End
-
-

@@ -116,7 +116,6 @@ Public Sub SaveVar(SymName As String, OutFile As File)
 
 End
 
-
 Public Sub WriteVar(Address As Long, OutFile As File, SymName As String)
 
     Dim value As Variant
@@ -135,7 +134,6 @@ Catch
     Error.Raise(errormsg)
 
 End
-
 
 Public Sub Load(InFile As File)
 
@@ -174,8 +172,6 @@ Public Sub ReadVar(infile As File, ReqSymname As String)
     _put(value, symname)
 
 End
-
-
 
 Static Public Sub SymbolLength() As Integer
 
@@ -243,7 +239,6 @@ Private Sub UpdateCache()
 
     SymbolCache.Clear()
 
-
     For i As Integer = 0 To SymInfo.Count - 1
         If SymMem.Table[i].Used And SymMem.Table[i].Address > 0 Then
             SymbolCache.Add(i, SymMem.Table[i].Name.toString())
@@ -276,7 +271,6 @@ Public Sub Clear()
     If $bDebug Then Print Application.id, "Clear SymTblmem.release"
 
 End
-
 
 Private Sub Hash(Symbol As String) As Pointer                 '' Hash table uses  pointers as index value  as they are unsigned
 
@@ -359,13 +353,12 @@ Public Sub GetSymIndex(Symbol As String) As Pointer
 
 End
 
-
 '' Return the slot number insert the name and change the lastupdated time
 '' Create a basic variable storage to go along with this symbol
 '' Update the virtual address of Var in the table
 Public Sub Add(symName As String, value As Variant) As Long
 
-    Dim result As Pointer
+    '    Dim result As Pointer
 
     If SymName = "" Then
         Error.Raise("Symbol name can not be blank")
@@ -386,7 +379,6 @@ Public Sub Add(symName As String, value As Variant) As Long
     Endif
 
     If $bDebug Then Print Application.id, "Add SymTblmem.Empty hash found " & SymName
-
 
     ' result = strncpy(SymMem.Table[i].Name.data, symname, 127)
     If symname.len > 127 Then symname = Left(symname, 127)
@@ -419,7 +411,6 @@ Public Sub Add(symName As String, value As Variant) As Long
     If $bDebug Then Print Application.id, "Add SymTblmem.release"
 
 End
-
 
 Public Sub Remove(SymName As String)
 
@@ -532,8 +523,6 @@ Public Sub NotifyStop(SymName As String)
 
 End
 
-
-
 '' Returns the Virtual Address of the symbol
 Public Sub {VarPtr}(SymName As String) As Variant
 
@@ -563,7 +552,6 @@ Public Sub Entry(SymName As String) As Variant
     Return value
 
 End
-
 
 Private Sub Text_Read() As String
 
@@ -664,7 +652,6 @@ Public Sub SortedList() As String[]
 
 End
 
-
 Public Sub _next() As Variant
 
     If Enum.Index = Null Then
@@ -699,7 +686,6 @@ Private Sub NextUsedSlot(index As Long) As Long
     Return index
 
 End
-
 
 Private Function count_Read() As Integer
 
@@ -743,7 +729,6 @@ Private Function MaxSymbols_Read() As Integer
 
 End
 
-
 Private Function Collisions_Read() As Integer
 
     Return SymInfo.Collisions
@@ -755,7 +740,3 @@ Private Function MaxUsedSymbols_Read() As Integer
     Return SymInfo.MaxCount
 
 End
-
-
-
-

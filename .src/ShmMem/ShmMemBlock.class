@@ -21,7 +21,6 @@ Extern strerror(err As Integer) As Pointer In "libc:6"
 'Extern rRead(handel As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
 Extern rClose(Handle As Integer) As Integer In "libc:6" Exec "close"
 
-
 Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
 Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
@@ -101,7 +100,6 @@ Static Public Sub ForceDelete(SharedName As String)
 
 End
 
-
 Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As String = "", WaitTimeout As Float = 2.1)
 
     ' $bDebug = True
@@ -156,13 +154,26 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
 
     Else
 
-        If $bDebug Then Print Object.Class(Me).Name;; " OPen Existing mem block"
-
-        SemLock = MemoryAddress
-        sem_wait(SemLock)
-
+        If $bDebug Then Print Object.Class(Me).Name;; " Open Existing mem block"
         ' BlockInfo = SetBlockInfo(MemoryAddress, MemoryAddress, 0)
         BlockInfo = MemoryAddress
+
+        If BlockInfo.InUseCounter > 0 Then
+            SemLock = MemoryAddress
+            For I As Integer = 0 To 10
+                If sem_trywait(SemLock) = -1 Then
+                    Wait 0.001
+                Else
+                    i = 0
+                    Break
+                Endif
+            Next
+            If I > 0 Then
+                sem_init(SemLock, 1, 0)
+            Endif
+        Else
+            sem_init(SemLock, 1, 0)
+        Endif
 
         Inc BlockInfo.InUseCounter
         MemoryBlockSize = BlockInfo.MemoryBlockSize
@@ -189,8 +200,8 @@ Public Sub _free()
         Try rClose(MemoryHandle)
         If BlockInfo.InUseCounter = 0 Then
             Try shm_unlink(Name)
+            Try sem_destroy(SemLock)
         Endif
-        Try sem_destroy(SemLock)
         Try munmap(MemoryAddress, MemoryLength)
     Else
         Try sem_destroy(SemLock)
@@ -242,7 +253,6 @@ Public Sub CreateNamedMem(Optional MemName As String = User.name & Application.n
 
     If $bDebug Then Print Object.Class(Me).Name;; " Call map named segment complete"
 
-
     If MemoryHandle = -1 Then
         If $bDebug Then Print Object.Class(Me).Name;; " Memory already created, then just map it"
         MemoryHandle = shm_open(MemName, O_RDWR, DefaultPermissions)
@@ -256,6 +266,8 @@ Public Sub CreateNamedMem(Optional MemName As String = User.name & Application.n
         rClose(MemoryHandle)
         shm_unlink(MemName)
         Error.Raise("Unable to ftruncate memory" & MemName & " " & Str(System.error) & " " & String@(strerror(System.error)))
+    Else
+        NewMemoryBlock = True
     Endif
 
     If $bDebug Then Print Object.Class(Me).Name;; "Do real mapping of allocated storage"
@@ -291,7 +303,6 @@ Public Sub Exclusive()
     sem_wait(SemLock)
 
 End
-
 
 Public Sub ExclusiveTimeout()
 
@@ -361,7 +372,6 @@ Catch
 
 End
 
-
 Private Function length_Read() As Long
 
     Return Blockinfo.DataLength
@@ -373,5 +383,3 @@ Private Function address_Read() As Pointer
     Return BlockInfo.DataAddress
 
 End
-
-

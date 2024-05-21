@@ -11,41 +11,40 @@ Fast Unsafe
 ''' Defines the Shm datatype - list
 ''' Lists are inherited by every other list based object
 
-Public Const ChangeSignal As Integer = 16      '' Sigsys = 31, SigUSr2 = 12, sig16 is unused too
-Private InitSignal As Integer = 0              '' force the init on first call of Notify
+Public Const ChangeSignal As Integer = 16               '' Sigsys = 31, SigUSr2 = 12, sig16 is unused too
+Private InitSignal As Boolean = False                           '' force the init on first call of Notify
 
 Public Struct AllocHeader                      '' Standard header
-    Length As Long                               '' Length including header
-    Address As Pointer                           '' The virtual address of this block, speed pointer conversion
-    Type As Integer                              '' Type of memory
-    {Next} As Pointer                              '' null if no more in list
+    Length As Long                                     '' Length including header
+    Address As Pointer                             '' The virtual address of this block, speed pointer conversion
+    Type As Integer                                    '' Type of memory
+    {Next} As Pointer                                 '' null if no more in list
 End Struct
 
 Public Struct dPointer
-    Length As Long                              '' Length including header
-    Address As Pointer                          '' The virtual address of this block, speed pointer conversion
-    Type As Integer                             '' Type of memory
-    Value As Pointer                            '' The actual value for usage
+    Length As Long                                     '' Length including header
+    Address As Pointer                             '' The virtual address of this block, speed pointer conversion
+    Type As Integer                                    '' Type of memory
+    Value As Pointer                                  '' The actual value for usage
 End Struct
 
 Public Struct Symbol
-    Name[128] As Byte                          '' Max length of any variable name
-    Used As Boolean                            '' This slot is in use
-    NotifyBlock As Pointer                     '' pointer to chain of pids waiting to be notifies when This symbol changes
-    Address As Long                            '' virtual address of the value, 0 means no value yet
-    Hash As Long                               '' When we start using a hash for this table
-    NameLength As Integer                      '' NameLength
+    Name[128] As Byte                             '' Max length of any variable name
+    Used As Boolean                                 '' This slot is in use
+    NotifyBlock As Pointer                      '' pointer to chain of pids waiting to be notified when this symbol changes
+    Address As Long                                 '' virtual address of the value, 0 means no value yet
+    Hash As Long                                        '' When we start using a hash for this table
+    NameLength As Integer                     '' NameLength
 End Struct
 
 Extern signal(sig As Integer, sighandler As Pointer) As Pointer In "libc:6"
 Extern sKill(sigpid As Integer, Sig As Integer) As Integer In "libc:6" Exec "kill"
 Extern sched_yield() As Integer In "libpthread:0"
 
-Private VarMem As ShmVarStorage
-Private NotifyQueue As ShmQueue
-Private NotifyVars As Collection
-Private MyAppId As Long = 0
-
+Private VarMem As ShmVarStorage            '' The memory block to be used for creating queues
+Private NotifyQueue As ShmQueue              '' the shared memory queue used to store requests
+Private NotifyVars As Collection                    '' The local copy of all variables to be notified of
+Private MyAppId As Long = 0                          '' This variable defines the current tasks identity
 
 '' Create a new notify queue for this symbol table
 '' This is called by the Symbol table to create the notify queue
@@ -66,7 +65,8 @@ Public Sub _free()
 End
 
 '' This function is called upon the first call to create  notify
-'' for a variable
+'' for a variable. This setts the task or applications signal handler
+'' to catch change signals from the task/app changing the value of a symbol
 Private Sub SetSignal()
 
     InitSignal = Application.id
@@ -84,26 +84,38 @@ Public Sub Notify(SymEntry As Symbol, CallBack As Object, CallFunc As String, Op
         SetSignal()
     Endif
 
-    If Application.id <> MyAppID Then
-        NotifyVars = New Collection(gb.ignorecase)
-        NotifyQueue = New ShmQueue(VarMem, 0, True)                                 ' Create a queue for variable changes per task/process
-        MyAppId = Application.id
+    '' Create a queue for this process id that will contain a list of the variables that this pid is looking for
+    '' The created queue is used by the app/task to enqueue a notification to this task that a value has
+    '' changed for a variable. There is only one copy of this per task/app.
+    If Application.id <> MyAppID Then                                                                 ' Check if we are new task, if we are create our own copy
+        NotifyVars = New Collection(gb.ignorecase)                                           ' Local copy of the list of variables we are waiting for
+        NotifyQueue = New ShmQueue(VarMem, 0, True)                                 ' Create a new queue for variable changes per task/process
+        MyAppId = Application.id                                                                               ' Keep a local copy of the running tasks/apps id
+        NotifyQueue.tag = "nq_" & MyAppId                                                          ' Set a tag to identify for later traceing
+
     Endif
 
-    If SymEntry.NotifyBlock = 0 Then
-        PidQueue = New ShmQueue(VarMem, 0, True)
+    '' Now create a queue to contain all the pid(programs/tasks) requesting to be notified about this particular symbol
+    '' This is only created by the first app/task to make a call to notify for a particular variable. And is Global to this Symtable
+    '' For the variable refrenced. There is one of these for each variable being watched.
+    If SymEntry.NotifyBlock = 0 Then                                                                     ' Check if a PID queue has already been created
+        PidQueue = New ShmQueue(VarMem, 0, True)                                        ' create a new queue
+        PidQueue.tag = "PIDQ-" & SymEntry.Name.ToString()
         SymEntry.NotifyBlock = PidQueue.Address
     Else
-        PidQueue = New ShmQueue(VarMem, SymEntry.NotifyBlock)
+        PidQueue = New ShmQueue(VarMem, SymEntry.NotifyBlock)          ' Get the address to the exsisting queue
     Endif
 
+    ''  Add this tasks Notify queue to the pid queue for this variable, we allow more than one callback address
+    ''  for each task or application. So within a single task/app any function can ask to be notified of a change of
+    ''  value to a variable. this queue is used by the App/Task changing the variable to enqueue a change notification.
     If Not PidQueue.Exist(NotifyQueue.Address) Then
-        PidQueue.Enqueue(Application.id, NotifyQueue.Address)
+        PidQueue.Enqueue(MyAppId, NotifyQueue.Address, "NoteQ_" & SymEntry.Name.ToString() & "_" & Str(myappid))
     Endif
 
+    '' Update the local list of variables waiting for dispatch notification
     VarInfo = New ShmNotifyEntry(SymEntry, CallBack, CallFunc, VarMem, Timeout) As "VarInfo"
     NotifyVars.Add(VarInfo, SymEntry.Name.tostring())
-
 
 End
 
@@ -118,7 +130,6 @@ Public Sub VarInfo_VarChanged(VarInfo As ShmNotifyEntry)
     VarInfo.Dispatch(True)
 
 End
-
 
 Public Sub NotifyStop(SymEntry As Symbol)
 
@@ -138,7 +149,10 @@ Public Sub NotifyStop(SymEntry As Symbol)
 
     If PidQueue.Exist(NotifyQueue.Address) Then
         PidQueue.Dequeue(NotifyQueue.Address)
-        NotifyQueue.free()
+        If NotifyVars.count = 0 Then
+            NotifyQueue.free()
+            NotifyQueue = Null
+        Endif
     Endif
 
     If PidQueue.count = 0 Then
@@ -149,18 +163,20 @@ Public Sub NotifyStop(SymEntry As Symbol)
 End
 
 '' This is where the signal arrives when generated from
-'' Any Application
+'' Any App/task
 
 Public Sub _signal(Sig As Integer)                  '' Signal handler for user defined signal
 
     If sig <> ChangeSignal Then Return
 
-    While NotifyQueue.count
+    While NotifyQueue.count > 0
         Dim VarName As Variant = NotifyQueue.Pop()
         NotifyVars[VarName].Newval()
+        Sched_Yield()
     Wend
 
 End
+
 '' Called by the symbol table when ever a variable changes value
 '' This only supports variables not direct memory values
 
@@ -172,11 +188,11 @@ Public Sub SignalEach(Sym As Symbol)
 
     If Sym.NotifyBlock = 0 Then Return
 
-    PidQueue = New ShmQueue(VarMem, Sym.NotifyBlock)
+    PidQueue = New ShmQueue(VarMem, Sym.NotifyBlock)                                             ' get the list of pids waiting for this variable to change
 
-    For Each Pid As Integer In PidQueue
-        userqueue = New ShmQueue(VarMem, PidQueue.key)
-        userqueue.Add(Sym.name.tostring())
+    For Each Pid As Integer In PidQueue                                                                                    ' loop over each of the ids waiting
+        userqueue = New ShmQueue(VarMem, PidQueue.key)                                             ' get the notifyqueue for each task waiting for notification
+        userqueue.Add(Sym.name.tostring(), Sym.Name.ToString() & ":" & Str(PID))    ' set an entry onto the queue
     Next
 
     For Each Pid As Integer In PidQueue
@@ -184,7 +200,7 @@ Public Sub SignalEach(Sym As Symbol)
         Result = sKill(Pid, ChangeSignal)
 
         If result <> 0 Then                              ' if it is an invalid pid then clean this stuff up
-            PidQueue.DeQueue(PidQueue.address)
+            PidQueue.DeQueue(UserQueue.address)
             ' userqueue = New ShmQueue(VarMem, PidQueue.key)
             ' userqueue.clear()
             ' VarMem.Free(userqueue.Address)
@@ -193,8 +209,3 @@ Public Sub SignalEach(Sym As Symbol)
     Next
 
 End
-
-
-
-
-

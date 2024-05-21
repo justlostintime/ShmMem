@@ -40,4 +40,3 @@ Public Sub cow_changed(VarName As String, VarValue As Variant, TimedOut As Boole
     If VarValue == 100 Then Quit 0
 
 End
-

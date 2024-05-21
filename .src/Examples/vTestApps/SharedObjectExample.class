@@ -11,7 +11,6 @@ Public ThisArray As String[] = ["bob", "jane", "Rabbit"]
 Public ReadString As String[] = ["Not Assigned Yet"]
 Public LengthOf As Integer = 0
 
-
 ' Public Sub _serialize() As Integer
 '   Dim iLen As Integer = 0
 '   iLen += mem.SizeOf(ThisString) ' add one because write does when output
@@ -58,7 +57,6 @@ Public Sub _property() As Boolean
     Return True
 
 End
-
 
 Public Sub _unknown(...) As Variant
 
@@ -112,5 +110,3 @@ Public Sub set(a As String[]) As SharedObjectExample
     Return Me
 
 End
-
-

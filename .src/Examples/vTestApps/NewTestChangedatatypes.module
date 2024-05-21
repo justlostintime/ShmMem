@@ -1,6 +1,5 @@
 ' Gambas module file
 
-
 Public Sub main()
 
     Dim vmem As New ShmMem(1000000)

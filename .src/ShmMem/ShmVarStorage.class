@@ -30,6 +30,7 @@ Public Struct dList                      '' A defined entry in list of objects
     sema As Pointer                        '' The locking semephor for each list
     Global As Integer                      '' Defines if this is a global memory object or not
     bDebug As Boolean                      '' Turns on debugging
+    Tag[16] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                       '' Number of refrences to this element
     Value As Pointer                       '' Value of entry or count if pool
 End Struct
@@ -142,8 +143,6 @@ Const FreeBlock As Integer = -1
 Static Public UserClasses As New Collection(gb.ignoreCase)
 Static Public UserClassByName As New Collection(gb.ignorecase)
 
-
-
 Static Public DataTypes As String[] = ["*Free", "*Binary", "*Boolean", "*Byte", "*Short", "*Integer", "*Long", "*Single", "*Float", "*Date", "*String",
     "", "*Pointer", "*Variant", "*Function", "*Class", "NULL", "*Object", "NotArray",
     "StringData", "ObjectData", "", "", "", ""]
@@ -162,8 +161,6 @@ Static Public Sub DefineClass(ClassName As String, ClassIndex As Integer)
 
 End
 
-
-
 Static Public Sub GetTextType(Type As Integer) As String
 
     If Type > ObjData Then
@@ -172,7 +169,6 @@ Static Public Sub GetTextType(Type As Integer) As String
     Return Left(DataTypes[Type + 1] & Space(10), 10)
 
 End
-
 
 '' Creating this pool of variable storage for a specific memory block
 Public Sub _new(mem As ShmManage)
@@ -187,7 +183,6 @@ Public Sub _free()
     varmem = Null
 
 End
-
 
 Private Sub AllocSimpleVar() As Pointer
 
@@ -215,7 +210,6 @@ Public Sub AllocVirt(Length As Long) As Pointer
     Return Me.Alloc(Length) + SizeOf(AllocHeader)
 
 End
-
 
 '' set the value of a variable, create a new one if VirtAddress is zero
 Public Sub set(value As Variant, Optional VirtAddress As Pointer = 0) As Pointer
@@ -288,7 +282,7 @@ Public Sub _puttype(value As Variant, VirtAddress As Pointer, mytype As Integer)
     If vptr.type <> MyType Then
         If vptr.type = gb.string Or If vptr.type = gb.object Then
             tmpptr = Getpointer(vptr.type, VirtAddress)
-            If vptr.value > 0 Then
+            If tmpptr.value > 0 Then
                 varmem.Free(tmpptr.value)
                 tmpptr.value = 0
             Endif
@@ -439,7 +433,6 @@ Public Sub FreeVirt(Virtaddress As Pointer)
 
 End
 
-
 Public Sub RealAddress(VirtAddress As Pointer) As Pointer
 
     Return varmem.RealAddress(VirtAddress)
@@ -451,8 +444,6 @@ Public Sub RealDataAddress(VirtAddress As Pointer) As Pointer
     Return varmem.RealDataAddress(VirtAddress)
 
 End
-
-
 
 Public Sub Getpointer(Type As Integer, VirtAddress As Pointer) As Variant
 
@@ -610,7 +601,6 @@ Public Sub _next() As Variant
 
 End
 
-
 Private AlreadyUsed As Collection
 
 Public Sub text(VirtAddress As Pointer, Optional Indent As String = "", SetTree As Boolean = False) As String
@@ -629,7 +619,7 @@ Public Sub text(VirtAddress As Pointer, Optional Indent As String = "", SetTree 
 
     Endif
 
-    Result &= Indent & Subst("@&1, Len&2, &3", Hex(vptr.Address, 10), Format(vptr.Length, "####0"), GetTextType(vptr.Type))
+    Result &= Indent & Subst("@&1, Len&2, &3", Hex(vptr.Address, 10), Format(vptr.Length, "########0"), Left(GetTextType(vptr.Type) & Space(15), 15))
 
     Select Case vptr.type
         Case FreeBlock
@@ -651,14 +641,19 @@ Public Sub text(VirtAddress As Pointer, Optional Indent As String = "", SetTree 
             Result &= Subst("@&1, Blk&2, Len&3, Class=&4", Hex(sPtr.address, 10), Format(sPtr.ObjLen, "######0"), Format(sPtr.WriteLen, "######0"), OName)
 
         Case 0  ' binary object
-            Result &= "Defined Binary"
+            Result &= ", Defined Binary"
 
         Case Else
             If UserClasses.Exist(vptr.Type) Then
                 Dim xObject As Variant = Object.New(UserClasses[vptr.type], [Me, vPtr.Address])
-                result &= ", Value = " & xObject.value
+                result &= ", Value = " & Str(xObject.value)
+                Dim mtag As String
+                Try mtag = xObject.tag
+                If Not Error Then
+                    result &= ", Tag = " & mtag
+                Endif
             Else
-                result &= ", Value = " & vptr.value
+                result &= ", Value = " & Str(vptr.value)
             Endif
 
     End Select
@@ -670,8 +665,9 @@ End
 Public Sub TextTree(Optional VirtAddress As Pointer = 0, Indent As Integer = 0) As String
 
     Dim vptr As AllocHeader
-    Dim sIndent As String = IIf(indent > 0, "|" & Space(Indent * 2), "")
+    '    Dim sIndent As String = IIf(indent > 0, "|" & Space(Indent * 2), "")
     Dim OutBuffer As String = ""
+    Dim theList As Variant
 
     If VirtAddress = 0 Then
         vptr = varmem.AllocPtr(varmem.ManagedInfo.StartOfMem)
@@ -683,9 +679,16 @@ Public Sub TextTree(Optional VirtAddress As Pointer = 0, Indent As Integer = 0) 
 
         If Not AlreadyUsed[vptr.address]
             Select Case vptr.Type
+
+                Case ShmList.cShmList, ShmQueue.cShmQueue
+                    thelist = GetPointer(vptr.type, vptr.address)
+                    outbuffer &= theList.TextTree()
+
                 Case gb.String
 
                 Case gb.Object
+
+                Case ShmList.cShmListEntry, ShmQueue.cShmQueueEntry
 
                 Case Else
                     OutBuffer &= text(vptr.address) & "\n"
