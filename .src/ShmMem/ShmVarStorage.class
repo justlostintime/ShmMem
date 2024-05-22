@@ -1,10 +1,10 @@
 ' Gambas class file
 
 ' Author Westwood JustLostintime
-'Released Under:
+' Released Under:
 '  GNU GENERAL Public LICENSE
-'  Version 3, 29 June 2007
-'  See project license file.
+'    Version 3, 29 June 2007
+'    See project license file.
 
 Export
 
@@ -12,116 +12,116 @@ Fast Unsafe
 
 Private varmem As ShmManage
 Private Storage As ShmMemBlock
-Static Public DefaultAlloc As Integer = 1024 '' Default increments used when allocating string and object memory
+Static Public DefaultAlloc As Integer = 1024      '' Default increments used when allocating string and object memory
 
 Public Struct AllocHeader
-    Length As Long                         '' Length including header
+    Length As Long                             '' Length including header
     Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                        '' Type of memory
-    {Next} As Pointer                      '' null if no more in list
+    Type As Integer                            '' Type of memory
+    {Next} As Pointer                         '' null if no more in list
 End Struct
 
-Public Struct dList                      '' A defined entry in list of objects
-    Length As Long                         '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                        '' Type of memory
-    {Next} As Pointer                      '' Next in list or head of pool
-    Prev As Pointer                        '' previous in list or end of pool
-    sema As Pointer                        '' The locking semephor for each list
-    Global As Integer                      '' Defines if this is a global memory object or not
-    bDebug As Boolean                      '' Turns on debugging
-    Tag[16] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
+Public Struct dList                           '' A defined entry in list of objects
+    Length As Long                            '' Length including header
+    Address As Pointer                    '' The virtual address of this block, speed pointer conversion
+    Type As Integer                           '' Type of memory
+    {Next} As Pointer                        '' Next in list or head of pool
+    Prev As Pointer                            '' previous in list or end of pool
+    sema As Pointer                           '' The locking semephor for each list
+    Global As Integer                         '' Defines if this is a global memory object or not
+    bDebug As Boolean                    '' Turns on debugging
+    Tag[16] As Byte                            '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                       '' Number of refrences to this element
-    Value As Pointer                       '' Value of entry or count if pool
+    Value As Pointer                          '' Value of entry or count if pool
 End Struct
 
 Public Struct dInteger
-    Length As Long                         '' Length including header
+    Length As Long                            '' Length including header
     Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                        '' Type of memory
-    Value As Integer                       '' The actual value for usage
+    Type As Integer                           '' Type of memory
+    Value As Integer                          '' The actual value for usage
 End Struct
 
 Public Struct dBoolean
-    Length As Long                         '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                        '' Type of memory
-    Value As Boolean                       '' The actual value for usage
+    Length As Long                            '' Length including header
+    Address As Pointer                    '' The virtual address of this block, speed pointer conversion
+    Type As Integer                           '' Type of memory
+    Value As Boolean                        '' The actual value for usage
 End Struct
 
 Public Struct dLong
-    Length As Long                         '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                        '' Type of memory
-    Value As Long                          '' The actual value for usage
+    Length As Long                          '' Length including header
+    Address As Pointer                  '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    Value As Long                             '' The actual value for usage
 End Struct
 
 Public Struct dFloat
-    Length As Long                         '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                        '' Type of memory
-    Value As Float                         '' The actual value for usage
+    Length As Long                          '' Length including header
+    Address As Pointer                  '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    Value As Float                            '' The actual value for usage
 End Struct
 
 Public Struct dbyte
     Length As Long                         '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Address As Pointer                 '' The virtual address of this block, speed pointer conversion
     Type As Integer                        '' Type of memory
-    Value As Byte                          '' The actual value for usage
+    Value As Byte                            '' The actual value for usage
 End Struct
 
 Public Struct dShort
     Length As Long                         '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Address As Pointer                  '' The virtual address of this block, speed pointer conversion
     Type As Integer                        '' Type of memory
-    Value As Short                         '' The actual value for usage
+    Value As Short                          '' The actual value for usage
 End Struct
 
 Public Struct dPointer
     Length As Long                         '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Address As Pointer                 '' The virtual address of this block, speed pointer conversion
     Type As Integer                        '' Type of memory
     Value As Pointer                       '' The actual value for usage
 End Struct
 
 Public Struct dSingle
     Length As Long                         '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Address As Pointer                 '' The virtual address of this block, speed pointer conversion
     Type As Integer                        '' Type of memory
-    Value As Single                        '' The actual value for usage
+    Value As Single                         '' The actual value for usage
 End Struct
 
 Public Struct dDate
     Length As Long                         '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Address As Pointer                 '' The virtual address of this block, speed pointer conversion
     Type As Integer                        '' Type of memory
-    Value As Date                          '' The actual value for usage
+    Value As Date                            '' The actual value for usage
 End Struct
 
 Public Struct dStrObjInfo
     Length As Long                         '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+    Address As Pointer                  '' The virtual address of this block, speed pointer conversion
     Type As Integer                        '' Type of memory
     ObjLen As Long                         '' length of the actual string/Object
-    WriteLen As Long                       '' The length of the actually written data
+    WriteLen As Long                     '' The length of the actually written data
 End Struct
 
 Public Struct dStrObj
-    Length As Long                         '' Length including header
+    Length As Long                             '' Length including header
     Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                        '' Type of memory
-    ObjLen As Long                         '' length of the actual string/Object
-    WriteLen As Long                       '' The length of the actually written data
-    Value[1000000] As Byte                 '' The actual value for usage asign as byte but we ref the value.data real address this is dummy
+    Type As Integer                            '' Type of memory
+    ObjLen As Long                            '' length of the actual string/Object
+    WriteLen As Long                        '' The length of the actually written data
+    Value[1000000] As Byte             '' The actual value for usage assign as byte but we ref the value.data real address this is dummy
 End Struct
 
 Public Struct dIntArray                  '' Support for one dimentional arrays of single types
     Length As Long                            '' Length including header
     Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                        '' Type of memory
-    Dims As Long                           '' Number of dimentions for this array
-    Elements As Long                       '' Number of elements
-    Value[1000000] As Integer              '' The actual value for usage is defined by length, this is dummy
+    Type As Integer                            '' Type of memory
+    Dims As Long                                '' Number of dimentions for this array
+    Elements As Long                        '' Number of elements
+    Value[1000000] As Integer       '' The actual value for usage is defined by length, this is dummy
 End Struct
 
 ' Extern AllocInteger(dest As Pointer, src As Pointer, Len As Integer) As DInteger In "libc:6" Exec "memcpy"
@@ -154,6 +154,9 @@ Property Read Length As Integer
 Property Read Max As Integer
 Property Debug As Boolean Use $bDebug
 
+'' Define a new user class for shared objects
+'' Defines the text class name and the internal  class index value
+'' The value must not conflict with any of the Gambas defined gb_type values
 Static Public Sub DefineClass(ClassName As String, ClassIndex As Integer)
 
     UserClasses.Add(ClassName, ClassIndex)
@@ -161,6 +164,20 @@ Static Public Sub DefineClass(ClassName As String, ClassIndex As Integer)
 
 End
 
+'' Take the User defined data type as a type value and a virtual pointer
+'' the the shared data structure and return a gambas object of that type
+'' This is only valid for shmmem defined user classes
+Public Sub AsObject(ctype As Integer, virtaddress As Pointer) As Variant
+
+    Dim NewObject As Variant
+
+    If Not UserClasses.Exist(Str(cType)) Then Return Null
+    NewObject = Object.new(UserClasses[Str(ctype)], [Me, VirtAddress])
+    Return NewObject
+
+End
+
+'' Return the defined class name for the shmmem user defined type
 Static Public Sub GetTextType(Type As Integer) As String
 
     If Type > ObjData Then
@@ -178,24 +195,29 @@ Public Sub _new(mem As ShmManage)
 
 End
 
+'' Clear the help pointer to the memory this
+'' will force the cleanup of the memory
 Public Sub _free()
 
     varmem = Null
 
 End
 
+'' Allocate a simple {int,long.. etc}
+'' gambas variable in the shared memory
 Private Sub AllocSimpleVar() As Pointer
 
     Dim MyVar As Pointer
 
     MyVar = varmem.Alloc(0)
     If MyVar < varmem.ManagedInfo.StartOfMem Or If MyVar > varmem.ManagedInfo.EndOfMem Then
-        Stop
+        Stop  ' this means there was a grave error in allocation
     Endif
     Return MyVar
 
 End
 
+'' Allocate a block of memory
 Public Sub {Alloc}(Length As Long) As Pointer
 
     Dim MyVar As Pointer
@@ -205,6 +227,8 @@ Public Sub {Alloc}(Length As Long) As Pointer
 
 End
 
+'' return an allocated block of memory and return
+'' the virtual address within the block
 Public Sub AllocVirt(Length As Long) As Pointer
 
     Return Me.Alloc(Length) + SizeOf(AllocHeader)
@@ -662,6 +686,15 @@ Public Sub text(VirtAddress As Pointer, Optional Indent As String = "", SetTree 
 
 End
 
+Public Sub EntryPtr(VirtAddress As Pointer) As DList
+
+    If VirtAddress <= 0 Then Return Null
+    Dim RealPtr As Pointer = RealAddress(VirtAddress)
+    ' Return DListPtr(RealPtr, RealPtr, 0)
+    Return RealPtr
+
+End
+
 Public Sub TextTree(Optional VirtAddress As Pointer = 0, Indent As Integer = 0) As String
 
     Dim vptr As AllocHeader
@@ -680,8 +713,12 @@ Public Sub TextTree(Optional VirtAddress As Pointer = 0, Indent As Integer = 0) 
         If Not AlreadyUsed[vptr.address]
             Select Case vptr.Type
 
-                Case ShmList.cShmList, ShmQueue.cShmQueue
-                    thelist = GetPointer(vptr.type, vptr.address)
+                Case ShmList.cShmList
+                    thelist = New ShmList(Me, vptr.address)
+                    outbuffer &= theList.TextTree()
+
+                Case ShmQueue.cShmQueue
+                    thelist = New ShmQueue(Me, vptr.address)
                     outbuffer &= theList.TextTree()
 
                 Case gb.String

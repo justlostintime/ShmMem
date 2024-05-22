@@ -15,6 +15,7 @@ Property Length As Pointer Use $Length = 0
 Property Buffer As ShmBuffer Use $Buffer = Null
 Property Name As String Use $Name = ""
 
+'' Defining a new field inside a buffer area.
 Public Sub _new(oBuffer As ShmBuffer, Element As String, ElementOffset As Pointer, ElementLength As Integer)
 
     $Offset = ElementOffset

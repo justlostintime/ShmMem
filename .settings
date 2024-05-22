@@ -2,7 +2,7 @@
 shmMem=[234]
 
 [Debug]
-Breakpoints={"NewSymbolTableclassTest":[17],"TestChangeType":[27,26],"NewFGEnqueue":[22,20],"shmMem":[241],"ShmList":[634],"ShmVarStorage":[683]}
+Breakpoints={"NewSymbolTableclassTest":[17],"TestChangeType":[27,26],"NewFGEnqueue":[22,20],"shmMem":[241],"ShmList":[640]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -68,8 +68,11 @@ Geometry=[834,402,252,276]
 [DebugWindow/srcstr]
 Geometry=[2664,390,339,339]
 
+[DebugWindow/theDlist]
+Geometry=[834,415,516,364]
+
 [DebugWindow/theList]
-Geometry=[2754,498,252,56]
+Geometry=[834,512,252,56]
 
 [DebugWindow/tmpptr]
 Geometry=[2754,498,252,56]
@@ -95,16 +98,23 @@ SnapResolution=8
 Diagonals=0
 Lock=False
 
+[FProjectVersion]
+LastCommit="Numerous fixes and updated"
+
 [OpenFile]
-Count=7
+Count=11
 File[1]=".src/Examples/vTestApps/NotifyTestWithProcesses/NewNotifyTest.module:40.8"
 Active=4
 File[2]=".src/Examples/vTestApps/NotifyTestWithProcesses/NotifyBGTask.class:10.22"
 File[3]=".src/Examples/vTestApps/TestChangeType.module:0.27"
-File[4]=".src/ShmMem/ShmVarStorage.class:0.496"
+File[4]=".src/ShmMem/ShmVarStorage.class:3.161"
 File[5]=".src/Examples/vTestApps/QueueTestWithProcesses/NewFGEnqueue.module:3.20"
-File[6]=".src/ShmMem/shmMem.class:28.241"
-File[7]=".src/ShmMem/ShmList.class:4.131"
+File[6]=".src/ShmMem/shmMem.class:4.41"
+File[7]=".src/ShmMem/ShmList.class:4.636"
+File[8]="README.md:0.0"
+File[9]=".src/ShmMem/ShmBuffer.class:0.0"
+File[10]=".src/ShmMem/ShmBufferField.class:45.17"
+File[11]=".src/ShmMem/ShmListEntry.class:0.0"
 
 [Watches]
 Count=0

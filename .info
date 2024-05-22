@@ -119,6 +119,7 @@ _new
 m
 
 (oBuffer)ShmBuffer;(Element)s(ElementOffset)p(ElementLength)i
+'Defining a new field inside a buffer area.
 _free
 m
 
@@ -307,6 +308,11 @@ v
 l
 
 'During iterations this will be the item count
+dlistkey
+v
+dList
+
+'During iteration this contains the current dlist entry
 max
 r
 l
@@ -840,6 +846,11 @@ r
 i
 
 'The number of time the Hash Function Collided with used entry
+MaxRehash
+V
+i
+
+'maximum times a rehash will be attempted when a colision happens
 SymTblMem
 v
 ShmMemBlock
@@ -865,11 +876,16 @@ r
 s
 
 'Returns a printable representation of the symbol table
+TextSummary
+r
+s
+
+'Returns a short summary of the symbol table"
 Length
 r
 i
 
-'The number of active entries in the symbol table
+'The number of slots in the symbol table
 Max
 r
 i
@@ -899,18 +915,23 @@ Debug
 p
 b
 
+'Turn on off the debug messages for this object
 Save
 m
 
 (OutFile)File;
+'Save the contents of the symbol table to a file, The actual value of the symbol is also saved
+'Saves only the table entries that have an active symbol entry.
 WriteVar
 m
 
 (Address)l(OutFile)File;(SymName)s
+'Write the variable/Symbol to a file by virtual memory reference
 SaveVar
 m
 
 (SymName)s(OutFile)File;
+'Write A Symbol/Variable to a file by name
 exist
 m
 b
@@ -919,14 +940,19 @@ Load
 m
 
 (InFile)File;
+'Load the complete previously saved Symbol table and symbol values.
 LoadVar
 m
 
 (InFile)File;[(SymName)s]
+'Load a variable file by text name into the symbol table
 ReadVar
 m
 
 (InFile)File;(ReqSymname)s
+'Read symbol value from a file, if the Symname does not match the
+'stored symbol name then rename the symbol to the
+'provided name. if the ReqSymName is blank then use the name from the file
 _put
 m
 
@@ -935,14 +961,18 @@ SymbolLength
 M
 i
 
+'return the length of a symbol table entry
 InfoLength
 M
 i
 
+'Return the length of the symbol table header
 _new
 m
 
 (MemBlock)ShmMemBlock;(DataMem)ShmVarStorage;
+'Create a new symbol table, provide the symbol table memory and
+'the Variable storgage information
 _free
 m
 
@@ -951,6 +981,7 @@ Clear
 m
 
 
+'remove all the entries from the symbol table
 Add
 m
 l
@@ -1004,10 +1035,13 @@ SortedList
 m
 String[]
 
+'Return a list of all symbols, Sorted by text name
 _next
 m
 v
 
+'iterate through the symbol table in shared memory
+'return the next used slot in the list
 #ShmVarStorage
 
 C
@@ -1052,10 +1086,21 @@ DefineClass
 M
 
 (ClassName)s(ClassIndex)i
+'Define a new user class for shared objects
+'Defines the text class name and the internal  class index value
+'The value must not conflict with any of the Gambas defined gb_type values
+AsObject
+m
+v
+(ctype)i(virtaddress)p
+'Take the User defined data type as a type value and a virtual pointer
+'the the shared data structure and return a gambas object of that type
+'This is only valid for shmmem defined user classes
 GetTextType
 M
 s
 (Type)i
+'Return the defined class name for the shmmem user defined type
 _new
 m
 
@@ -1065,43 +1110,48 @@ _free
 m
 
 
+'Clear the help pointer to the memory this
+'will force the cleanup of the memory
 Alloc
 m
 p
 (Length)l
+'Allocate a block of memory
 AllocVirt
 m
 p
 (Length)l
+'return an allocated block of memory and return
+'the virtual address within the block
 set
 m
 p
-(Value)v[(VirtAddress)p]
+(Value)v[(virtaddress)p]
 'set the value of a variable, create a new one if VirtAddress is zero
 _put
 m
 
-(Value)v(VirtAddress)p
+(Value)v(virtaddress)p
 _getType
 m
 v
-(VirtAddress)p(Type)i
+(virtaddress)p(Type)i
 Getpointer
 m
 v
-(Type)i(VirtAddress)p
+(Type)i(virtaddress)p
 _get
 m
 v
-(VirtAddress)p
+(virtaddress)p
 _puttype
 m
 
-(Value)v(VirtAddress)p(mytype)i
+(Value)v(virtaddress)p(mytype)i
 Free
 m
 
-(VirtAddress)p
+(virtaddress)p
 SizeOf
 M
 i
@@ -1111,15 +1161,15 @@ i
 FreeVirt
 m
 
-(VirtAddress)p
+(virtaddress)p
 RealAddress
 m
 p
-(VirtAddress)p
+(virtaddress)p
 RealDataAddress
 m
 p
-(VirtAddress)p
+(virtaddress)p
 Lock
 m
 
@@ -1131,19 +1181,23 @@ m
 VarPtr
 m
 v
-(VirtAddress)p
+(virtaddress)p
 text
 m
 s
-(VirtAddress)p[(Indent)s(SetTree)b]
+(virtaddress)p[(Indent)s(SetTree)b]
 _next
 m
 v
 
+EntryPtr
+m
+dList
+(virtaddress)p
 TextTree
 m
 s
-[(VirtAddress)p(Indent)i]
+[(virtaddress)p(Indent)i]
 #shmMem
 
 C

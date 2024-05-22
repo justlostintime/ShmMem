@@ -57,6 +57,7 @@ Private VirtualAddress As Pointer = 0              '' Pointer to the head of the
 Public ListHead As DList                                         '' Pointer to the actual list
 Public VarMem As ShmVarStorage                    '' The storage pool to used or referenced
 Public Key As Long                                                   '' During iterations this will be the item count
+Public dlistkey As Dlist                                             '' During iteration this contains the current dlist entry
 
 Property Read max As Long                                '' max count for iteration
 Property Read count As Long                             '' Count of elements in this list
@@ -533,6 +534,7 @@ Public Sub _next() As Variant
             ListItem = EntryPtr(ListHead.next)
             Enum.Index = ListItem
             Key = 0
+            dlistkey = ListItem
         Else
             Enum.Stop
             Return
@@ -546,6 +548,7 @@ Public Sub _next() As Variant
             ListItem = EntryPtr(ListItem.next)
             Inc key
             Enum.index = listItem
+            dlistkey = ListItem
         Endif
     Endif
 
@@ -632,10 +635,10 @@ End
 Public Sub textTree() As String
 
     Dim Indent As String = "    "
-    Dim entry As ShmListEntry
+    Dim entry As Variant
 
     For Each entry In Me
-
+        Print Me.key
     Next
 
 End
