@@ -1,1 +1,60 @@
 ' Gambas module file
+
+''' Each of the User1-3 should be executed as seperate application
+''' They give an example of sharing data between application.
+''' Notifications are used to signal the apps as data changes
+Public MyShare As ShmMem
+Public Completed As Boolean = False
+
+Public Sub main()
+
+    Dim MyShare As ShmMem
+
+    MyShare = New ShmMem(2000000, "MySharedMem", 8000)
+    MyShare!Cat = "Felix"
+    MyShare!Dog = "Rover"
+    MyShare!Rabbit = 1000
+    MyShare!Done = False
+
+    MyShare.Notify("Cat", Me)
+    MyShare.Notify("Dog", Me)
+    MyShare.Notify("rabbit", Me)
+    MyShare.Notify("Done", Me, "It_Is_Done")
+
+    Print " User 3 monitoring all variables"
+    While Not completed
+        Wait 0.001
+    Wend
+
+    Print "User 2 Completed and exits"
+
+End
+
+Public Sub cat_changed(varname As String, value As Variant, TimedOut As Boolean)
+
+    Print "Cat has been updated ";; value
+
+End
+
+Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
+
+    Print "Dog has been updated ";; value
+
+End
+
+Public Sub Rabbit_changed(varname As String, value As Variant, TimedOut As Boolean)
+
+    Print "Rabbit has been updated ";; value
+
+End
+
+Public Sub It_Is_Done(varname As String, value As Variant, TimedOut As Boolean)
+
+    If value == "True" Then
+        Completed = True
+        Print "Done Is committed"
+    Else
+        Print "done set to "; value
+    Endif
+
+End

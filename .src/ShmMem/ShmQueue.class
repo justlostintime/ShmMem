@@ -164,6 +164,6 @@ Public Sub _next() As Variant
 
 Catch
     Print "ShmQueue Next error ";; Error.text;; Error.where
-    Print Hex(listitem)
+    Print Hex(listitem.Address)
 
 End

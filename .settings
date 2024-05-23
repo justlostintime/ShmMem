@@ -1,17 +1,14 @@
 [Bookmarks]
 shmMem=[234]
-NewSymbolTableclassTest=[]
 
 [Debug]
-Breakpoints={"TestChangeType":[27,26],"NewFGEnqueue":[22,20],"shmMem":[241],"ShmList":[640]}
+Breakpoints={"NewFGEnqueue":[22,20],"shmMem":[241],"ShmList":[640],"User1":[48,38]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
 Remote=False
 Profiling=False
 Environment=["GB_NO_JIT=1"]
-RemoteEnvironment=[]
-Arguments=[]
 
 [DebugWindow]
 Count=0
@@ -122,16 +119,21 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Updated to use Hash by default for all operation, option to fallback to cache/dictionary"
+LastCommit="Adding more concreat user examples, update readme"
 
 [OpenFile]
-Count=5
-File[1]=".src/ShmMem/ShmSymbolTable.class:4.318"
-Active=1
-File[2]=".src/Examples/vTestApps/TestSymTableAddEntry.module:4.28"
-File[3]=".src/ShmMem/ShmNotifyEntry.class:123.33"
-File[4]=".src/ShmMem/ShmNotify.class:20.30"
-File[5]=".src/Examples/vTestApps/NewSymbolTableclassTest.module:10.97"
+Count=9
+File[1]=".src/Examples/vTestApps/General Tests/NewVarStorageTest.module:0.0"
+Active=3
+File[2]=".src/Examples/vTestApps/General Tests/TestChangeType.module:0.27"
+File[3]=".src/Examples/User Examples/User1.module:0.48"
+File[4]=".src/Examples/User Examples/User2.module:3.30"
+File[5]=".src/Examples/User Examples/User3.module:33.54"
+File[6]=".src/Examples/vTestApps/NotifyTestWithProcesses/NewNotifyTest.module:80.68"
+File[7]=".src/ShmMem/ShmQueue.class:41.157"
+File[8]=".src/ShmMem/ShmNotify.class:20.199"
+File[9]=".src/ShmMem/shmMem.class:0.277"
+File[10]=".src/ShmMem/ShmSymbolTable.class:0.647"
 
 [Watches]
 Count=0
