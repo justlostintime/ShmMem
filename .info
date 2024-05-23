@@ -1001,7 +1001,7 @@ m
 Add
 m
 l
-(SymName)s(Value)v
+(SymName)s(Value)v[(HashValue)l]
 'Return the slot number insert the name and change the lastupdated time
 'Create a basic variable storage to go along with this symbol
 'Update the virtual address of Var in the table
@@ -1139,7 +1139,8 @@ set
 m
 p
 (Value)v[(virtaddress)p]
-'set the value of a variable, create a new one if VirtAddress is zero
+'Set the value of a variable, create a new one if VirtAddress is zero
+'These variables have no entry in the symbol table and are managed by the user
 _put
 m
 

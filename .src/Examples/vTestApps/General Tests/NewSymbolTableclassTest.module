@@ -1,6 +1,6 @@
 ' Gambas module file
 
-' Fast Unsafe
+Fast Unsafe
 'Extern strncpy(dest As Pointer, source As String, len As Long) In "libc:6"
 Private loopcount As Integer = 100000
 Private Letters As String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -15,32 +15,21 @@ Public Sub main()
     Dim vars As New ShmSymbolTable(symStore, MyVarMem, False)
 
     Print "UseCache = "; vars.UseCache;; "' Length = "; Vars.MaxSymbols
-    ' strncpy(Vars.SymMem.Table[0].Name.data, "Var1", 127)
-    ' Dim srcstr As Byte[] = Byte[].FromString("Var1")
-    '
-    ' For j As Integer = 0 To srcstr.Max
-    '     Vars.SymMem.Table[0].Name[j] = srcstr[j]
-    ' Next
-    ' Vars.SymMem.Table[0].Name[j] = 0
-    '
-    ' Print "Symbol Name :";; Quote(Vars.SymMem.Table[0].Name.tostring())
+
     Dim gotit As Integer
 
     vars!dog = 56
     Gotit = vars!dog
     Print "The Dogs Value is ";; vars!dog
-
+    Print "Assign/free  symbol begins for ";; loopcount;; "Loops"
     Dim starttime As Float = Timer
+    For i As Integer = 0 To LoopCount
+        vars!dog = i
+        vars.Remove("dog")
+    Next
 
-    ' Print "Assign/free  symbol begins for ";; loopcount;; "Loops"
-    '
-    ' For i As Integer = 0 To LoopCount
-    '     vars!dog = i
-    '     vars.Remove("dog")
-    ' Next
-    '
-    ' Print "Assign/free  symbol "; loopcount; "    Time :";; Timer - Starttime
-    ' Print vars.text
+    Print "Assign/free  symbol "; loopcount; "    Time :";; Timer - Starttime
+    Print vars.text
 
     With vars
         !a = 1
@@ -53,8 +42,6 @@ Public Sub main()
         !e = 5
         !fish = "hello"
         !Dish = "Bobby"
-
-        Quit 0
 
         Print vars.text
         vars.clear
@@ -105,6 +92,16 @@ Public Sub main()
 
         Next
         Print " Fetch Time = "; Timer - starttime
+        Print .textSummary
+
+        Print "Put Value to  each symbol  by name for "; RandomName.count;; "entry"
+        b = 0
+        starttime = Timer
+        For Each s In RandomName
+            Inc b
+            vars[s] = b
+        Next
+        Print " Write Time = "; Timer - starttime
         Print .textSummary
 
         Vars.clear()

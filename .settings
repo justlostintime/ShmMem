@@ -1,14 +1,15 @@
 [Bookmarks]
 shmMem=[234]
+NewSymbolTableclassTest=[]
 
 [Debug]
-Breakpoints={"TestChangeType":[27,26],"NewFGEnqueue":[22,20],"shmMem":[241],"ShmList":[640],"NewSymbolTableclassTest":[27,105,62,72,90,40],"ShmSymbolTable":[682]}
+Breakpoints={"TestChangeType":[27,26],"NewFGEnqueue":[22,20],"shmMem":[241],"ShmList":[640]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
 Remote=False
-Environment=[]
 Profiling=False
+Environment=["GB_NO_JIT=1"]
 RemoteEnvironment=[]
 Arguments=[]
 
@@ -57,20 +58,32 @@ Geometry=[834,498,252,150]
 [DebugWindow/SymEntry.Name]
 Geometry=[848,512,252,508]
 
+[DebugWindow/SymInfo]
+Geometry=[834,441,252,170]
+
 [DebugWindow/SymList]
 Geometry=[834,402,252,276]
 
+[DebugWindow/SymMem]
+Geometry=[2158,691,252,58]
+
+[DebugWindow/SymMem.Table]
+Geometry=[768,342,587,508]
+
+[DebugWindow/SymMem.Table[index]]
+Geometry=[834,431,252,190]
+
 [DebugWindow/SymTblMem]
-Geometry=[834,405,510,314]
+Geometry=[834,405,510,270]
 
 [DebugWindow/SymbolCache]
-Geometry=[834,512,252,56]
+Geometry=[834,512,252,216]
 
 [DebugWindow/UserQueue]
 Geometry=[834,512,252,56]
 
 [DebugWindow/VarMem]
-Geometry=[834,475,252,130]
+Geometry=[834,498,252,56]
 
 [DebugWindow/Vars.SortedList()]
 Geometry=[834,402,252,276]
@@ -88,7 +101,7 @@ Geometry=[834,512,252,56]
 Geometry=[2754,498,252,56]
 
 [DebugWindow/vars]
-Geometry=[834,512,252,56]
+Geometry=[834,498,252,56]
 
 [DebugWindow/vptr]
 Geometry=[2754,498,252,110]
@@ -109,17 +122,16 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Numerous fixes and updated"
+LastCommit="Updated to use Hash by default for all operation, option to fallback to cache/dictionary"
 
 [OpenFile]
-Count=6
-File[1]=".src/ShmMem/ShmVarStorage.class:9.645"
-Active=6
-File[2]=".src/ShmMem/shmMem.class:24.241"
-File[3]=".src/ShmMem/ShmBuffer.class:0.0"
-File[4]=".src/ShmMem/ShmListEntry.class:0.0"
-File[5]=".src/ShmMem/ShmSymbolTable.class:1.9"
-File[6]=".src/Examples/vTestApps/NewSymbolTableclassTest.module:0.42"
+Count=5
+File[1]=".src/ShmMem/ShmSymbolTable.class:4.318"
+Active=1
+File[2]=".src/Examples/vTestApps/TestSymTableAddEntry.module:4.28"
+File[3]=".src/ShmMem/ShmNotifyEntry.class:123.33"
+File[4]=".src/ShmMem/ShmNotify.class:20.30"
+File[5]=".src/Examples/vTestApps/NewSymbolTableclassTest.module:10.97"
 
 [Watches]
 Count=0

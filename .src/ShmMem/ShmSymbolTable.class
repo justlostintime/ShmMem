@@ -26,7 +26,7 @@ Public Struct TableInfo
     Initialized As Boolean                  '' indicates if memory must be initialized
     LastUpdate As Float                    '' The last time the table was updated
     Count As Long                               '' Number of actual table slots available
-    Collisions As Long                         '' Number of times hash was already used
+    Collisions As Pointer                     '' Number of times hash was already used
     UsedCount As Long                      '' Number of used Entries
     MaxCount As Long                        '' Max Number of entries ever used
     TotalRetryCount As Pointer       '' Max number of retries when looking for symols
@@ -63,23 +63,23 @@ Private LastUpdated As Float = 0                                            '' t
 
 ' Extern SymMemPtr(dest As Pointer, src As Pointer, Len As Integer) As TableLayout In "libc:6" Exec "memcpy"
 ' Extern SymInfoPtr(dest As Pointer, src As Pointer, Len As Integer) As TableInfo In "libc:6" Exec "memcpy"
-' Extern memPtr(dest As Pointer, src As Pointer, Len As Integer) As Pointer In "libc:6" Exec "memcpy"
+Extern memPtr(dest As Pointer, src As Pointer, Len As Integer) As Pointer In "libc:6" Exec "memcpy"
 'Extern strncpy(dest As Pointer, source As String, len As Integer) As Pointer In "libc:6"
 Extern strncmp(dest As Pointer, source As String, len As Integer) As Integer In "libc:6"
 
-Property Read text As String                                '' Returns a printable representation of the symbol table
-Property Read TextSummary As String             '' Returns a short summary of the symbol table"
-Property Read count As Integer                           '' The number of active entries in the symbol table
-Property Read Length As Integer                         '' The number of slots in the symbol table
-Property Read Max As Integer                              '' The highest index that will work
-Property Read Key As String Use $sKey                         '' The key when using for each
-Property Read KeyIndex As Long Use $iKeyIndex       '' the index of the current entry in the symbol table
-Property Default As Variant Use $vDefault = False    '' The default value returned when a symbol does not exist, Defaults to False
-Property Read MaxSymbols As Integer               '' The Max number of symbols that can be placed in the table
-Property Read Collisions As Integer                      '' The number of time the Hash Function Collided with used entry
-Property Read MaxUsedSymbols As Integer      '' Highest Number Of Symbols ever used
-Property Debug As Boolean Use $bDebug          '' Turn on off the debug messages for this object
-Property UseCache As Boolean Use $UseCache = True                   '' Trun on or off the use of the Cache for variables in local app
+Property Read text As String                                                   '' Returns a printable representation of the symbol table
+Property Read TextSummary As String                               '' Returns a short summary of the symbol table"
+Property Read count As Integer                                             '' The number of active entries in the symbol table
+Property Read Length As Integer                                           '' The number of slots in the symbol table
+Property Read Max As Integer                                                '' The highest index that will work
+Property Read Key As String Use $sKey                              '' The key when using for each
+Property Read KeyIndex As Long Use $iKeyIndex            '' the index of the current entry in the symbol table
+Property Default As Variant Use $vDefault = False          '' The default value returned when a symbol does not exist, Defaults to False
+Property Read MaxSymbols As Integer                                '' The Max number of symbols that can be placed in the table
+Property Read Collisions As Integer                                       '' The number of time the Hash Function Collided with used entry
+Property Read MaxUsedSymbols As Integer                       '' Highest Number Of Symbols ever used
+Property Debug As Boolean Use $bDebug                          '' Turn on off the debug messages for this object
+Property UseCache As Boolean Use $UseCache = True    '' Trun on or off the use of the Cache for variables in local app
 
 '' Save the contents of the symbol table to a file, The actual value of the symbol is also saved
 '' Saves only the table entries that have an active symbol entry.
@@ -213,7 +213,7 @@ End
 
 '' Create a new symbol table, provide the symbol table memory and
 '' the Variable storgage information
-Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional ActivateCache As Boolean = True)
+Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional ActivateCache As Boolean = False)
 
     ' $bDebug = True
 
@@ -264,7 +264,7 @@ Public Sub _free()
 End
 
 '' update the apps/tasks copy of the symbol table
-Private Sub UpdateCache()
+Fast Unsafe Private Sub UpdateCache()
 
     If Not $UseCache Then
         Stop
@@ -310,7 +310,10 @@ Public Sub Clear()
 
 End
 
+LastSymbol As String
+LastHash As Long
 '' Hash table uses  pointers as index value  as they are unsigned
+
 Fast Unsafe Private Sub Hash(Symbol As String) As Pointer
 
     Dim SymName As String = Lower(Symbol)
@@ -320,8 +323,10 @@ Fast Unsafe Private Sub Hash(Symbol As String) As Pointer
 
     Buffer = Byte[].FromString(SymName)
     For i As Integer = 0 To Buffer.Max
-        Value = (31 * Value + Buffer[i]) Mod TblLen
+        Value = ((31 * Value) + Buffer[i]) Mod TblLen
     Next
+
+    LastHash = Value
     Return value
 
 End
@@ -358,13 +363,12 @@ Fast Unsafe Private Sub FindHash(HashValue As Pointer, SymName As String) As Poi
 
 End
 
-Private Sub FindEmpty(HashValue As Pointer) As Pointer       '' Returns the next available entry in the symbol table
+Fast Unsafe Private Sub FindEmpty(HashValue As Pointer) As Pointer       '' Returns the next available entry in the symbol table
 
     Dim index As Pointer = HashValue
 
     While True
         If SymMem.Table[index].Used = False Then Return index
-        Inc SymInfo.Collisions                                                                          '' Number of collisions when looking for a free entry
         Inc index
         If index = HashValue Then Break
         If index = SymInfo.Count Then
@@ -384,9 +388,11 @@ Private Sub InsertHash(rootHash As Long, newElement As Long)
     While SymMem.Table[index].next <> -1
         index = SymMem.Table[index].next
     Wend
+
     SymMem.Table[index].next = newElement
     SymMem.Table[NewElement].Previous = index
     SymMem.Table[NewElement].next = -1
+    SymMem.Table[NewElement].Used = True
 
 End
 
@@ -401,7 +407,7 @@ End
 '' Return the slot number insert the name and change the lastupdated time
 '' Create a basic variable storage to go along with this symbol
 '' Update the virtual address of Var in the table
-Public Sub Add(symName As String, value As Variant) As Long
+Fast Unsafe Public Sub Add(symName As String, value As Variant, Optional HashValue As Long = -1) As Long
 
     '    Dim result As Pointer
 
@@ -411,7 +417,9 @@ Public Sub Add(symName As String, value As Variant) As Long
 
     Symname = Lower(symname)
 
-    Dim HashValue As Pointer = Hash(symName)
+    If HashValue <> -1 Then
+        HashValue = Hash(symName)
+    Endif
 
     If $bDebug Then Print Application.id, "Add SymTblmem.exclusive " & SymName
     SymTblMem.Exclusive()
@@ -419,10 +427,16 @@ Public Sub Add(symName As String, value As Variant) As Long
     Dim k As Pointer = FindHash(HashValue, SymName)          '' check if the value exists
     If k = noentry Then                                                                         '' either it exists but does not match or does not exist
         If SymMem.Table[HashValue].Used Then
+            Inc SymInfo.Collisions                                                            '' Number of collisions when looking for a free entry
             Dim i As Pointer = FindEmpty(HashValue)
             If i <> noentry Then
-                InsertHash(HashValue, i)
+                InsertHash(HashValue, i)                                                   '' this sets the next, previous and used fields
             Endif
+        Else
+            i = HashValue                                                                            '' new entry so mark with no prev or next
+            SymMem.Table[i].Used = True
+            SymMem.Table[i].next = -1
+            SymMem.Table[i].Previous = -1
         Endif
     Endif
 
@@ -430,6 +444,8 @@ Public Sub Add(symName As String, value As Variant) As Long
         SymTblMem.Release()
         Error.Raise("No More Room In Symbol Table : Used: " & SymInfo.UsedCount & ",Available:" & SymInfo.count & " for " & symname)
     Endif
+
+    SymMem.Table[i].Hash = HashValue
 
     If $bDebug Then Print Application.id, "Add SymTblmem.Empty hash found " & SymName
 
@@ -446,16 +462,11 @@ Public Sub Add(symName As String, value As Variant) As Long
 
     SymMem.Table[i].NameLength = IIf(symname.len > 127, 127, symName.len)
 
-    SymMem.Table[i].Hash = HashValue
-    SymMem.Table[i].Used = True
-    SymMem.Table[i].next = -1
-    SymMem.Table[i].Previous = -1
-
     SymInfo.LastUpdate = Timer
 
     LastUpdated = SymInfo.LastUpdate
 
-    If $UseCache Then SymbolCache[symName] = i ' updated
+    If $UseCache Then SymbolCache[symName] = i                            ' updated
 
     SymMem.Table[i].Address = VarMem.set(value)
 
@@ -469,18 +480,16 @@ Public Sub Add(symName As String, value As Variant) As Long
 
 End
 
-Public Sub Remove(SymName As String)
+Fast Unsafe Public Sub Remove(SymName As String)
 
     Dim index As Long
     Dim freeData As Pointer
 
     If $UseCache Then
         UpdateCache() ' updated
-
         If Not SymbolCache.Exist(SymName) Then ' updated
             Error.Raise("Unknown Symbol " & SymName)
         Endif
-
         index = SymbolCache[SymName] ' updated
     Else
         index = GetSymbol(SymName)
@@ -492,9 +501,18 @@ Public Sub Remove(SymName As String)
     If $bDebug Then Print Application.id, "remove SymTblmem.exclusive " & SymName
     SymTblMem.Exclusive()
 
-    freeData = SymMem.Table[index].Address
-    SymMem.Table[index].Address = NoEntry
-    SymMem.Table[index].Used = False
+    freeData = SymMem.Table[index].Address                       ' the address of the data to be freed
+    SymMem.Table[index].Address = NoEntry                        ' mark adress as unused
+    SymMem.Table[index].Used = False                                    ' mark entry as not used
+
+    If SymMem.Table[index].next <> -1 Then                           ' we have a chain
+        If SymMem.Table[index].previous = -1 Then                 ' we have the top of a chain with more links
+            TableMove(index, SymMem.Table[index].next)       ' Move the next  entry to this slot
+            SymMem.Table[index].previous = -1                           ' the moved value has no previous any more
+        Else
+            SymMem.Table[SymMem.Table[index].previous].next = SymMem.Table[index].next
+        Endif
+    Endif
 
     If $UseCache Then SymbolCache.Remove(SymName) ' updated
 
@@ -507,6 +525,24 @@ Public Sub Remove(SymName As String)
 
     If $bDebug Then Print Application.id, "remove SymTblmem.release"
     VarMem.Free(Freedata)
+
+End
+
+'' Move/copy  an entry from one location to another
+'' update the symbolCache if it is being used
+Private Sub TableMove(ToIndex As Long, FromIndex As Long)
+
+    Dim fromPtr As Pointer
+    Dim toPointer As Pointer
+    Dim ResultPtr As Pointer
+    Dim EntryLen As Integer = SizeOf(symbol)
+    Dim symName As String = SymMem.Table[FromIndex].Name.ToString()
+
+    fromptr = VarPtr(SymMem) + (EntryLen * FromIndex)
+    toPointer = VarPtr(SymMem) + (EntryLen * ToIndex)
+
+    resultptr = memPtr(toPointer, fromPtr, EntryLen)
+    If $UseCache Then SymbolCache[SymName] = ToIndex           ' update the cache if being used
 
 End
 
@@ -557,7 +593,7 @@ Public Sub _put(value As Variant, SymName As String)
     Else
         index = GetSymbol(SymName)
         If index = NoEntry Then
-            Add(SymName, Value)
+            Add(SymName, Value, LastHash)
             Return
         Else
             SymbolIndex = index
@@ -690,7 +726,7 @@ Private Sub TextSummary_Read() As String
     Dim Result As String = ""
 
     Result &= "\nSymbol Table Listing\nMaxLength = " & SymInfo.MaxCount & ", Available Slots = " & SymInfo.Count & ", Occupied Slots = " & SymInfo.UsedCount &
-        ",\nCollisions = " & SymInfo.Collisions & ", Search Retry count = " & CLong(SymInfo.TotalRetryCount) &
+        ",\nCollisions = " & CLong(SymInfo.Collisions) & ", Search Retry count = " & CLong(SymInfo.TotalRetryCount) &
         "\nLast Updated " & SymInfo.LastUpdate & ", Phy Address " & Hex(SymTblMem.MemoryAddress, 8) & "\n"
 
     Return result

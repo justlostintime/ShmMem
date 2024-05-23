@@ -39,8 +39,6 @@ Public Sub main()
 
         Print !go, !goagain
 
-
     End With
-
 
 End

@@ -235,7 +235,8 @@ Public Sub AllocVirt(Length As Long) As Pointer
 
 End
 
-'' set the value of a variable, create a new one if VirtAddress is zero
+'' Set the value of a variable, create a new one if VirtAddress is zero
+'' These variables have no entry in the symbol table and are managed by the user
 Public Sub set(value As Variant, Optional VirtAddress As Pointer = 0) As Pointer
 
     Dim myvar As Pointer
