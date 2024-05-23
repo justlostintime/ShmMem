@@ -1,0 +1,80 @@
+' Gambas module file
+
+' Fast Unsafe
+'Extern strncpy(dest As Pointer, source As String, len As Long) In "libc:6"
+Private loopcount As Integer = 100000
+Private Letters As String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+Public varStore As ShmMemBlock
+Public varMnge As ShmManage
+Public MyVarMem As ShmVarStorage
+Public symStore As ShmMemBlock
+Public vars As ShmSymbolTable
+
+Public Sub main()
+
+    varStore = New ShmMemBlock(5128000)
+    varMnge = New ShmManage(varStore)
+    MyVarMem = New ShmVarStorage(varMnge)
+    symStore = New ShmMemBlock(5000000)
+
+    Dim withCache As Boolean = False
+
+    '  If Not WithCache Then
+    vars = New ShmSymbolTable(symStore, MyVarMem, False)
+    RunTest()
+    vars.Clear()
+    vars.UseCache = True
+    'Else
+    ' vars = New ShmSymbolTable(symStore, MyVarMem, True)
+    RunTest()
+    Quit 0
+    '  Endif
+
+End
+
+Sub RunTest()
+
+    With vars
+        Print "UseCache = "; vars.UseCache;; "' Length = "; Vars.MaxSymbols
+
+        Dim starttime As Float = Timer
+
+        Randomize (CInt(Timer * 31))
+
+        Dim RandomName As New String[]
+
+        For p As Integer = 0 To 20000
+            Dim wordin As String = ""
+            Dim WordLength As Integer = Rand(1, 20)
+            For Q As Integer = 0 To WordLength
+                Dim r As Integer = Rand(0, Letters.len - 1)
+                wordin &= Letters[R]
+            Next
+            If Not RandomName.Exist(Wordin) Then RandomName.Add(wordin)
+        Next
+
+        Print "Filled  Symbol Table with";; RandomName.Count;; "Symbols"
+        StartTime = Timer
+
+        Dim counter As Integer = 0
+
+        For Each s As String In RandomName
+            Inc counter
+            s &= Str(counter)
+            Try vars[s] = counter
+            If Error Then
+                Print " Assigning error :";; Error.Text;; Error.where
+                Break
+                ' Else
+                '     counter = vars[s]
+            Endif
+        Next
+
+        Print "Assigned Many variables("; Vars.Count; ") to Symbol table, Time= ";; Timer - starttime
+
+        Print Vars.TextSummary
+
+    End With
+
+End

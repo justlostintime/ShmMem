@@ -30,6 +30,8 @@ Public Struct Symbol
     Address As Long                         '' virtual address of the value, 0 means no value yet
     Hash As Long                            '' When we start using a hash for this table
     NameLength As Integer                   '' NameLength
+    {Next} As Long                               '' in case of a hash conflict index to the next in this chain -1 of not used
+    Previous As Long                           '' in case of hash conflict index to the parent of this value -1 if not used
 End Struct
 
 Public NotifyObject As Object

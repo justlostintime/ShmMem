@@ -7,7 +7,7 @@
 '  See project license file.
 
 Export
-Fast Unsafe
+'Fast Unsafe
 
 '' How a symbol is stored in the shared memory
 Public Struct Symbol
@@ -17,6 +17,8 @@ Public Struct Symbol
     Address As Long                          '' virtual address of the value, 0 means no value yet
     Hash As Long                                 '' Hash value for the symbol, used to match when collision
     NameLength As Integer              '' the length of the symbol Name
+    {Next} As Long                               '' in case of a hash conflict index to the next in this chain -1 of not used
+    Previous As Long                           '' in case of hash conflict index to the parent of this value -1 if not used
 End Struct
 
 '' The content of table structure and each entry in the symbol table
@@ -35,7 +37,7 @@ End Struct
 '' but this does not define the actual size or count when allocated. See shmmem  MaxSymbolsDefault
 '' for the actual size of the table when it is created.
 Public Struct tableLayout
-    Table[20000] As Struct Symbol           '' fake number entries but does limit max number of symbols that can be defined in the sysmbol table during creation
+    Table[80000] As Struct Symbol           '' fake number entries but does limit max number of symbols that can be defined in the sysmbol table during creation
 End Struct
 
 '' Used as a pointer to strings inside shared memory
@@ -45,7 +47,6 @@ End Struct
 
 '' The value returned When there are no valid entries in table, not found, end of table, etc
 Static Private NoEntry As Pointer = CPointer(-1)        '' &hffffffffff
-Static Public MaxRehash As Integer = 100                        '' maximum times a rehash will be attempted when a colision happens
 
 Public SymTblMem As ShmMemBlock
 Public VarMem As ShmVarStorage
@@ -56,7 +57,7 @@ Public SymInfo As TableInfo
 '' cache the symbol names in a hash table for quick access
 '' Does mean that we have to update this every time a symbol is added or removed .. lol
 '' But this is a database not just a bunch of variables
-Private SymbolCache As New Collection(gb.ignorecase) '' a collection of symbols since the last sym table update
+Public SymbolCache As New Collection(gb.ignorecase) '' a collection of symbols since the last sym table update
 
 Private LastUpdated As Float = 0                                            '' time stamp of the last time the Symbol Cache was updated
 
@@ -71,14 +72,14 @@ Property Read TextSummary As String             '' Returns a short summary of th
 Property Read count As Integer                           '' The number of active entries in the symbol table
 Property Read Length As Integer                         '' The number of slots in the symbol table
 Property Read Max As Integer                              '' The highest index that will work
-Private $sKey As String
-Property Read Key As String                                  '' The key when using for each
-Private $vDefault As Variant = False
-Property Default As Variant                                    '' The default value returned when a symbol does not exist, Defaults to False
+Property Read Key As String Use $sKey                         '' The key when using for each
+Property Read KeyIndex As Long Use $iKeyIndex       '' the index of the current entry in the symbol table
+Property Default As Variant Use $vDefault = False    '' The default value returned when a symbol does not exist, Defaults to False
 Property Read MaxSymbols As Integer               '' The Max number of symbols that can be placed in the table
 Property Read Collisions As Integer                      '' The number of time the Hash Function Collided with used entry
 Property Read MaxUsedSymbols As Integer      '' Highest Number Of Symbols ever used
 Property Debug As Boolean Use $bDebug          '' Turn on off the debug messages for this object
+Property UseCache As Boolean Use $UseCache = True                   '' Trun on or off the use of the Cache for variables in local app
 
 '' Save the contents of the symbol table to a file, The actual value of the symbol is also saved
 '' Saves only the table entries that have an active symbol entry.
@@ -112,13 +113,20 @@ End
 '' Write A Symbol/Variable to a file by name
 Public Sub SaveVar(SymName As String, OutFile As File)
 
-    UpdateCache()
+    Dim index As Long
 
-    If Not SymbolCache.exist(SymName) Then
-        Error.Raise("SaveVar Error:" & Error.text & "," & Error.where)
+    If $UseCache Then
+        UpdateCache() ' updated
+        If Not SymbolCache.exist(SymName) Then ' updated
+            Error.Raise("SaveVar Error:" & Error.text & "," & Error.where)
+        Endif
+        index = SymbolCache[SymName]    ' updated
+    Else
+        index = GetSymbol(SymName)
+        If index = noentry Then
+            Error.Raise("SaveVar Error:" & Error.text & "," & Error.where)
+        Endif
     Endif
-
-    Dim index As Long = SymbolCache[SymName]
     WriteVar(SymMem.Table[index].Address, OutFile, SymName)
     If Error Then
         Error.Raise("SaveVar Error: " & Error.text & "," & Error.where)
@@ -205,10 +213,11 @@ End
 
 '' Create a new symbol table, provide the symbol table memory and
 '' the Variable storgage information
-Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage)
+Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional ActivateCache As Boolean = True)
 
     ' $bDebug = True
 
+    $UseCache = ActivateCache
     VarMem = DataMem
     SymTblMem = MemBlock
 
@@ -238,7 +247,7 @@ Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage)
 
     NotifyVars = New ShmNotify(VarMem)
 
-    UpdateCache()
+    If $UseCache Then UpdateCache()
 
 End
 
@@ -256,6 +265,10 @@ End
 
 '' update the apps/tasks copy of the symbol table
 Private Sub UpdateCache()
+
+    If Not $UseCache Then
+        Stop
+    Endif
 
     If LastUpdated = SymInfo.LastUpdate Then Return
 
@@ -277,7 +290,7 @@ Public Sub Clear()
     If $bDebug Then Print Application.id, "Clear SymTblmem.exclusive"
     SymTblMem.Exclusive()
 
-    SymbolCache.Clear()
+    If $UseCache Then SymbolCache.Clear()
 
     For i As Integer = 0 To SymInfo.Count - 1
         If SymMem.Table[i].Used = True Then
@@ -294,15 +307,6 @@ Public Sub Clear()
 
     SymTblMem.Release()
     If $bDebug Then Print Application.id, "Clear SymTblmem.release"
-
-End
-
-'' rehash the the value, used when a collision occurs
-Fast Unsafe Private Sub ReHash(oldHash As Pointer) As Pointer
-
-    Dim value As Long = CLong(oldHash)
-
-    Return (31 * Value + 51) Mod SymInfo.count
 
 End
 
@@ -323,22 +327,20 @@ Fast Unsafe Private Sub Hash(Symbol As String) As Pointer
 End
 
 '' returns the table entry with this hash and symbol
-'' optionally returns the next empty slot after this hash, search for empty if hash collision occurs
-Fast Unsafe Private Sub FindHash(HashValue As Pointer, SymName As String, Optional NextEmpty As Boolean = False) As Pointer
+'' optionally returns the next empty slot after the hash match
+'' builds a chain if in a sublist
+Fast Unsafe Private Sub FindHash(HashValue As Pointer, SymName As String) As Pointer
 
     Dim index As Pointer = HashValue
 
-    If SymMem.Table[index].Used = False Then
-        If NextEmpty Then Return index
+    If SymMem.Table[index].Used = False
         Return NoEntry
     Endif
 
-    If Not nextempty Then SymName = Lower(SymName)
-    Dim MaxRetry As Integer = SymInfo.Count
+    SymName = Lower(SymName)
 
-    While True
-
-        If Not NextEmpty And If SymMem.Table[index].Hash = hashValue Then                                                   '' if the hash values match then check actual name incase of collision
+    If SymMem.Table[index].Hash = hashValue Then                                                        '' if the hash values match then check actual name incase of collision
+        While True
             Dim NameLen As Integer = SymMem.Table[index].NameLength
             If NameLen = SymName.len Then
                 Dim cmpresult As Integer = strncmp(SymMem.Table[index].Name.data, SymName, NameLen)
@@ -346,37 +348,49 @@ Fast Unsafe Private Sub FindHash(HashValue As Pointer, SymName As String, Option
                     Return index
                 Endif
             Endif
-        Endif
-
-        If nextempty Then
-            Inc SymInfo.Collisions                                              '' Number of collisions when adding a new variable
-        Else
-            Inc SymInfo.TotalRetryCount                                 '' Number of retry attempts when looking for a variable
-        Endif
-
-    Searchloop:
-        Inc index
-        If index = HashValue Then Break                               '' if we have looped through whole table then exit
-        If index = SymInfo.count Then index = 0                  '' If we are at end of table then start at the top again
-
-        If SymMem.Table[index].Used = False Then
-            If NextEmpty Then Return index                            '' if we are looking for an empty slot return the index
-            Goto Searchloop                                                         '' if we are looking for a variable skip empty slots
-        Endif
-
-    Wend
+            If SymMem.Table[index].Next = -1 Then Break
+            Inc SymInfo.TotalRetryCount
+            index = SymMem.Table[index].Next
+        Wend
+    Endif
 
     Return NoEntry
 
 End
 
-Private Sub FindEmpty(HashValue As Pointer, Symbol As String) As Pointer     '' Returns the next available entry in the symbol table
+Private Sub FindEmpty(HashValue As Pointer) As Pointer       '' Returns the next available entry in the symbol table
 
-    Return FindHash(HashValue, Symbol, True)
+    Dim index As Pointer = HashValue
+
+    While True
+        If SymMem.Table[index].Used = False Then Return index
+        Inc SymInfo.Collisions                                                                          '' Number of collisions when looking for a free entry
+        Inc index
+        If index = HashValue Then Break
+        If index = SymInfo.Count Then
+            index = 0
+            Continue
+        Endif
+    Wend
+
+    Return noEntry
 
 End
 
-Public Sub GetSymIndex(Symbol As String) As Pointer
+Private Sub InsertHash(rootHash As Long, newElement As Long)
+
+    Dim index As Long = rootHash
+
+    While SymMem.Table[index].next <> -1
+        index = SymMem.Table[index].next
+    Wend
+    SymMem.Table[index].next = newElement
+    SymMem.Table[NewElement].Previous = index
+    SymMem.Table[NewElement].next = -1
+
+End
+
+Public Sub GetSymbol(Symbol As String) As Pointer
 
     Dim MyHash As Pointer = Hash(symbol)
 
@@ -402,7 +416,15 @@ Public Sub Add(symName As String, value As Variant) As Long
     If $bDebug Then Print Application.id, "Add SymTblmem.exclusive " & SymName
     SymTblMem.Exclusive()
 
-    Dim i As Pointer = FindEmpty(HashValue, SymName)
+    Dim k As Pointer = FindHash(HashValue, SymName)          '' check if the value exists
+    If k = noentry Then                                                                         '' either it exists but does not match or does not exist
+        If SymMem.Table[HashValue].Used Then
+            Dim i As Pointer = FindEmpty(HashValue)
+            If i <> noentry Then
+                InsertHash(HashValue, i)
+            Endif
+        Endif
+    Endif
 
     If i = NoEntry Then
         SymTblMem.Release()
@@ -426,10 +448,14 @@ Public Sub Add(symName As String, value As Variant) As Long
 
     SymMem.Table[i].Hash = HashValue
     SymMem.Table[i].Used = True
+    SymMem.Table[i].next = -1
+    SymMem.Table[i].Previous = -1
+
     SymInfo.LastUpdate = Timer
 
     LastUpdated = SymInfo.LastUpdate
-    SymbolCache[symName] = i
+
+    If $UseCache Then SymbolCache[symName] = i ' updated
 
     SymMem.Table[i].Address = VarMem.set(value)
 
@@ -445,15 +471,23 @@ End
 
 Public Sub Remove(SymName As String)
 
+    Dim index As Long
     Dim freeData As Pointer
 
-    UpdateCache()
+    If $UseCache Then
+        UpdateCache() ' updated
 
-    If Not SymbolCache.Exist(SymName) Then
-        Error.Raise("Unknown Symbol " & SymName)
+        If Not SymbolCache.Exist(SymName) Then ' updated
+            Error.Raise("Unknown Symbol " & SymName)
+        Endif
+
+        index = SymbolCache[SymName] ' updated
+    Else
+        index = GetSymbol(SymName)
+        If index = NoEntry Then
+            Error.Raise("Unknown Symbol " & SymName)
+        Endif
     Endif
-
-    Dim index As Long = SymbolCache[SymName]
 
     If $bDebug Then Print Application.id, "remove SymTblmem.exclusive " & SymName
     SymTblMem.Exclusive()
@@ -461,7 +495,9 @@ Public Sub Remove(SymName As String)
     freeData = SymMem.Table[index].Address
     SymMem.Table[index].Address = NoEntry
     SymMem.Table[index].Used = False
-    SymbolCache.Remove(SymName)
+
+    If $UseCache Then SymbolCache.Remove(SymName) ' updated
+
     SymInfo.LastUpdate = Timer
     LastUpdated = SymInfo.LastUpdate
 
@@ -476,13 +512,22 @@ End
 
 Public Sub _get(SymName As String) As Variant
 
-    UpdateCache()
+    Dim index As Long
 
-    If Not SymbolCache.exist(SymName) Then
-        Return $vDefault
+    If $UseCache Then
+        UpdateCache() ' updated
+
+        If Not SymbolCache.exist(SymName) Then ' updated
+            Return $vDefault
+        Endif
+
+        index = SymbolCache[SymName]  'updated
+    Else
+        index = GetSymbol(Symname)
+        If index = NoEntry Then
+            Return $vDefault
+        Endif
     Endif
-
-    Dim index As Long = SymbolCache[SymName]
 
     If $bDebug Then Print Application.id, "_get ShmSymbolTable VarMem.Lock " & SymName
     VarMem.Lock()
@@ -495,22 +540,37 @@ End
 
 Public Sub _put(value As Variant, SymName As String)
 
-    UpdateCache()
     Dim SymbolIndex As Long
     Dim sym As Symbol
+    Dim index As Pointer
 
-    If Not SymbolCache.Exist(SymName) Then
-        Add(SymName, Value)
-    Else
+    If $UseCache Then
+        UpdateCache() ' upated
 
-        SymbolIndex = SymbolCache[SymName]
-        Sym = SymMem.Table[SymbolIndex]
-        VarMem.Lock()
-        VarMem[Sym.Address] = value
-        VarMem.Unlock()
-        If Sym.NotifyBlock <> 0 Then
-            NotifyVars.SignalEach(Sym)
+        If Not SymbolCache.Exist(SymName) Then 'updated
+            Add(SymName, Value)
+            Return
+        Else
+            SymbolIndex = SymbolCache[SymName] ' updated
         Endif
+
+    Else
+        index = GetSymbol(SymName)
+        If index = NoEntry Then
+            Add(SymName, Value)
+            Return
+        Else
+            SymbolIndex = index
+        Endif
+    Endif
+
+    Sym = SymMem.Table[SymbolIndex]
+    VarMem.Lock()
+    VarMem[Sym.Address] = value
+    VarMem.Unlock()
+
+    If Sym.NotifyBlock <> 0 Then
+        NotifyVars.SignalEach(Sym)
     Endif
 
 End
@@ -518,11 +578,20 @@ End
 Public Sub Notify(SymName As String, CallBack As Object, Optional FuncName As String = "", Timeout As Long = 0)
 
     Dim ObjClass As Class = Null
-    Dim SymbolIndex As Variant = SymbolCache[SymName]
+    Dim SymbolIndex As Variant
 
-    If Not SymbolIndex Then
-        Error.Raise("Unknown Variable " & Quote(SymName))
+    If $UseCache Then
+        SymbolIndex = SymbolCache[SymName] ' updated
+        If Not SymbolIndex Then
+            Error.Raise("Unknown Variable " & Quote(SymName))
+        Endif
+    Else
+        SymbolIndex = GetSymbol(SymName)
+        If SymbolIndex = noentry Then
+            Error.Raise("Unknown Variable " & Quote(SymName))
+        Endif
     Endif
+
     If FuncName = "" Then funcName = SymName & "_Changed"
 
     Dim cClass As Class
@@ -547,11 +616,20 @@ End
 
 Public Sub NotifyStop(SymName As String)
 
-    Dim SymbolIndex As Variant = SymbolCache[SymName]
+    Dim SymbolIndex As Variant
 
-    If Not SymbolIndex Then
-        Error.Raise("Unknown Variable " & Quote(SymName))
+    If $UseCache Then
+        SymbolIndex = SymbolCache[SymName] ' updated
+        If Not SymbolIndex Then
+            Error.Raise("Unknown Variable " & Quote(SymName))
+        Endif
+    Else
+        SymbolIndex = getsymbol(SymName)
+        If SymbolIndex = NoEntry Then
+            Error.Raise("Unknown Variable " & Quote(SymName))
+        Endif
     Endif
+
     NotifyVars.NotifyStop(SymMem.Table[SymbolIndex])
 
 End
@@ -559,14 +637,24 @@ End
 '' Returns the Virtual Address of the symbol
 Public Sub {VarPtr}(SymName As String) As Variant
 
-    UpdateCache()
-    If Not SymbolCache.exist(SymName) Then
-        Error.Raise("Unknow Symbol " & SymName)
+    Dim index As Long
+    Dim value As Variant
+
+    If $UseCache Then
+        UpdateCache() ' updated
+        If Not SymbolCache.exist(SymName) Then 'updated
+            Error.Raise("Unknow Symbol " & SymName)
+        Else
+            index = SymbolCache[SymName] 'updated
+        Endif
     Else
-        Dim index As Long = SymbolCache[SymName]
-        Dim value As Variant = VarMem.varptr(SymMem.Table[index].Address)
+        index = GetSymbol(SymName)
+        If index = noentry Then
+            Error.Raise("Unknow Symbol " & SymName)
+        Endif
     Endif
 
+    value = VarMem.varptr(SymMem.Table[index].Address)
     Return value
 
 End
@@ -574,13 +662,24 @@ End
 ''Returns a Virtual object pointing to the table entry
 Public Sub Entry(SymName As String) As Variant
 
-    UpdateCache()
-    If Not SymbolCache.exist(SymName) Then
-        Error.Raise("Unknow Symbol " & SymName)
+    Dim index As Long
+    Dim value As Variant
+
+    If $UseCache Then
+        UpdateCache() ' updated
+        If Not SymbolCache.exist(SymName) Then 'updated
+            Error.Raise("Unknown Symbol " & SymName)
+        Else
+            index = SymbolCache[SymName] ' updated
+        Endif
     Else
-        Dim index As Long = SymbolCache[SymName]
-        Dim value As Variant = SymMem.Table[index]
+        index = GetSymbol(SymName)
+        If index = NoEntry Then
+            Error.Raise("Unknown Symbol " & SymName)
+        Endif
     Endif
+
+    value = SymMem.Table[index]
 
     Return value
 
@@ -591,7 +690,7 @@ Private Sub TextSummary_Read() As String
     Dim Result As String = ""
 
     Result &= "\nSymbol Table Listing\nMaxLength = " & SymInfo.MaxCount & ", Available Slots = " & SymInfo.Count & ", Occupied Slots = " & SymInfo.UsedCount &
-        ",\nCollisions = " & SymInfo.Collisions & ", Search Retry count = " & SymInfo.TotalRetryCount &
+        ",\nCollisions = " & SymInfo.Collisions & ", Search Retry count = " & CLong(SymInfo.TotalRetryCount) &
         "\nLast Updated " & SymInfo.LastUpdate & ", Phy Address " & Hex(SymTblMem.MemoryAddress, 8) & "\n"
 
     Return result
@@ -601,10 +700,12 @@ End
 Private Sub Text_Read() As String
 
     Dim Result As String = ""
+    Dim var As Integer
 
     Result &= TextSummary_Read()
 
-    For Each Var As Integer In SymbolCache
+    For Each tem As Variant In Me
+        var = $iKeyIndex
         Result &= Format(SymMem.Table[Var].Hash, "####0") & ":" & Left(SymMem.Table[Var].Name.ToString() & Space(25), 25) & " : " & VarMem.text(SymMem.Table[Var].Address) & "\n"
     Next
     Return result
@@ -613,8 +714,16 @@ End
 
 Public Sub {Exist}(SymName As String) As Boolean
 
-    UpdateCache()
-    Return SymbolCache.Exist(SymName)
+    Dim index As Long
+
+    If $UseCache Then
+        UpdateCache() ' updated
+        Return SymbolCache.Exist(SymName) ' updated
+    Else
+        index = getsymbol(symname)
+        If index = noentry Then Return False
+    Endif
+    Return True
 
 End
 
@@ -623,15 +732,23 @@ Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
 
     Dim starttime As Float = Timer
 
-    UpdateCache()
+    While True
 
-    While Not SymbolCache.Exist(symname)
+        If $useCache Then
+            UpdateCache() ' updated
+            If SymbolCache.Exist(symname) Then Break ' updated
+        Else
+            If GetSymbol(symname) <> noentry Then Break
+        Endif
+
         If timeout > 0 And If Timer - starttime >= timeout Then
             Return False
         Endif
-        UpdateCache()
-        Wait 0
+
+        Wait 0.0001
+
     Wend
+
     Return True
 
 End
@@ -640,14 +757,7 @@ Public Sub WaitForValue(SymName As String, Value As Variant, Optional timeout As
 
     Dim starttime As Float = Timer
 
-    UpdateCache()
-    While Not SymbolCache.Exist(symname)
-        If timeout > 0 And If Timer - starttime >= timeout Then
-            Return False
-        Endif
-        UpdateCache()
-        Wait 0
-    Wend
+    If WaitFor(SymName, timeout) = False Then Return False
 
     While Me[symname] <> Value
         Wait 0
@@ -664,14 +774,7 @@ Public Sub WaitValueChange(SymName As String, Value As Variant, Optional timeout
 
     Dim starttime As Float = Timer
 
-    UpdateCache()
-    While Not SymbolCache.Exist(symname)
-        If timeout > 0 And If Timer - starttime >= timeout Then
-            Return False
-        Endif
-        UpdateCache()
-        Wait 0
-    Wend
+    If WaitFor(SymName, timeout) = False Then Return False
 
     While Me[symname] = Value
         If timeout > 0 And If Timer - starttime >= timeout Then
@@ -704,12 +807,13 @@ End
 Public Sub _next() As Variant
 
     If Enum.Index = Null Then
-        If SymInfo.count = 0 Then
+        If SymInfo.UsedCount = 0 Then
             Enum.Stop()
             Return
         Endif
         Enum.Index = NextUsedSlot(-1)
         $sKey = SymMem.Table[Enum.Index].Name.toString()
+        $iKeyIndex = Enum.index
     Else
         Enum.index = NextUsedSlot(Enum.index)
         If Enum.index = -1 Then
@@ -717,6 +821,7 @@ Public Sub _next() As Variant
             Return
         Endif
         $sKey = SymMem.Table[Enum.Index].Name.toString()
+        $iKeyIndex = Enum.index
     Endif
 
     Return VarMem[SymMem.Table[Enum.index].Address]
@@ -761,6 +866,12 @@ End
 Private Function Key_Read() As String
 
     Return $sKey
+
+End
+
+Private Function KeyIndex_read() As Long
+
+    Return $iKeyIndex
 
 End
 

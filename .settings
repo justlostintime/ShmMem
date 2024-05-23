@@ -2,12 +2,13 @@
 shmMem=[234]
 
 [Debug]
-Breakpoints={"NewSymbolTableclassTest":[17],"TestChangeType":[27,26],"NewFGEnqueue":[22,20],"shmMem":[241],"ShmList":[640]}
+Breakpoints={"TestChangeType":[27,26],"NewFGEnqueue":[22,20],"shmMem":[241],"ShmList":[640],"NewSymbolTableclassTest":[27,105,62,72,90,40],"ShmSymbolTable":[682]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
 Remote=False
-Environment=["GB_NO_JIT=1"]
+Environment=[]
+Profiling=False
 RemoteEnvironment=[]
 Arguments=[]
 
@@ -41,6 +42,9 @@ Geometry=[2782,446,252,190]
 [DebugWindow/PidQueue]
 Geometry=[834,498,252,56]
 
+[DebugWindow/RandomName]
+Geometry=[834,512,252,56]
+
 [DebugWindow/Sym]
 Geometry=[834,465,546,150]
 
@@ -55,6 +59,12 @@ Geometry=[848,512,252,508]
 
 [DebugWindow/SymList]
 Geometry=[834,402,252,276]
+
+[DebugWindow/SymTblMem]
+Geometry=[834,405,510,314]
+
+[DebugWindow/SymbolCache]
+Geometry=[834,512,252,56]
 
 [DebugWindow/UserQueue]
 Geometry=[834,512,252,56]
@@ -102,19 +112,14 @@ Lock=False
 LastCommit="Numerous fixes and updated"
 
 [OpenFile]
-Count=11
-File[1]=".src/Examples/vTestApps/NotifyTestWithProcesses/NewNotifyTest.module:40.8"
-Active=4
-File[2]=".src/Examples/vTestApps/NotifyTestWithProcesses/NotifyBGTask.class:10.22"
-File[3]=".src/Examples/vTestApps/TestChangeType.module:0.27"
-File[4]=".src/ShmMem/ShmVarStorage.class:3.161"
-File[5]=".src/Examples/vTestApps/QueueTestWithProcesses/NewFGEnqueue.module:3.20"
-File[6]=".src/ShmMem/shmMem.class:4.41"
-File[7]=".src/ShmMem/ShmList.class:4.636"
-File[8]="README.md:0.0"
-File[9]=".src/ShmMem/ShmBuffer.class:0.0"
-File[10]=".src/ShmMem/ShmBufferField.class:45.17"
-File[11]=".src/ShmMem/ShmListEntry.class:0.0"
+Count=6
+File[1]=".src/ShmMem/ShmVarStorage.class:9.645"
+Active=6
+File[2]=".src/ShmMem/shmMem.class:24.241"
+File[3]=".src/ShmMem/ShmBuffer.class:0.0"
+File[4]=".src/ShmMem/ShmListEntry.class:0.0"
+File[5]=".src/ShmMem/ShmSymbolTable.class:1.9"
+File[6]=".src/Examples/vTestApps/NewSymbolTableclassTest.module:0.42"
 
 [Watches]
 Count=0

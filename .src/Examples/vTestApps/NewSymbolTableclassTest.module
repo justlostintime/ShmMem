@@ -11,9 +11,10 @@ Public Sub main()
     Dim varMnge As New ShmManage(varStore)
     Dim MyVarMem As New ShmVarStorage(varMnge)
 
-    Dim symStore As New ShmMemBlock(1000000)
-    Dim vars As New ShmSymbolTable(symStore, MyVarMem)
+    Dim symStore As New ShmMemBlock(5000000)
+    Dim vars As New ShmSymbolTable(symStore, MyVarMem, False)
 
+    Print "UseCache = "; vars.UseCache;; "' Length = "; Vars.MaxSymbols
     ' strncpy(Vars.SymMem.Table[0].Name.data, "Var1", 127)
     ' Dim srcstr As Byte[] = Byte[].FromString("Var1")
     '
@@ -31,15 +32,15 @@ Public Sub main()
 
     Dim starttime As Float = Timer
 
-    Print "Assign/free  symbol begins for ";; loopcount;; "Loops"
-
-    For i As Integer = 0 To LoopCount
-        vars!dog = i
-        vars.Remove("dog")
-    Next
-
-    Print "Assign/free  symbol "; loopcount; "    Time :";; Timer - Starttime
-    Print vars.text
+    ' Print "Assign/free  symbol begins for ";; loopcount;; "Loops"
+    '
+    ' For i As Integer = 0 To LoopCount
+    '     vars!dog = i
+    '     vars.Remove("dog")
+    ' Next
+    '
+    ' Print "Assign/free  symbol "; loopcount; "    Time :";; Timer - Starttime
+    ' Print vars.text
 
     With vars
         !a = 1
@@ -53,9 +54,16 @@ Public Sub main()
         !fish = "hello"
         !Dish = "Bobby"
 
+        Quit 0
+
+        Print vars.text
+        vars.clear
+
         Randomize (CInt(Timer * 31))
+
         Dim RandomName As New String[]
-        For p As Integer = 0 To vars.length - 1
+
+        For p As Integer = 0 To (vars.length - 1) / 2
             Dim wordin As String = ""
             Dim WordLength As Integer = Rand(1, 20)
             For Q As Integer = 0 To WordLength
@@ -65,32 +73,42 @@ Public Sub main()
             RandomName.Add(wordin)
         Next
 
-        Print "Fill Symbol Table with";; Vars.Length;; "Symbols"
+        Print "Fill Symbol Table with";; RandomName.Count;; "Symbols"
         StartTime = Timer
 
         Dim counter As Integer = 0
 
         For Each s As String In RandomName
             Inc counter
-            Try vars[wordin] = counter
+            Try vars[s] = counter
             If Error Then
                 Print " Assigning error :";; Error.Text;; Error.where
                 Break
-            Else
-                counter = vars[wordin]
+                ' Else
+                '     counter = vars[s]
             Endif
         Next
 
-        Print "Assigned Many variables("; counter; ") to Symbol table, Time= ";; Timer - starttime
+        Print "Assigned Many variables("; vars.Count; ") to Symbol table, Time= ";; Timer - starttime
 
         Print Vars.TextSummary
 
         ' Print "Table length = "; Vars.Length
         ' Print "Sorted List Count = "; Vars.SortedList().count
 
+        Print "Get each symbol value by name for "; RandomName.count;; "entry"
+        Dim b As Integer
+        starttime = Timer
+        For Each s In RandomName
+
+            b = vars[s]
+
+        Next
+        Print " Fetch Time = "; Timer - starttime
+        Print .textSummary
+
         Vars.clear()
 
-        Print .text
     End With
 
     starttime = Timer

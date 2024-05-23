@@ -846,15 +846,12 @@ r
 i
 
 'The number of time the Hash Function Collided with used entry
-MaxRehash
-V
-i
-
-'maximum times a rehash will be attempted when a colision happens
 SymTblMem
 v
 ShmMemBlock
 
+'The value returned When there are no valid entries in table, not found, end of table, etc
+'&hffffffffff
 VarMem
 v
 ShmVarStorage
@@ -871,6 +868,11 @@ SymInfo
 v
 TableInfo
 
+SymbolCache
+v
+Collection
+
+'a collection of symbols since the last sym table update
 text
 r
 s
@@ -896,6 +898,11 @@ r
 s
 
 'The key when using for each
+KeyIndex
+r
+l
+
+'the index of the current entry in the symbol table
 Default
 p
 v
@@ -916,6 +923,11 @@ p
 b
 
 'Turn on off the debug messages for this object
+UseCache
+p
+b
+
+'Trun on or off the use of the Cache for variables in local app
 Save
 m
 
@@ -936,6 +948,10 @@ exist
 m
 b
 (SymName)s
+GetSymbol
+m
+p
+(Symbol)s
 Load
 m
 
@@ -970,7 +986,7 @@ i
 _new
 m
 
-(MemBlock)ShmMemBlock;(DataMem)ShmVarStorage;
+(MemBlock)ShmMemBlock;(DataMem)ShmVarStorage;[(ActivateCache)b]
 'Create a new symbol table, provide the symbol table memory and
 'the Variable storgage information
 _free
@@ -989,10 +1005,6 @@ l
 'Return the slot number insert the name and change the lastupdated time
 'Create a basic variable storage to go along with this symbol
 'Update the virtual address of Var in the table
-GetSymIndex
-m
-p
-(Symbol)s
 Remove
 m
 
