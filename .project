@@ -1,7 +1,7 @@
 # Gambas Project File 3.0
 Title=Shm Mem
 Startup=NewVarStorageTest
-Version=2.0.4
+Version=2.0.5
 Description="This provides an interface to the Linux Shared memory functions. Allowing the creation and sharing of shared memory segments accross any number of local applications or tasks.\n\nTo do this it implements  an interface which allows any valid gambas object of variable to be directly stored or accessed via the inteface\n\nexample::\nWith ShmMem\n !a = \"this\"\n!b = 1\n\nprint !a, !b\n\nend with\nwith shared"
 Authors="JustLostInTime, Brian G"
 TabSize=4
