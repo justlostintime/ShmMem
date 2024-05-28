@@ -1,0 +1,31 @@
+' Gambas module file
+
+Public MyMem As New ShmMem(1280000)
+Public MyQueue As ShmList
+
+Public Sub Main()
+
+    MyMem!a = 100
+    MyMem!b = 200
+    MyMem.Notify("a", Me)
+    MyMem.Notify("b", Me)
+    MyQueue = MyMem.notifyQ("a")
+    MyMem!a = 20
+    MyMem!b = 30
+    Wait 1
+    MyMem.NotifyStop("a")
+    MyMem.NotifyStop("b")
+
+End
+
+Public Sub a_changed(VarName As String, value As Variant, TimedOut As Boolean)
+
+    Print "A changed to "; value
+
+End
+
+Public Sub b_changed(VarName As String, value As Variant, TimedOut As Boolean)
+
+    Print "B changed to "; value
+
+End

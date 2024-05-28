@@ -4,7 +4,8 @@ Public Vars As ShmSymbolTable
 
 Public Sub main()
 
-    Dim varStore As New ShmMemBlock(1128000, "mydata")
+    ShmMemBlock.ForceDelete("mydata_Data")
+    Dim varStore As New ShmMemBlock(1128000, "mydata_Data")
     ' varStore.debug = True
 
     Dim varMnge As New ShmManage(varStore)
@@ -12,7 +13,8 @@ Public Sub main()
     Dim MyVarMem As New ShmVarStorage(varMnge)
     'MyVarMem.Debug = True
 
-    Dim symStore As New ShmMemBlock(1000000, "mysyms")
+    ShmMemBlock.ForceDelete("mydata_Symbols")
+    Dim symStore As New ShmMemBlock(1000000, "mydata_Symbols")
     'symStore.Debug = True
 
     vars = New ShmSymbolTable(symStore, MyVarMem)

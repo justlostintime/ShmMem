@@ -33,8 +33,10 @@ Public Struct dList                         '' A defined entry in list of object
     Global As Integer                       '' Defines if this is a global memory object or not
     bDebug As Boolean                  '' turns on or off the debug control
     Tag[16] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
-    RefCount As Long                      '' Number of refrences to this element or used to set the queue entry priority
-    Value As Pointer                        '' Value of entry or count if pool
+    RefCount As Long                      '' Number of refrences to this element
+    Priority As Long                           '' in a queue this is the priority of this element or the Extended Id of a list
+    UsePriority As Boolean             '' Enable the use of priority ordering in the list
+    Value As Pointer                         '' Value of entry or count if pool
 End Struct
 
 ' Extern DListPtr(dest As Pointer, src As Pointer, Len As Integer) As DList In "libc:6" Exec "memcpy"
@@ -44,11 +46,12 @@ Private Entry As DList                                                     '' Th
 Property Value As Variant                                            '' The actual value of the entry
 Property Read Address As Pointer                            '' The virtual address of the entry
 Property Read Type As Integer                                   '' The Type of this block
-Property Read RefCount As Long                               '' The Number of refrences or used as a tag/priority field
+Property Read RefCount As Long                               '' The Number of refrences
+Property Priority As Long                                               '' The priority of this element
 Property Debug As Boolean Use $bDebug             '' Turn on or off debugging for this entry
 Property Tag As String                                                  '' user defined tag for this entry
 
-Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0)
+Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Priority As Long = 0)
 
     '$bDebug = True
     If Object.Class(VarStorage).name == "ShmMem" Then
@@ -59,12 +62,23 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0)
 
     If VirtAddress = 0 Then
         NewEntry()
+        entry.Priority = Priority
     Else
         Dim RealPtr As Pointer
         RealPtr = VarMem.RealAddress(VirtAddress)
         ' entry = DListPtr(RealPtr, RealPtr, 0)
         entry = RealPtr
+
     Endif
+
+End
+
+'' Required for each user define class, returns the pointer to the under laying data structure
+Static Public Sub UserPtr(varmem As ShmVarStorage, VirtAddr As Pointer) As Dlist
+
+    If VirtAddr <= 0 Then Return Null
+    Dim RealPtr As Pointer = VarMem.RealAddress(VirtAddr)
+    Return RealPtr
 
 End
 
@@ -133,7 +147,7 @@ End
 
 Private Function Tag_Read() As String
 
-    Return "|" & Trim(entry.Tag.ToString()) & "|"
+    Return Trim(entry.Tag.ToString())
 
 End
 
@@ -143,5 +157,17 @@ Private Sub Tag_Write(Value As String)
     For i As Integer = 0 To entry.Tag.Length - 1
         entry.Tag[i] = Asc(Value[i])
     Next
+
+End
+
+Private Function Priority_Read() As Long
+
+    Return entry.Priority
+
+End
+
+Private Sub Priority_Write(Value As Long)
+
+    entry.priority = value
 
 End

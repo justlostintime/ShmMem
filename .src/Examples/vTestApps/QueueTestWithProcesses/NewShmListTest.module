@@ -26,9 +26,11 @@ Public Sub main()
             qa.enqueue("This is even higher 200", 200)
             qa.enqueue("This is very low 1", 1)
 
+            Print "For each loop over the queue begins ==========================================="
             For Each v As Variant In qa
                 Print v
             Next
+            Print "For each loop ends ========================================================="
 
             While qa.count
                 qa.Pop()

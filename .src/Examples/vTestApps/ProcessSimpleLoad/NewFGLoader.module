@@ -12,13 +12,16 @@ Public Sub main()
         !Wiggle = 0
         !AllDone = "No"
 
+        Print "Create 100 tasks to access the shared memeory"
         For i As Integer = 0 To 100
             tmp = New NewBGLoader
             tmp.myindex = i
             Wait 0
             Tasks.Add(tmp)
         Next
+        Print "Waiting for all tasks to start"
         Wait 1.0
+
         Dim counter As Long = 0
 
         While counter <= Iterations
@@ -26,14 +29,15 @@ Public Sub main()
             !Wiggle = counter
             Print "FG Count = "; counter;; "Wiggle=";; !wiggle
             If counter = Iterations Then
+                Print "Sending termination to all Tasks"
                 !AllDone = "Yes"
+                Wait 1
             Endif
-            Wait 4.0
-
             Inc counter
         Wend
 
         Dim tasksRunning As Boolean = True
+
         While tasksRunning
             tasksRunning = False
             For i = 0 To 100
@@ -44,8 +48,9 @@ Public Sub main()
                     Print "Task Complete ";; i;; "Value="; Tasks[i].value
                 Endif
             Next
-            Wait 2.00
+            Wait 0.001
         Wend
+
         Print "Completed "
 
     End With

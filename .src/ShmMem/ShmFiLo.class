@@ -24,14 +24,8 @@ End
 Public Sub _new()
 
     Super.SetHeadType = cShmFiLo                                 '' The list header Class
-    Super.SetEntryType = cShmFiLoEntry                           '' The List Entry Class
-    Super.ListHead.Type = cShmFiLo
-
-End
-
-Public Sub Push(Value As Variant)
-
-    Me.add(Value)
+    Super.SetEntryType = cShmFiLoEntry                       '' The List Entry Class
+    Super.ListHead.Type = cShmFiLo                                '' The actual type of this
 
 End
 

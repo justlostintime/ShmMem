@@ -16,7 +16,7 @@ Public Sub Main()
         qa.enqueue("hello dolly")
         qa.enqueue(1)
         qa.enqueue(2.4)
-        If i Mod 10 = 0 Then Print Application.id, "************************************", i
+        If i Mod 10 = 0 Then Print Application.id, "FG ************************************", i
         While qa.Count
             Dim r As Variant = qa.pop()
         Wend

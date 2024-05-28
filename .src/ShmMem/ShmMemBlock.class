@@ -45,37 +45,37 @@ Static Private Const EEXIST As Integer = 11
 Static DefaultPermissions As Integer = &O660
 
 Public Struct MemBlockHeader                            '' Memory block header
-    SemLock[64] As Byte                                   '' Semaphor used to lock this memory when sharing
-    InUseCounter As Integer                               '' the number of applications using this Memory
-    MemoryLength As Long                                  '' length of the shared memory
-    MemoryBlockSize As Long                               '' How much to add each time memory is extended
-    LockTimeOut As Float                                  '' How long to wait for a timeout on wait sem call
-    DataAddress As Pointer                                '' Address usable by application
-    DataLength As Long                                    '' length of data portion of the the block
+    SemLock[64] As Byte                                            '' Semaphor used to lock this memory when sharing
+    InUseCounter As Integer                                     '' the number of applications using this Memory
+    MemoryLength As Long                                      '' length of the shared memory
+    MemoryBlockSize As Long                                '' How much to add each time memory is extended
+    LockTimeOut As Float                                        '' How long to wait for a timeout on wait sem call
+    DataAddress As Pointer                                     '' Address usable by application
+    DataLength As Long                                            '' length of data portion of the the block
 End Struct
 
 ' Extern SetBlockInfo(dest As Pointer, src As Pointer, Len As Integer) As MemBlockHeader In "libc:6" Exec "memcpy"
 
 Public Const DefaultLength As Long = 4000000            '' Default length of allocated chunk of memory 4Meg
 
-Public MemoryHandle As Integer = -1                     '' Handle of named shared memory segment
-Public MemoryAddress As Pointer                         '' Real memory address of this shared memory
-Public Name As String = ""                              '' Name used for this memory block, blank if unnamed
+Public MemoryHandle As Integer = -1                               '' Handle of named shared memory segment
+Public MemoryAddress As Pointer                                     '' Real memory address of this shared memory
+Public Name As String = ""                                                    '' Name used for this memory block, blank if unnamed
 
-Public MemoryLength As Long                             '' Length of actual allocated memory
-Public MemoryBlockSize As Long                          '' The size of memory used to extend this if needed
-Private SemLock As Pointer = Null                       '' Address of the semephore for this memory segment
-Public DataAddress As Pointer                           '' The address of memory usable by the application
-Public DataLength As Long                               '' Length of user accessable area
-Public LockTimeout As Float = 0                         '' The length of time before reporting race condition
+Public MemoryLength As Long                                            '' Length of actual allocated memory
+Public MemoryBlockSize As Long                                      '' The size of memory used to extend this if needed
+Private SemLock As Pointer = Null                                    '' Address of the semephore for this memory segment
+Public DataAddress As Pointer                                           '' The address of memory usable by the application
+Public DataLength As Long                                                   '' Length of user accessable area
+Public LockTimeout As Float = 0                                         '' The length of time before reporting race condition
 
-Public BlockInfo As MemBlockHeader                      '' The information stored in the header of the memory
+Public BlockInfo As MemBlockHeader                               '' The information stored in the header of the memory
 
 Private NewMemoryBlock As Boolean = True                '' Used to indicate if we are accessing an already created named block
-Private MyAppId As Long = 0                             '' The app used if we spawn a task that requires the sem lock
+Private MyAppId As Long = 0                                              '' The app used if we spawn a task that requires the sem lock
 
-Property Read length As Long                            '' Length of user space
-Property Read address As Pointer                        '' address of user space
+Property Read length As Long                                            '' Length of user space
+Property Read address As Pointer                                   '' address of user space
 Property Debug As Boolean Use $bDebug
 
 Public Sub _print()
@@ -180,8 +180,10 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
         DataAddress = SemLock + BlockInfo.DataAddress
         DataLength = BlockInfo.DataLength
         LockTimeOut = BlockInfo.LockTimeOut
-        If MemoryLength <> BlockInfo.MemoryLength Then
+        If MemoryLength > BlockInfo.MemoryLength Then
             RemapNamed(BlockInfo.MemoryLength)                 '' called when the requested length does not match the actual length
+            MemoryLength = BlockInfo.MemoryLength
+        Else If MemoryLength <= BlockInfo.MemoryLength Then
             MemoryLength = BlockInfo.MemoryLength
         Endif
         sem_post(SemLock)
@@ -282,6 +284,7 @@ Public Sub RemapNamed(NewLength As Long)
     Dim p As Pointer
 
     P = mremap(MemoryAddress, MemoryLength, NewLength, 0)           '' resize but don't allow to move
+    Dim syserror As Integer = System.Error
     If p = -1 Or p <> MemoryAddress Then
         Stop
     Endif

@@ -2,34 +2,66 @@
 shmMem=[234]
 
 [Debug]
-Breakpoints={"NewFGEnqueue":[22,20],"shmMem":[241],"ShmList":[640],"User1":[48,38]}
+Breakpoints={}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
 Remote=False
 Profiling=False
-Environment=["GB_NO_JIT=1"]
+Environment=[]
+RemoteEnvironment=[]
+Arguments=[]
 
 [DebugWindow]
 Count=0
 
+[DebugWindow/CallBack]
+Geometry=[834,445,411,261]
+
 [DebugWindow/ListHead]
-Geometry=[834,498,252,56]
+Geometry=[2754,498,252,56]
 
 [DebugWindow/ListHead.Tag]
 Geometry=[834,498,252,56]
 
+[DebugWindow/ListItem]
+Geometry=[834,381,252,290]
+
+[DebugWindow/Listof]
+Geometry=[2033,375,364,313]
+
+[DebugWindow/Listof.Tag]
+Geometry=[2768,429,563,380]
+
+[DebugWindow/Me]
+Geometry=[834,498,252,58]
+
+[DebugWindow/MyQueue]
+Geometry=[833,502,639,420]
+
+[DebugWindow/NewElement]
+Geometry=[2203,217,252,56]
+
+[DebugWindow/NotifyObject]
+Geometry=[834,445,471,258]
+
+[DebugWindow/NotifyObject.Symbols]
+Geometry=[848,459,252,276]
+
 [DebugWindow/NotifyQueue]
-Geometry=[834,512,252,320]
+Geometry=[834,498,252,56]
 
 [DebugWindow/NotifyQueue.AllLists]
 Geometry=[2195,300,577,377]
 
 [DebugWindow/NotifyQueue.ListHead]
-Geometry=[2195,300,252,250]
+Geometry=[2024,105,252,250]
 
 [DebugWindow/NotifyVars]
-Geometry=[2754,498,252,56]
+Geometry=[2448,202,252,220]
+
+[DebugWindow/NotifyVars["a"]]
+Geometry=[2034,203,378,361]
 
 [DebugWindow/NotifyVars["dog"]]
 Geometry=[2754,498,252,56]
@@ -38,55 +70,100 @@ Geometry=[2754,498,252,56]
 Geometry=[2782,446,252,190]
 
 [DebugWindow/PidQueue]
-Geometry=[834,498,252,56]
+Geometry=[834,512,397,416]
+
+[DebugWindow/PidQueue.AllLists]
+Geometry=[2477,150,252,56]
+
+[DebugWindow/PidQueue.AllLists[0]]
+Geometry=[1961,32,463,360]
+
+[DebugWindow/PidQueue.AllLists[0].ListHead]
+Geometry=[2058,354,310,310]
+
+[DebugWindow/PidQueue.AllLists[1]]
+Geometry=[2026,109,419,445]
+
+[DebugWindow/PidQueue.AllLists[1].AllLists]
+Geometry=[1975,46,519,348]
+
+[DebugWindow/PidQueue.ListHead]
+Geometry=[2276,183,252,56]
 
 [DebugWindow/RandomName]
 Geometry=[834,512,252,56]
 
 [DebugWindow/Sym]
-Geometry=[834,465,546,150]
+Geometry=[834,465,546,190]
 
 [DebugWindow/Sym.Name]
 Geometry=[848,479,328,508]
 
 [DebugWindow/SymEntry]
-Geometry=[834,498,252,150]
+Geometry=[2198,88,252,190]
 
 [DebugWindow/SymEntry.Name]
 Geometry=[848,512,252,508]
 
 [DebugWindow/SymInfo]
-Geometry=[834,441,252,170]
+Geometry=[2454,356,252,170]
 
 [DebugWindow/SymList]
 Geometry=[834,402,252,276]
 
 [DebugWindow/SymMem]
-Geometry=[2158,691,252,58]
+Geometry=[2132,429,252,58]
 
 [DebugWindow/SymMem.Table]
-Geometry=[768,342,587,508]
+Geometry=[2095,303,587,508]
+
+[DebugWindow/SymMem.Table[97]]
+Geometry=[2109,317,421,306]
+
+[DebugWindow/SymMem.Table[97].Name]
+Geometry=[2123,331,252,508]
 
 [DebugWindow/SymMem.Table[index]]
 Geometry=[834,431,252,190]
 
 [DebugWindow/SymTblMem]
-Geometry=[834,405,510,270]
+Geometry=[834,405,606,270]
 
 [DebugWindow/SymbolCache]
 Geometry=[834,512,252,216]
+
+[DebugWindow/SymbolCache.Keys]
+Geometry=[848,526,252,276]
+
+[DebugWindow/TheQueues]
+Geometry=[834,402,488,276]
+
+[DebugWindow/TheQueues[0]]
+Geometry=[848,416,252,336]
+
+[DebugWindow/TmpListhead]
+Geometry=[834,415,252,250]
 
 [DebugWindow/UserQueue]
 Geometry=[834,512,252,56]
 
 [DebugWindow/VarMem]
-Geometry=[834,498,252,56]
+Geometry=[834,498,252,130]
 
 [DebugWindow/Vars.SortedList()]
 Geometry=[834,402,252,276]
 
+[DebugWindow/mBlock]
+Geometry=[834,372,252,336]
+
 [DebugWindow/srcstr]
 Geometry=[2664,390,339,339]
+
+[DebugWindow/svptr]
+Geometry=[2754,498,252,56]
+
+[DebugWindow/sym]
+Geometry=[834,445,558,190]
 
 [DebugWindow/theDlist]
 Geometry=[834,415,516,364]
@@ -96,6 +173,18 @@ Geometry=[834,512,252,56]
 
 [DebugWindow/tmpptr]
 Geometry=[2754,498,252,56]
+
+[DebugWindow/todoList]
+Geometry=[834,512,252,56]
+
+[DebugWindow/userclass]
+Geometry=[2754,498,252,56]
+
+[DebugWindow/userclass.Symbols]
+Geometry=[2754,498,252,56]
+
+[DebugWindow/userclass.Symbols.Bounds]
+Geometry=[2137,375,252,88]
 
 [DebugWindow/vars]
 Geometry=[834,498,252,56]
@@ -119,21 +208,17 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Adding more concreat user examples, update readme"
+LastCommit="Updated example"
 
 [OpenFile]
-Count=9
-File[1]=".src/Examples/vTestApps/General Tests/NewVarStorageTest.module:0.0"
-Active=3
-File[2]=".src/Examples/vTestApps/General Tests/TestChangeType.module:0.27"
-File[3]=".src/Examples/User Examples/User1.module:0.48"
-File[4]=".src/Examples/User Examples/User2.module:3.30"
-File[5]=".src/Examples/User Examples/User3.module:33.54"
-File[6]=".src/Examples/vTestApps/NotifyTestWithProcesses/NewNotifyTest.module:80.68"
-File[7]=".src/ShmMem/ShmQueue.class:41.157"
-File[8]=".src/ShmMem/ShmNotify.class:20.199"
-File[9]=".src/ShmMem/shmMem.class:0.277"
-File[10]=".src/ShmMem/ShmSymbolTable.class:0.647"
+Count=6
+File[1]=".src/Examples/vTestApps/General Tests/Define2NotifyForSameVariable.module:0.10"
+Active=2
+File[2]=".src/ShmMem/shmMem.class:4.268"
+File[3]=".src/ShmMem/ShmSymbolTable.class:4.630"
+File[4]=".src/ShmMem/ShmNotify.class:9.139"
+File[5]=".src/Examples/vTestApps/NotifyTestWithProcesses/NewNotifyManualAllocTasks.module:0.68"
+File[6]=".src/Examples/vTestApps/General Tests/Define2NotifyAgain.class:28.14"
 
 [Watches]
 Count=0

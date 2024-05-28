@@ -24,14 +24,14 @@ Public Struct dPointer
 End Struct
 
 Public Struct Symbol
-    Name[128] As Byte                       '' Max length of any variable name
-    Used As Boolean                         '' This slot is in use
+    Name[128] As Byte                         '' Max length of any variable name
+    Used As Boolean                             '' This slot is in use
     NotifyBlock As Pointer                  '' pointer to chain of pids waiting to be notifies when This symbol changes
-    Address As Long                         '' virtual address of the value, 0 means no value yet
-    Hash As Long                            '' When we start using a hash for this table
-    NameLength As Integer                   '' NameLength
-    {Next} As Long                               '' in case of a hash conflict index to the next in this chain -1 of not used
-    Previous As Long                           '' in case of hash conflict index to the parent of this value -1 if not used
+    Address As Long                             '' virtual address of the value, 0 means no value yet
+    Hash As Long                                    '' When we start using a hash for this table
+    NameLength As Integer                '' NameLength
+    {Next} As Long                                '' in case of a hash conflict index to the next in this chain -1 of not used
+    Previous As Long                            '' in case of hash conflict index to the parent of this value -1 if not used
 End Struct
 
 Public NotifyObject As Object
@@ -40,6 +40,7 @@ Public NotifyTimeout As Integer
 Public NotifyVar As Symbol
 Public VarName As String
 Public VarMemory As ShmVarStorage
+Public Tag As String
 Public StartTime As Float
 Private VarClock As Timer
 ' Private OneShot As Boolean
@@ -47,10 +48,12 @@ Private VarClock As Timer
 Event VarChanged(VarDef As ShmNotifyEntry)
 Event VarTimedOut(VarDef As ShmNotifyEntry)
 
+Extern sched_yield() As Integer In "libpthread:0"
+
 '' Dispatch Functions must look like
 '' MyChange(SymSource as ShmMem, SymName as String, Value as Variant, TimedOut as boolean)
 
-Public Sub _new(SymName As Symbol, CallObject As Object, CallFunc As String, VarMem As ShmVarStorage, Optional fTimeout As Long = 0, Once As Boolean = False)
+Public Sub _new(SymName As Symbol, CallObject As Object, CallFunc As String, VarMem As ShmVarStorage, Optional fTimeout As Long = 0, Once As Boolean = False, Tag As String = "")
 
     NotifyObject = CallObject
     NotifyFunc = CallFunc
@@ -58,6 +61,7 @@ Public Sub _new(SymName As Symbol, CallObject As Object, CallFunc As String, Var
     NotifyTimeOut = fTimeOut
     VarMemory = VarMem
     VarName = SymName.Name.ToString()
+    If Tag = "" Then Tag = Str(CallObject) & CallFunc
 
     If fTimeOut > 0 Then
         VarClock = New Timer As "VarTimeout"
@@ -79,6 +83,7 @@ End
 Public Sub NewVal()
 
     Raise VarChanged(Me)
+    Sched_Yield()
 
 End
 
@@ -90,5 +95,6 @@ Public Sub Dispatch(Failed As Boolean)
     Dim ParmList As Variant[] = [VarName, value, Failed]
 
     Object.Call(NotifyObject, NotifyFunc, ParmList)
+    Sched_Yield()
 
 End

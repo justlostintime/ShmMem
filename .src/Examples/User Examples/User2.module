@@ -23,14 +23,26 @@ Public Sub main()
 
     Print " User 2 monitoring all variables"
     While Not completed
-        Wait 0.001
+        PrintStuff(MyShare)
+        Wait 2
+
     Wend
 
     Print "User 2 Completed and exits"
 
 End
 
-Public Sub Changes_changed(varname As String, value As Variant, TimedOut As Boolean)
+Public Sub PrintStuff(MyShare As ShmMem)
+
+    Dim Value As Variant = ""
+
+    For Each Value In MyShare
+        Print MyShare.key; "="; Quote(Value)
+    Next
+
+End
+
+Public Sub changes(varname As String, value As Variant, TimedOut As Boolean)
 
     Print varname;; "has been updated to";; value
     If VarName == "done" And value == "true" Then Completed = True

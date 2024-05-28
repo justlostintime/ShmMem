@@ -7,9 +7,9 @@
 '  See project license file.
 
 Export
-'Fast Unsafe
-
+Fast Unsafe
 '' How a symbol is stored in the shared memory
+
 Public Struct Symbol
     Name[128] As Byte                       '' Max length of any variable name actual length is 127 with terminating 0
     Used As Boolean                          '' This slot is in use
@@ -310,7 +310,6 @@ Public Sub Clear()
 
 End
 
-LastSymbol As String
 LastHash As Long
 '' Hash table uses  pointers as index value  as they are unsigned
 
@@ -417,13 +416,12 @@ Fast Unsafe Public Sub Add(symName As String, value As Variant, Optional HashVal
 
     Symname = Lower(symname)
 
-    If HashValue <> -1 Then
+    If HashValue = -1 Then
         HashValue = Hash(symName)
     Endif
 
     If $bDebug Then Print Application.id, "Add SymTblmem.exclusive " & SymName
     SymTblMem.Exclusive()
-
     Dim k As Pointer = FindHash(HashValue, SymName)          '' check if the value exists
     If k = noentry Then                                                                         '' either it exists but does not match or does not exist
         If SymMem.Table[HashValue].Used Then
@@ -611,13 +609,42 @@ Public Sub _put(value As Variant, SymName As String)
 
 End
 
-Public Sub Notify(SymName As String, CallBack As Object, Optional FuncName As String = "", Timeout As Long = 0)
+Public Sub NotifyQ(symname As String) As ShmList
+
+    Dim sym As Symbol
+    Dim index As Long
+    Dim ShmQ As ShmList
+
+    index = getsymbol(SymName)
+    If index = noentry Then
+        Error.Raise("Unknown Sysmbol name " & symname)
+    Endif
+    sym = SymMem.Table[index]
+    If sym.notifyBlock = 0 Then Return Null
+    shmq = New ShmList(VarMem, sym.NotifyBlock)
+    Return shmq
+
+End
+
+'' We need to determine if the object is a class=module or object=class instanciated object
+Public Sub GetObjectClass(BasicObject As Object) As Class
+
+    Dim result As Class = Object.Class(BasicObject)
+    If result.Name == "class" Then
+        Return BasicObject
+    Else
+        Return result
+    Endif
+
+End
+
+Public Sub Notify(SymName As String, CallBack As Object, Optional FuncName As String = "", Timeout As Long = 0, Tag As String = "")
 
     Dim ObjClass As Class = Null
     Dim SymbolIndex As Variant
 
     If $UseCache Then
-        SymbolIndex = SymbolCache[SymName] ' updated
+        SymbolIndex = SymbolCache[SymName]                                                   ' updated
         If Not SymbolIndex Then
             Error.Raise("Unknown Variable " & Quote(SymName))
         Endif
@@ -630,27 +657,17 @@ Public Sub Notify(SymName As String, CallBack As Object, Optional FuncName As St
 
     If FuncName = "" Then funcName = SymName & "_Changed"
 
-    Dim cClass As Class
-    For Each cClass In classes
-        If CallBack = cClass Then
-            ObjClass = cClass
-            Break
-        Endif
-    Next
-
-    If IsNull(ObjClass) Then
-        ObjClass = Object.Class(CallBack)
-    Endif
+    objClass = GetObjectClass(CallBack)
 
     If ObjClass.Exist(FuncName) Then
-        NotifyVars.Notify(SymMem.Table[SymbolIndex], CallBack, FuncName, Timeout)
+        NotifyVars.Notify(SymMem.Table[SymbolIndex], CallBack, FuncName, Timeout, Tag)
     Else
         Error.Raise("Unknown Function Name " & FuncName)
     Endif
 
 End
 
-Public Sub NotifyStop(SymName As String)
+Public Sub NotifyStop(SymName As String, CallObject As Object, CallFunc As String, Optional tag As String = "")
 
     Dim SymbolIndex As Variant
 
@@ -666,7 +683,9 @@ Public Sub NotifyStop(SymName As String)
         Endif
     Endif
 
-    NotifyVars.NotifyStop(SymMem.Table[SymbolIndex])
+    If CallFunc = "" Then Callfunc = SymName & "_Changed"
+
+    NotifyVars.NotifyStop(SymMem.Table[SymbolIndex], CallObject, CallFunc, tag)
 
 End
 
@@ -781,7 +800,7 @@ Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
             Return False
         Endif
 
-        Wait 0.0001
+        Wait 0
 
     Wend
 
@@ -789,6 +808,7 @@ Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
 
 End
 
+'' Wait for a specific value to appear in the variable
 Public Sub WaitForValue(SymName As String, Value As Variant, Optional timeout As Float = 0) As Boolean
 
     Dim starttime As Float = Timer
@@ -806,6 +826,7 @@ Public Sub WaitForValue(SymName As String, Value As Variant, Optional timeout As
 
 End
 
+'' Wait for a Specified value to diverge from the one specified
 Public Sub WaitValueChange(SymName As String, Value As Variant, Optional timeout As Float = 0) As Boolean
 
     Dim starttime As Float = Timer

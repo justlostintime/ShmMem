@@ -13,7 +13,7 @@ Public Sub main() As String
     With vmem
         While True
 
-            If Not .WaitValueChange("Wiggle", counter, 4.5) Then
+            If Not .WaitValueChange("Wiggle", counter, 20.5) Then
                 Print Application.id;; MyIndex;; " Timed out Waiting for change"
                 If !AllDone == "Yes" Then
                     Print Application.id;; MyIndex;; "All done recieved , Wiggle =";; !Wiggle
@@ -38,4 +38,3 @@ Catch
     Print Application.id;; "Error:";; Error.text;; Error.where
 
 End
-

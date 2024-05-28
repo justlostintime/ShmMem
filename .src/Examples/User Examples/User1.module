@@ -14,7 +14,7 @@ Public Sub main()
     Dim elements As String[]
     Dim element As String[]
 
-    ShmMem.ForceDelete("MySharedMem")                                          ' cleanup any old testing
+    'ShmMem.ForceDelete("MySharedMem")                                          ' cleanup any old testing
     MyShare = New ShmMem(2000000, "MySharedMem", 8000)
     MyShare!Cat = "Felix"
     MyShare!Dog = "Rover"
@@ -24,7 +24,7 @@ Public Sub main()
     MyShare.Notify("Cat", Me)
     MyShare.Notify("Dog", Me)
     MyShare.Notify("rabbit", Me)
-    MyShare.Notify("Done", Me, "It_Is_Done")
+    MyShare.Notify("Done", Me)
 
     Print " User 1 monitoring all variables"
     While Not completed
@@ -72,7 +72,7 @@ Public Sub Rabbit_changed(varname As String, value As Variant, TimedOut As Boole
 
 End
 
-Public Sub It_Is_Done(varname As String, value As Variant, TimedOut As Boolean)
+Public Sub done_changed(varname As String, value As Variant, TimedOut As Boolean)
 
     If value == "True" Then
         Completed = True

@@ -22,11 +22,14 @@ Public Struct dList                         '' A defined entry in list of object
     bDebug As Boolean                  '' turns on or off the debug control
     Tag[16] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                      '' Number of refrences to this element
+    Priority As Long                           '' Priority/Extended ID of a list element
+    UsePriority As Boolean            '' Enable the use of priority ordering in the queue
     Value As Pointer                        '' Value of entry or count if pool
 End Struct
 
 Static Public cShmQueue As Integer = 26
 Static Public cShmQueueEntry As Integer = 27
+Private listhead As Dlist
 
 Static Public Sub _init()
 
@@ -35,23 +38,25 @@ Static Public Sub _init()
 
 End
 
-Public Sub _new()
+Public Sub _new(Optional UsePriority As Boolean = True)
 
     Super.SetHeadType = cShmQueue                                 '' The list header Class
     Super.SetEntryType = cShmQueueEntry                        '' The List Entry Class
-    Super.ListHead.Type = cShmQueue
+    ListHead = Super.Listhead                                                  '' speed up for not seeking the super value
+    listhead.Type = cShmQueue                                              '' This structure is a Queue
+    listhead.UsePriority = UsePriority                                    '' Sets if we are to sort by priority
 
 End
 
-Public Sub Push(Value As Variant)
+Public Sub Push(Value As Variant, Optional Priority As Long = 0, TagInfo As String = "QPush")
 
-    Me.add(Value)
+    enqueue(Value, Priority, TagInfo)
 
 End
 
 Public Sub Pop() As Variant
 
-    Return Me.remove(0)
+    Return DeQueue(0)                    ' if no priority then take from top of the queue
 
 End
 
@@ -59,10 +64,12 @@ Private LastIndex As Integer = 0
 
 Public Sub EnQueue(Value As Variant, Optional Priority As Integer = 0, TagValue As String = "")
 
-    If priority = 0 Then
-        Me.add(value, TagValue)
+    If priority = 0 Or If listhead.UsePriority = False Then
+        Me.add(value, Priority, TagValue)
         Return
     Endif
+
+    Dim TmpListhead As Dlist = listhead
 
     Super.VarMem.Lock()
     SeekPriority(Priority)
@@ -76,7 +83,7 @@ Public Sub DeQueue(Optional Priority As Integer = -1) As Variant
     Dim value As Variant
 
     Super.VarMem.Lock()
-    If Priority = -1 Then
+    If Priority = -1 Or If listhead.UsePriority = False Then
         Value = Me.remove(0)
         Super.VarMem.Unlock()
         Return value
@@ -96,14 +103,14 @@ End
 Private Sub SeekPriority(Priority As Integer, Optional bMatch As Boolean = False) As DList
 
     Dim Index As Long = 0
-    Dim current As Dlist = Super.EntryPtr(Super.ListHead.Next)
+    Dim current As Dlist = Super.EntryPtr(listhead.Next)
 
     While current
         If bMatch Then
-            If Current.RefCount = Priority Then
+            If Current.Priority = Priority Then
                 Break
             Endif
-        Else If current.RefCount < Priority Then                       ' RefCount will hold the priority
+        Else If current.Priority < Priority Then
             Break
         Endif
 
@@ -111,7 +118,7 @@ Private Sub SeekPriority(Priority As Integer, Optional bMatch As Boolean = False
         Inc Index
     Wend
 
-    If Index >= Super.ListHead.Value Then
+    If Index >= listhead.Value Then
         Index = -1
     Endif
 
@@ -136,26 +143,27 @@ End
 Public Sub _next() As Variant
 
     Dim ListItem As DList
-    '    Dim Listof As DList = Super.Listhead
+    '    Dim Listof As DList = listhead
 
     If IsNull(Enum.Index) Then
-        If Super.ListHead.Value > 0 Then
-            Enum.index = Super.EntryPtr(Super.ListHead.next)
+
+        If listhead.Value > 0 Then
+            Enum.index = Super.EntryPtr(listhead.next)
             Listitem = Enum.index
-            Super.key = Listitem.RefCount                                             ' sets the key to be the items priority in the queue
+            Super.key = Listitem.Priority                                            ' sets the key to be the items priority in the queue
         Else
-            Enum.Stop
+            Enum.Stop()
             Return
         Endif
     Else
         listitem = Enum.index
         If ListItem.next = 0 Then
-            Enum.Stop
+            Enum.Stop()
             Return
         Else
             listitem = Enum.index
             ListItem = Super.EntryPtr(ListItem.next)
-            Super.key = ListItem.RefCount
+            Super.key = ListItem.Priority                                 ' in this case this is the priority
             Enum.Index = listitem
         Endif
     Endif

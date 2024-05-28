@@ -14,23 +14,20 @@ Public Sub main()
         !Done = False
         !count = 0
 
+        ' Vars.PrintAllInfo()
+
+        Dim Mtask As New NotifyBGTask
+        Wait 1.0
+        Dim Btask As New NotifyBGTask
+        Wait 1.0
+
         .Notify("Dog", Me)
         .Notify("Cow", Me)
         .Notify("Done", Me)
 
-        ' Vars.PrintAllInfo()
-
-        Dim Mtask As New NotifyBGTask
-        Wait 5.0
-        Dim Btask As New NotifyBGTask
-        Wait 5.0
-
-        While !count < 10
+        While !count < 100000
             !Dog = !count
             !Cow = !count
-            Wait 0.03
-            !Cow = "hello " & !count
-            Wait 0.03
             Inc !count
         Wend
 
@@ -40,41 +37,42 @@ Public Sub main()
         Mtask.Wait()
         BTask.Wait()
 
-        vars.PrintAllInfo()
+        .PrintAllInfo()
         !Done = "Step one"
-        vars.PrintAllInfo()
+        .PrintAllInfo()
         !Done = 16
-        vars.PrintAllInfo()
+        .PrintAllInfo()
         !Done = "fast cars"
-        vars.PrintAllInfo()
+        .PrintAllInfo()
         !Done = 20
-        vars.PrintAllInfo()
+        .PrintAllInfo()
         !Done = "more stuff"
-        vars.PrintAllInfo()
-    End With
-    vars.NotifyStop("Cow")
-    vars.NotifyStop("Dog")
-    vars.NotifyStop("Done")
+        .PrintAllInfo()
 
-    vars.PrintAllInfo()
+        .NotifyStop("Cow")
+        .NotifyStop("Dog")
+        .NotifyStop("Done")
+
+        .PrintAllInfo()
+    End With
 
 End
 
 Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print Application.id, "FG";; VarName;; "=";; Value
+    If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value
 
 End
 
-Public Sub Cow_changed(varname As String, value As Variant, TimedOut As Boolean)
+Public Sub cow_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print Application.id, "FG";; VarName;; "=";; Value
+    If TypeOf(value) = gb.integer And If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value
 
 End
 
-Public Sub Done_Changed(varname As String, value As Variant, TimedOut As Boolean)
+Public Sub done_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print Application.id, "FG";; VarName;; "=";; Value
+    Print Application.id;; " FG Recieved Done directive, starting exit procedure"
 
 End
 

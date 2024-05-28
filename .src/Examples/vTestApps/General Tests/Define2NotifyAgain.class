@@ -1,0 +1,39 @@
+' Gambas class file
+
+Public Sub DoAgain(vars As ShmMem)
+
+    With vars
+
+        !a = 100
+
+        .Notify("a", Me, "a1")
+        .Notify("a", Me, "a2")
+        .Notify("a", Me)
+        !a = 200
+        .NotifyStop("a", Me, "a1")
+        .NotifyStop("a", Me, "a2")
+        .NotifyStop("a", Me)
+
+        .PrintAllInfo()
+
+    End With
+
+End
+
+Public Sub a1(SymName As String, value As Variant, TimedOut As Boolean)
+
+    Print "a1"
+
+End
+
+Public Sub a2(SymName As String, value As Variant, TimedOut As Boolean)
+
+    Print "a2"
+
+End
+
+Public Sub a_changed(SymName As String, value As Variant, TimedOut As Boolean)
+
+    Print "a_changed"
+
+End

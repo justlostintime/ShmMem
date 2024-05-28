@@ -7,6 +7,9 @@
 '  See project license file.
 
 Export
+
+Fast Unsafe
+
 Const VarMemDefault As Long = 2000000                              '' default memory size is 2 meg
 Const MaxSymbolsDefault As Integer = 8000                        '' default variable memory space 8000 entries
 Const TimeOutDefault As Float = 0.1                                       '' Default sem timeout
@@ -45,17 +48,17 @@ Public Sub _new(Optional VarMemLength As Long = VarMemDefault, MemName As String
         VarStoreName = Memname & "_Data"
         SymStoreName = Memname & "_Symbols"
         VarStore = New ShmMemBlock(VarMemLength, VarStoreName, LockTimeOut)
-        symStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), SymStoreName, LockTimeOut)
+        SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), SymStoreName, LockTimeOut)
     Else
         VarStoreName = ""
         SymStoreName = ""
         VarStore = New ShmMemBlock(VarMemLength, MemName, LockTimeOut)
-        symStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), MemName, LockTimeOut)
+        SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), MemName, LockTimeOut)
     Endif
 
     VarMnge = New ShmManage(varStore)
     MyVarMem = New ShmVarStorage(varMnge)
-    vars = New ShmSymbolTable(symStore, MyVarMem)
+    Vars = New ShmSymbolTable(symStore, MyVarMem)
 
 End
 
@@ -261,15 +264,18 @@ Public Sub WaitValueChange(SymName As String, Value As Variant, Optional Timeout
 
 End
 
-Public Sub Notify(SymName As String, NotifyObject As Object, Optional NotifyFunction As String = "")
+Public Sub Notify(SymName As String, NotifyObject As Object, Optional NotifyFunction As String = "", Timeout As Float = 0, Tag As String = "")
 
-    vars.Notify(SymName, NotifyObject, NotifyFunction)
+    vars.Notify(SymName, NotifyObject, NotifyFunction, TimeOut, tag)
+
+Catch
+    Print "shm Notify :";; Error.text;; Error.where
 
 End
 
-Public Sub NotifyStop(SymName As String)
+Public Sub NotifyStop(SymName As String, CallObject As Object, Optional CallFunc As String = "", Optional tag As String = "")
 
-    vars.NotifyStop(SymName)
+    vars.NotifyStop(SymName, CallObject, CallFunc, tag)
 
 End
 
@@ -316,6 +322,16 @@ End
 Private Function Length_Read() As Integer
 
     Return vars.Count
+
+End
+
+Public Sub NotifyQ(symName As String) As ShmList
+
+    If Not Vars.Exist(symname) Then
+        Error.Raise("Unknown Symbol Name:" & Symname)
+    Endif
+
+    Return Vars.NotifyQ(symname)
 
 End
 

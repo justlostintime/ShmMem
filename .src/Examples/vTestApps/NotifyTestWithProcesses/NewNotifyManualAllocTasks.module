@@ -4,15 +4,18 @@ Public Vars As ShmSymbolTable
 
 Public Sub main()
 
-    Dim varStore As New ShmMemBlock(1128000, "mydata")
+    ShmMemBlock.ForceDelete("mydata_Data")
+    Dim varStore As New ShmMemBlock(1128000, "mydata_Data")
     ' varStore.debug = True
 
     Dim varMnge As New ShmManage(varStore)
     'varMnge.debug = True
+
     Dim MyVarMem As New ShmVarStorage(varMnge)
     'MyVarMem.Debug = True
 
-    Dim symStore As New ShmMemBlock(1000000, "mysyms")
+    ShmMemBlock.ForceDelete("mydata_Symbols")
+    Dim symStore As New ShmMemBlock(1000000, "mydata_Symbols")
     'symStore.Debug = True
 
     vars = New ShmSymbolTable(symStore, MyVarMem)
@@ -25,54 +28,63 @@ Public Sub main()
 
     With vars
         !dog = 8
-        !Cow = 6
-        !Done = 0
+        !cow = 6
+        !done = 0
+        Print "Dog="; !dog, "Cow="; !cow, "Done="; !done
 
-        ' Dim Ntask As New NotifyBGTask As "TheTask"
-        ' Dim Ntask2 As New NotifyBGTask As "TheTask2"
-        ' Wait 2.00
+        Dim Ntask As New NotifyBGTask As "TheTask"
+        Ntask.UseNamed = True
+        Ntask.NotifyProg = Me
+        Wait 0.01
+        Dim Ntask2 As New NotifyBGTask As "TheTask2"
+        Ntask2.UseNamed = True
+        Ntask2.NotifyProg = Me
+        Wait 0.01
+
         vars.Notify("dog", Me)
         vars.Notify("Cow", Me)
         'vars.NotifyStop("dog")
 
-        'Stop
         varMnge._PrintBlocks()
         varMnge._PrintFreeList()
         'Print !Cow, !Dog
+
         Dim TheQueues As Variant[]
         TheQueues = MyQueue.AllLists
 
         'Stop
-        Dim count As Long = 10
+        !count = 1000000
 
-        While count > 0
-            !Dog = 4
-            !Cow = 7
-            Wait
-            !Cow = 8
-            Wait
-            !Cow = "hello"
-            Wait
-            Dec count
+        While !count > 0
+            !Dog = !Count
+            !Cow = !Count
+            '          !Cow = "hello"
+            Dec !count
         Wend
 
-        !Cow = 100
+        !Done = "True"
+
+        .NotifyStop("Dog", Me)
+        .NotifyStop("Cow", Me)
+
     End With
-    ' Ntask.Wait
-    ' Ntask2.wait
+
+    Ntask.Wait()
+    Ntask2.wait()
+
     varMnge._Print()
 
 End
 
 Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print Application.id, "FG";; VarName;; "=";; Value
+    If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value
 
 End
 
 Public Sub Cow_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print Application.id, "FG";; VarName;; "=";; Value
+    If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value
 
 End
 

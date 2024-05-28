@@ -23,15 +23,9 @@ End
 
 Public Sub _new()
 
-    Super.SetHeadType = cShmFiFo                                 '' The list header Class
+    Super.SetHeadType = cShmFiFo                                    '' The list header Class
     Super.SetEntryType = cShmFiFoEntry                           '' The List Entry Class
     Super.ListHead.Type = cShmFiFo
-
-End
-
-Public Sub Push(Value As Variant)
-
-    Me.add(Value)
 
 End
 

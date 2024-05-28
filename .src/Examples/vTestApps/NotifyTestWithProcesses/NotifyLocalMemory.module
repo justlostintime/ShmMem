@@ -1,0 +1,93 @@
+' Gambas module file
+
+Fast Unsafe
+'Public Vars As ShmSymbolTable
+Public Vars As Shmmem
+
+Public Sub main()
+
+    '  shmMem.ForceDelete("mydata")
+    Vars = New ShmMem(1128000)
+
+    With vars
+        !dog = 8
+        !Cow = 6
+        !Done = False
+        !count = 0
+
+        ' Vars.PrintAllInfo()
+
+        Dim Mtask As New NotifyBGTask
+        mtask.Vars = Vars
+        Wait 0.001
+        Dim Btask As New NotifyBGTask
+        Btask.Vars = Vars
+        Wait 0.001
+
+        .Notify("Dog", Me)
+        .Notify("Cow", Me)
+        .Notify("Done", Me)
+
+        While !count < 100000
+            '!Dog = !count
+            !Cow = !count
+            !Cow = "hello " & !count
+            Inc !count
+        Wend
+
+        !Done = True
+        Wait 0.2
+
+        Mtask.Wait()
+        BTask.Wait()
+
+        .PrintAllInfo()
+        !Done = "Step one"
+        .PrintAllInfo()
+        !Done = 16
+        .PrintAllInfo()
+        !Done = "fast cars"
+        .PrintAllInfo()
+        !Done = 20
+        .PrintAllInfo()
+        !Done = "more stuff"
+        .PrintAllInfo()
+
+        .NotifyStop("Cow")
+        .NotifyStop("Dog")
+        .NotifyStop("Done")
+
+        .PrintAllInfo()
+    End With
+
+End
+
+Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
+
+    If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value
+
+End
+
+Public Sub cow_changed(varname As String, value As Variant, TimedOut As Boolean)
+
+    If TypeOf(value) = gb.integer And If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value
+
+End
+
+Public Sub done_changed(varname As String, value As Variant, TimedOut As Boolean)
+
+    Print Application.id, "FG";; VarName;; "=";; Value
+
+End
+
+Public Sub TheTask_Read(value As String)
+
+    Print value
+
+End
+
+Public Sub TheTask2_read(value As String)
+
+    Print value
+
+End

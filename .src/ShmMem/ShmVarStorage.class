@@ -32,6 +32,8 @@ Public Struct dList                           '' A defined entry in list of obje
     bDebug As Boolean                    '' Turns on debugging
     Tag[16] As Byte                            '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                       '' Number of refrences to this element
+    Priority As Long                           '' in a queue this is the priority of this element or the Extended Id of a list
+    UsePriority As Boolean            '' Enable the use of priority ordering in the queue
     Value As Pointer                          '' Value of entry or count if pool
 End Struct
 
@@ -174,6 +176,20 @@ Public Sub AsObject(ctype As Integer, virtaddress As Pointer) As Variant
     If Not UserClasses.Exist(Str(cType)) Then Return Null
     NewObject = Object.new(UserClasses[Str(ctype)], [Me, VirtAddress])
     Return NewObject
+
+End
+
+''Return the data Type structure contained in the user defined types
+Public Sub UserType(cType As Integer, virtaddress As Pointer) As Variant
+
+    If Not UserClasses.Exist(Str(cType)) Then Return Null
+    Dim userclass As Class = Classes[UserClasses[Str(ctype)]]
+    Dim result As Variant
+    Try result = Object.Call(userclass, "userPtr", [Me, virtaddress])
+    If Error Then
+        Stop
+    Endif
+    Return result
 
 End
 
@@ -525,7 +541,11 @@ Public Sub Getpointer(Type As Integer, VirtAddress As Pointer) As Variant
             ' Return AllocStrObj(realAddr, RealAddr, 0)
 
         Case Else
-            Return varmem.AllocPtr(VirtAddress)
+            Dim result As Variant = UserType(type, VirtAddress)
+            If result = Null Then
+                Return varmem.AllocPtr(VirtAddress)
+            Endif
+            Return result
 
     End Select
 

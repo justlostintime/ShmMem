@@ -2,8 +2,9 @@
 
 Inherits Task
 isRunning As Boolean = True
-'Public Vars As ShmSymbolTable
-Public Vars As Shmmem
+Public Vars As Shmmem = Null
+Public Starttime As Float
+
 ' Public Logfile As File
 ' Public LogfileName As String
 
@@ -11,20 +12,31 @@ Public Sub main() As String
 
     ' LogfileName = User.home &/ "Desktop" &/ "log_" & application.id
     'logfile = Open LogFileName For Write Create
-    ' Vars = New ShmMem(1128000, "mydata")
-    Vars = NewNotifyTest.Vars
+
+    If vars = Null Then
+        Print "BG Using named memory mydata"
+        Vars = New ShmMem(1128000, "mydata")
+    Endif
 
     With vars
-        Print Application.id, "BG Begins,";;
+        Print Application.id, "BG Begins,"
 
-        .Notify("Cow", Me)
-        .Notify("Done", Me)
+        Try .Notify("Cow", Me)
+        If Error Then
+            Error "BG Failed to set notify request, cow "; Error.text, Error.where
+        Else
+            Try .Notify("Done", Me)
+            If Error Then
+                Error "BG Failed to set notify request, Done"; Error.text, Error.where
+            Endif
+
+        Endif
 
         ' Vars.PrintAllInfo("For PID " & Application.id)
 
         ' Print "Notify Set for 'cow'"
         '   Print #LogFile, "Notify Set for 'cow and done'"
-
+        starttime = Now
         While isRunning
             Wait Next
         Wend
@@ -47,15 +59,19 @@ Catch
 
 End
 
-Public Sub cow_changed(VarName As String, VarValue As Variant, TimedOut As Boolean)
+Public Sub cow_changed(VarName As String, Value As Variant, TimedOut As Boolean)
 
-    'Print #LogFIle, varname;; "=";; VarValue;; " Fetched value = "; Vars!Cow
+    If TypeOf(value) = gb.string Then Return
+    If value % 10000 = 0 Then
+        Print Application.id;; " BG "; varname;; " = ";; Value;; " Fetched value = "; Vars!Cow;; "time for 10,000 events = "; (Now - starttime) * 100000
+        starttime = Now
+    Endif
 
 End
 
-Public Sub done_changed(VarName As String, VarValue As Variant, TimedOut As Boolean)
+Public Sub done_changed(VarName As String, Value As Variant, TimedOut As Boolean)
 
-    'Print #LogFile, "Recieved Done directive, starting exit procedure"
+    Print Application.id;; " BG Recieved Done directive, starting exit procedure"
     isRunning = False
 
 End
