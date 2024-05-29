@@ -630,6 +630,7 @@ End
 Public Sub GetObjectClass(BasicObject As Object) As Class
 
     Dim result As Class = Object.Class(BasicObject)
+
     If result.Name == "class" Then
         Return BasicObject
     Else
@@ -667,7 +668,7 @@ Public Sub Notify(SymName As String, CallBack As Object, Optional FuncName As St
 
 End
 
-Public Sub NotifyStop(SymName As String, CallObject As Object, CallFunc As String, Optional tag As String = "")
+Public Sub NotifyStop(SymName As String, CallObject As Object, Optional CallFunc As String = "", tag As String = "")
 
     Dim SymbolIndex As Variant
 

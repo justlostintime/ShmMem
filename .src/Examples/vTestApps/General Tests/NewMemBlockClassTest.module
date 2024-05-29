@@ -40,7 +40,7 @@ Public Sub main()
 
     ' llongptr = LongPtr(MyBlock.DataAddress, MyBlock.DataAddress, 0)
     llongptr = MyBlock.DataAddress
-
+    Starttime = Timer
     Len = MyBlock.DataLength
     Starttime = Timer
     For i = 0 To LongLoop
@@ -64,7 +64,7 @@ Public Sub main()
     memptr.Add(mymem.Alloc(100))
     mymem._PrintFreeList()
 
-    Print "************************* Allocate 61 Blocks"
+    Print "************************* Allocate 60 Blocks"
     For i As Integer = 1 To 60
         memptr.Add(mymem.Alloc(i))
     Next

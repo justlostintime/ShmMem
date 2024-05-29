@@ -23,7 +23,10 @@ Public Sub main()
     Dim Str_a As Pointer = MyVars.set("Hello world")
 
     Dim y As Integer = MyVars[var_x]
-    Print y, MyVars[Str_a]
+
+    Print "Saved var_X ="; y, "Myvar at Str_a="; MyVars[Str_a]
+    MyVars.set(123456, var_x)
+    Print "Saved var_x ="; y, "updated Myvar at var_x="; MyVars[Var_x]
 
     Print "Total time for all operations "; Timer - StartTime
 

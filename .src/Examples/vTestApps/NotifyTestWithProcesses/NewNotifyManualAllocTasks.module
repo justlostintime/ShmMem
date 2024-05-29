@@ -21,9 +21,10 @@ Public Sub main()
     vars = New ShmSymbolTable(symStore, MyVarMem)
     'vars.debug = True
 
-    Dim MyQueue As New ShmQueue(MyVarMem)
+    Dim MyList As New ShmList(MyVarMem, 0, False, "Test The List")
+    Dim MyQueue As New ShmQueue(MyVarMem, 0, False, "Test The Queue")
 
-    Print symStore.length
+    Print "Symbol Storage length =";; symStore.length
     'Stop
 
     With vars
@@ -33,19 +34,15 @@ Public Sub main()
         Print "Dog="; !dog, "Cow="; !cow, "Done="; !done
 
         Dim Ntask As New NotifyBGTask As "TheTask"
-        Ntask.UseNamed = True
-        Ntask.NotifyProg = Me
-        Wait 0.01
+        Wait
         Dim Ntask2 As New NotifyBGTask As "TheTask2"
-        Ntask2.UseNamed = True
-        Ntask2.NotifyProg = Me
-        Wait 0.01
+        Wait
 
         vars.Notify("dog", Me)
         vars.Notify("Cow", Me)
         'vars.NotifyStop("dog")
 
-        varMnge._PrintBlocks()
+        varMnge._PrintBlocks(MyVarMem)
         varMnge._PrintFreeList()
         'Print !Cow, !Dog
 
@@ -53,13 +50,13 @@ Public Sub main()
         TheQueues = MyQueue.AllLists
 
         'Stop
-        !count = 1000000
+        !count = 40000
 
         While !count > 0
             !Dog = !Count
             !Cow = !Count
             '          !Cow = "hello"
-            Dec !count
+            !count -= 2
         Wend
 
         !Done = "True"
@@ -72,7 +69,7 @@ Public Sub main()
     Ntask.Wait()
     Ntask2.wait()
 
-    varMnge._Print()
+    varMnge._Print(MyVarMem)
 
 End
 

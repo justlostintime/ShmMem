@@ -43,8 +43,8 @@ Public Sub main() As String
 
         Wait 0.03
 
-        .NotifyStop("cow")
-        .NotifyStop("done")
+        .NotifyStop("cow", Me)
+        .NotifyStop("done", Me)
 
         '  Print #LogFile, "BG Task exits"
 

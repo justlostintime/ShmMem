@@ -13,15 +13,17 @@ Public Sub main()
 
         Print !a[3]
 
-        !v[1] = 100
+        .["v", 1] = 100
+        Let !a[1] = 1000
 
-        Print !v[1]
+        Print .v(1)
+
         Dim a As Float = Timer
         For i As Integer = 0 To 100000
-            MyMem["v", 3] = i
+            .["v", 3] = i
         Next
 
-        Print "Total time = 100000/"; Timer - a, !v[3]
+        Print "Total time = 100000/"; Timer - a, !v[3], !a[2]
 
     End With
 

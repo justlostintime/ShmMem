@@ -25,10 +25,10 @@ Public Sub main()
         .Notify("Cow", Me)
         .Notify("Done", Me)
 
-        While !count < 100000
+        While !count < 30000
             !Dog = !count
             !Cow = !count
-            Inc !count
+            !Count += 2
         Wend
 
         !Done = True
@@ -49,9 +49,9 @@ Public Sub main()
         !Done = "more stuff"
         .PrintAllInfo()
 
-        .NotifyStop("Cow")
-        .NotifyStop("Dog")
-        .NotifyStop("Done")
+        .NotifyStop("Cow", Me)
+        .NotifyStop("Dog", Me)
+        .NotifyStop("Done", Me)
 
         .PrintAllInfo()
     End With

@@ -56,10 +56,6 @@ Public Sub main()
     TestCases.Add(CollectionTest, "Variable collection[]")
     TestCases.Add(MyStruct, "Struct type")
 
-
-
-
-
     For Each i As Variant In TestCases
 
         'Print " Test Case Begins for " & TestCases.key
@@ -70,5 +66,3 @@ Public Sub main()
     Print "End TestMemSizeof #########################################################################################"
 
 End
-
-

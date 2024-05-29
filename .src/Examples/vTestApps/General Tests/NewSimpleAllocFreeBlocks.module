@@ -9,7 +9,7 @@ Public Sub main()
     Dim StartTime As Float
     Dim pp, xx, yy, aa As Long
 
-    Print "Starting Test....";
+    Print "Starting Test.... Alloc and release blocks of memory ";
     Flush
     starttime = Timer
 
@@ -30,7 +30,8 @@ Public Sub main()
     Next
 
     Dim Duration As Float = Timer - starttime
-    Print "Alloc and free Blocks ";; 500000 * 8;; "Times, Duration = "; Duration;; "Per second Operations: "; (500000 * 8) / Duration
+    Print "Alloc and free operations ";; Format(500000 * 8, "###,###,##0");; "Times, Duration = "; Duration;; " Avg seconds Per 10,000 Operations: "; (Duration / (500000.0 * 8.0) * 10000.0)
+    Print
     mymem._Print()
 
     pp = mymem.Alloc(500)
@@ -40,5 +41,3 @@ Public Sub main()
     mymem._Print()
 
 End
-
-

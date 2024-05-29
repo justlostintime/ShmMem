@@ -13,8 +13,8 @@ Public Sub Main()
     MyMem!a = 20
     MyMem!b = 30
     Wait 1
-    MyMem.NotifyStop("a")
-    MyMem.NotifyStop("b")
+    MyMem.NotifyStop("a", Me)
+    MyMem.NotifyStop("b", Me)
 
 End
 

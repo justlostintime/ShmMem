@@ -6,7 +6,7 @@ Public Sub Main()
 
     Print Application.id, "BG ***********************  Begin BackGround task"
 
-    Dim qa As New ShmQueue(NewQueueTest.mqa, 0, True)
+    Dim qa As New ShmQueue(NewQueueTest.mqa, 0, True, "The Testing queue")
 
     Print Application.id, "Start BackGround loop"
     For i As Integer = 0 To 100

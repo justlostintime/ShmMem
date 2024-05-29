@@ -38,7 +38,7 @@ Static Public Sub _init()
 
 End
 
-Public Sub _new(Optional UsePriority As Boolean = True)
+Public Sub _new(Optional usePriority As Boolean = True)
 
     Super.SetHeadType = cShmQueue                                 '' The list header Class
     Super.SetEntryType = cShmQueueEntry                        '' The List Entry Class
@@ -56,7 +56,7 @@ End
 
 Public Sub Pop() As Variant
 
-    Return DeQueue(0)                    ' if no priority then take from top of the queue
+    Return DeQueue()                    ' if no priority then take from top of the queue
 
 End
 

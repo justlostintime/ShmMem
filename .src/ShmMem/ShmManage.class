@@ -417,12 +417,12 @@ Public Sub _PrintBlocks(Optional vVarStorage As ShmVarStorage = Null)
             Print vVarStorage.text(vptr.address)
         Else
             Dim textType As String = ShmVarStorage.GetTextType(vptr.type)
-            Print Subst("Start : &1 Length :  &2 Type :(&4) &3", Hex(vptr.address, 10), Format(vptr.length, "########0"), Left(textType & Space(15), 15), Format(vptr.type, "-##0"))
+            Print Subst("Start : &1 Length :  &2 Type :(&4) &3", Hex(vptr.address, 10), Format(vptr.length, "########0"), Left(textType & Space(15), 15), Format(vptr.type, "-##0"));
             If texttype == "shmlist" Or texttype == "shmqueue" Or texttype == "shmqueueentry" Or texttype == "shmlistentry" And If vVarStorage <> Null Then
                 Dim vlist As Variant
                 If vVarStorage Then
                     vlist = vVarStorage.Getpointer(vptr.type, vptr.address)
-                    Print "|"; vlist.tag; "|"
+                    Print vlist.tag
                 Endif
             Else
                 Print

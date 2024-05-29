@@ -18,7 +18,7 @@ Public Sub main() As Integer
         Next
         Print "BG End Queue"
         Flush
-        Wait 0.001
+        Wait
         Print "bg begin popping values"
         While TheQ.Count
             Print "Popping =";; TheQ.pop()
@@ -27,7 +27,7 @@ Public Sub main() As Integer
 
     Print "Bg Ends"
     Flush
-    Wait 1
+    Wait
 
 Catch
     Print "bg error ";; Error.text
@@ -36,4 +36,3 @@ Catch
     Return -9
 
 End
-

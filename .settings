@@ -8,12 +8,15 @@ RedirectStderr=False
 UseHttpServer=False
 Remote=False
 Profiling=False
-Environment=[]
+Environment=["GB_NO_JIT=1"]
 RemoteEnvironment=[]
 Arguments=[]
 
 [DebugWindow]
 Count=0
+
+[DebugWindow/BaseObject]
+Geometry=[2192,325,252,56]
 
 [DebugWindow/CallBack]
 Geometry=[834,445,411,261]
@@ -49,7 +52,7 @@ Geometry=[834,445,471,258]
 Geometry=[848,459,252,276]
 
 [DebugWindow/NotifyQueue]
-Geometry=[834,498,252,56]
+Geometry=[834,498,252,416]
 
 [DebugWindow/NotifyQueue.AllLists]
 Geometry=[2195,300,577,377]
@@ -58,7 +61,7 @@ Geometry=[2195,300,577,377]
 Geometry=[2024,105,252,250]
 
 [DebugWindow/NotifyVars]
-Geometry=[2448,202,252,220]
+Geometry=[834,512,252,56]
 
 [DebugWindow/NotifyVars["a"]]
 Geometry=[2034,203,378,361]
@@ -156,6 +159,12 @@ Geometry=[834,402,252,276]
 [DebugWindow/mBlock]
 Geometry=[834,372,252,336]
 
+[DebugWindow/param]
+Geometry=[834,512,252,160]
+
+[DebugWindow/param.All]
+Geometry=[848,526,622,368]
+
 [DebugWindow/srcstr]
 Geometry=[2664,390,339,339]
 
@@ -208,18 +217,14 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Updated example"
+LastCommit="Updated Notify functions, extended to allow more than one object to request notification more than once\n\n* New : Allow more than one object to request notification, or same object to request with different call back functions"
 
 [OpenFile]
-Count=6
-File[1]=".src/Examples/vTestApps/General Tests/Define2NotifyForSameVariable.module:0.10"
-Active=2
-File[2]=".src/ShmMem/shmMem.class:4.268"
-File[3]=".src/ShmMem/ShmSymbolTable.class:4.630"
-File[4]=".src/ShmMem/ShmNotify.class:9.139"
-File[5]=".src/Examples/vTestApps/NotifyTestWithProcesses/NewNotifyManualAllocTasks.module:0.68"
-File[6]=".src/Examples/vTestApps/General Tests/Define2NotifyAgain.class:28.14"
+Count=1
+File[1]=".src/Examples/vTestApps/General Tests/NewArrayAccess.module:18.13"
+Active=1
 
 [Watches]
-Count=0
+Count=1
+Watch[1]="param"
 

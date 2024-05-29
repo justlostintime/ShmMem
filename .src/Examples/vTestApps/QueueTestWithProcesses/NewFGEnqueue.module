@@ -6,17 +6,17 @@ Public Sub Main()
     Dim work As New ShmMem(4200000, "Work")
 
     With work
-        !TheQ = New ShmQueue(work)
+        !TheQ = New ShmQueue(work, 0, True, "Queue Test one")
 
         !Testy1 = "hello world"
         !Testy2 = 1
         !Testy3 = 2.6
-        !TheQ.enqueue("1", 0)
-        !TheQ.enqueue("23", 6)
-        !TheQ.enqueue("S2", 5)
-        !TheQ.EnQueue("3", 4)
-        !TheQ.enqueue("S4", 3)
-        !TheQ.enqueue("5", 100)
+        !TheQ.enqueue("1-0", 0)
+        !TheQ.enqueue("23-6", 6)
+        !TheQ.enqueue("S2-5", 5)
+        !TheQ.EnQueue("3-4", 4)
+        !TheQ.enqueue("S4-3", 3)
+        !TheQ.enqueue("5-100", 100)
 
         .PrintTree()
 
@@ -29,13 +29,14 @@ Public Sub Main()
         While !TheQ.Count
             Print "Popping =";; !TheQ.dequeue()
         Wend
-        Print "End Dqueue"
-        !TheQ.enqueue("1", 0)
-        !TheQ.enqueue("23", 6)
-        !TheQ.enqueue("6", 5)
-        !TheQ.EnQueue("32", 8)
-        !TheQ.enqueue("s12", 3)
-        !TheQ.enqueue("5", 100)
+
+        Print "End Dqueue, Queue Count ="; !TheQ.count
+        !TheQ.enqueue("1-0", 0)
+        !TheQ.enqueue("23-6", 6)
+        !TheQ.enqueue("6-5", 5)
+        !TheQ.EnQueue("32-8", 8)
+        !TheQ.enqueue("s12-3", 3)
+        !TheQ.enqueue("5-100", 100)
 
         .PrintAllInfo()
 

@@ -91,7 +91,7 @@ End
 '' Returns the list as a list
 '' Increments the refrence counter for this list
 
-Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, GlobalValue As Boolean = False)
+Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, GlobalValue As Boolean = False, Tag As String = "")
 
     If Object.Class(VarStorage).name == "ShmMem" Then
         VarMem = VarStorage.MyVarMem
@@ -108,6 +108,7 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Glob
         ListHead.sema = VarMem.Alloc(64)
         ListHead.UsePriority = False
         ListHead.Value = 0
+        ListHead.tag = Byte[].FromString(tag)
         sem_init(varmem.RealDataAddress(ListHead.sema), 1, 0)
     Else
         VirtualAddress = VirtAddress
@@ -337,7 +338,7 @@ Public Sub insert(Index As Long, value As Variant, Optional ExtendedId As Intege
         Next
     Endif
 
-    NewItem.RefCount = ExtendedId
+    NewItem.Priority = ExtendedId
 
     If ListHead.bDebug Then Print Application.id, "Insert ShmList VarMem.Lock " & Index
     VarMem.Lock()
@@ -483,14 +484,14 @@ End
 Public Sub Pop() As Variant
 
     If ListHead.value > 0 Then
-        Return Remove(0)
+        Return Remove(-1)
     Else
-        Return Null
+        Error.Raise("Dequeue : empty queue")
     Endif
 
 End
 
-Public Sub push(value As Variant, Optional ExtendedID As Long = 0, TagInfo As String = "Push")
+Public Sub Push(value As Variant, Optional ExtendedID As Long = 0, TagInfo As String = "Push")
 
     add(value, ExtendedID, TagInfo)
 

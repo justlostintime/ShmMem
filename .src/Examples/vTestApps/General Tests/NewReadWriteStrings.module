@@ -1,15 +1,22 @@
 ' Gambas module file
 
+loops As Long = 10
+
 Public Sub main()
 
     Dim vmem As New ShmMem
+    Dim tmp As String
+    Dim starttime As Float = Timer
 
-    vmem!goat = "hello mom"
-    Print vmem!goat
-    vmem!cat = "This cat"
-    Print vmem!cat
+    For i As Integer = 0 To loops
+        vmem!goat = "hello mom .." & Space(i % 1000) & ".."
+        tmp = vmem!goat
+        vmem!cat = "This cat.." & Space(i % 1000) & ".."
+        tmp = vmem!cat
+    Next
 
-    vmem.Print()
+    ' Print "ReWrite string data";; loops;; "times, time="; Timer - starttime
+    ' vmem.Print()
 
     vmem = Null
 

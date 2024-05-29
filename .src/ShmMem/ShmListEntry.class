@@ -51,7 +51,7 @@ Property Priority As Long                                               '' The p
 Property Debug As Boolean Use $bDebug             '' Turn on or off debugging for this entry
 Property Tag As String                                                  '' user defined tag for this entry
 
-Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Priority As Long = 0)
+Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Priority As Long = 0, tag As String = "")
 
     '$bDebug = True
     If Object.Class(VarStorage).name == "ShmMem" Then
@@ -63,6 +63,7 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Prio
     If VirtAddress = 0 Then
         NewEntry()
         entry.Priority = Priority
+        entry.tag = Byte[].FromString(tag)
     Else
         Dim RealPtr As Pointer
         RealPtr = VarMem.RealAddress(VirtAddress)
