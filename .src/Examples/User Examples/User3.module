@@ -24,7 +24,7 @@ Public Sub main()
         Wait 0.001
     Wend
 
-    Print "User 2 Completed and exits"
+    Print "User 3 Completed and exits"
 
 End
 
