@@ -1,0 +1,33 @@
+' Gambas module file
+
+vars As New ShmMem
+
+Public Sub main()
+
+    With vars
+        !dog = New ShmList(vars, 0, True, "My Dog Info")
+        !dog.Add("My Dirty Mutt", 1, "MyDirty Mut")
+        !dog.Add("My Clean Mutt", 2, "Clean Mut Too")
+
+        Dim allitems As Variant[]
+        AllItems = !dog.AllEntries
+
+        For Each v As Variant In !dog
+            Print v, !dog.key, !dog.Key_ExtendedId, !dog.key_tag
+            Dim bork As Shmlist = !dog.dup()                                               ' this only creates a new header, that points to the exsisting entries, be carefull
+            For Each v As Variant In bork
+                Print v, bork.key, bork.Key_ExtendedId, bork.key_tag
+            Next
+        Next
+
+        Dim cat As New ShmList(vars, 0, True, "My Cat Stuff")
+        cat.Add("My Dirty Cat", 1, "MyDirty Cat")
+        cat.Add("My Clean Mutt", 2, "Clean cat Too")
+
+        For Each v As Variant In cat
+            Print v, cat.key, cat.Key_ExtendedId, cat.key_Tag
+        Next
+
+    End With
+
+End

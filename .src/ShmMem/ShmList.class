@@ -39,6 +39,8 @@ Public Struct dList                             '' A defined entry in list of ob
     RefCount As Long                          '' Number of refrences to this element
     Priority As Long                              '' in a queue this is the priority of this element
     UsePriority As Boolean                '' Enable the use of priority ordering in the list
+    enum_counter As Long              '' Used when enumerating a list structure
+    enum_listitem As Dlist                '' pointer to dlist
     Value As Pointer                            '' Value of entry or count if pool
 End Struct
 
@@ -46,6 +48,7 @@ Static Public cShmList As Integer = 20                  '' The Constant identify
 Static Public cShmListEntry As Integer = 21        '' The entry in a ShmList object type
 
 ' Extern DListPtr(dest As Pointer, src As Pointer, Len As Integer) As DList In "libc:6" Exec "memcpy"
+' Extern memcpy(dest As Dlist, src As Dlist, Len As Integer) As Integer In "libc:6"
 
 Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
 ' Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
@@ -58,9 +61,10 @@ Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
 Private VirtualAddress As Pointer = 0              '' Pointer to the head of the list
 Public ListHead As DList                                         '' Pointer to the actual list
 Public VarMem As ShmVarStorage                    '' The storage pool to used or referenced
-Public Key As Long                                                   '' During iterations this will be the item count
-Public Key_dlist As Dlist                                         '' During iteration this contains the current dlist entry
-Public Key_ExtendedId As Long                          '' ExtendedId of the entry being proessed by Next
+Property Read Key As Long                                   '' During iterations this will be the item count
+Property Read Key_dlist As Dlist                          '' During iteration this contains the current dlist entry
+Property Read Key_ExtendedId As Long           '' ExtendedId of the entry being proessed by Next
+Property Read Key_Tag As String                       '' The content of the entry tag field
 
 Property Read max As Long                                '' max count for iteration
 Property Read count As Long                             '' Count of elements in this list
@@ -69,6 +73,7 @@ Property Read Type As Integer                        '' The type of this object
 Property Read Address As Pointer                  '' The address of the object
 Property Debug As Boolean                              '' Debugging helper
 Property Read AllLists As Variant[]                 '' Returns a table of all active List{types} in memory
+Property Read AllEntries As Variant[]             '' returns a list of all entries in the list
 Property Tag As String                                        '' memo tag for debug and identity purposed
 Property Read ClassList As String                    '' The name of the class for this list/entry
 Property Read ClassEntry As String                 '' The text name of the list/queue entries
@@ -138,11 +143,11 @@ Public Sub _Free(Optional OverRideGlobal As Boolean = False)
 
 End
 
-'' Required for each user define class, returns the pointer to the under laying data structure
-Static Public Sub UserPtr(varmem As ShmVarStorage, VirtAddr As Pointer) As Dlist
+'' Required for each user defined class, returns the pointer to the under laying data structure
+Static Public Sub UserPtr(vvarmem As ShmVarStorage, VirtAddr As Pointer) As Dlist
 
     If VirtAddr <= 0 Then Return Null
-    Dim RealPtr As Pointer = VarMem.RealAddress(VirtAddr)
+    Dim RealPtr As Pointer = vVarMem.RealAddress(VirtAddr)
     Return RealPtr
 
 End
@@ -607,15 +612,52 @@ Public Sub RemoveByVirt(VirtAddress As Pointer) As Variant
 
 End
 
+'' Duplicate the head of the list but include the same entries in both lists
+Public Sub Dup() As Variant
+
+    Dim newlist As Variant = Object.Class(Me).New([VarMem, 0, Me.ListHead.global, "Dup:" & Me.tag])
+
+    newlist.listhead.Next = Me.ListHead.Next
+    newlist.ListHead.prev = Me.ListHead.Prev
+    newlist.ListHead.value = Me.ListHead.Value
+    Return newlist
+
+End
+
+'' Create a deep copy of the list
 Public Sub {Copy}() As Variant
 
-    Dim newlist As New ShmList(VarMem)
+    Dim newlist As Variant = Object.Class(Me).New(VarMem, 0, Me.ListHead.Global, "Copy:" & Me.tag)
 
-    For Each v As Variant In Me
-        newlist.add(v)
+    For Each v As Variant In Me                         'Move the values To the New List
+        newlist.add(v, Me.Key_ExtendedId, Me.Key_Tag)
     Next
 
     Return newlist
+
+End
+
+Private Function key_read() As Long
+
+    Return ListHead.Enum_counter
+
+End
+
+Private Function Key_Tag_read() As String
+
+    Return ListHead.Enum_Listitem.Tag.ToString()
+
+End
+
+Private Function Key_dlist_read() As Dlist
+
+    Return ListHead.Enum_Listitem
+
+End
+
+Private Function Key_ExtendedId_read() As Long
+
+    Return ListHead.Enum_listitem.Priority
 
 End
 
@@ -627,25 +669,22 @@ Public Sub _next() As Variant
 
         If ListHead.Value > 0 Then
             ListItem = EntryPtr(ListHead.next)
-            Enum.Index = ListItem
-            Key = 0
-            Key_dlist = ListItem
-            Key_ExtendedId = ListItem.Priority
+            Enum.Index = listhead
+            Enum.Index.enum_listitem = listitem
+            Enum.Index.enum_counter = 0
         Else
             Enum.Stop
             Return
         Endif
     Else
-        listItem = Enum.index
+        listItem = Enum.index.Enum_listitem
         If ListItem.next = Null Then
             Enum.Stop
             Return
         Else
             ListItem = EntryPtr(ListItem.next)
-            Enum.index = listItem
-            Inc Key
-            Key_dlist = ListItem
-            Key_ExtendedId = ListItem.Priority
+            Enum.Index.enum_listitem = listItem
+            Inc Enum.Index.enum_Counter
         Endif
     Endif
 
@@ -751,6 +790,8 @@ Private Sub Debug_Write(Value As Boolean)
 
 End
 
+'' Returns a list Of all the objects Of the same type As This Class
+'' from the shared memory
 Private Function AllLists_Read() As Variant[]
 
     Dim ListTable As New Variant[]
@@ -765,6 +806,26 @@ Private Function AllLists_Read() As Variant[]
 
 End
 
+'' returns an array of elements for all list type classes
+'' Entries in this list point to the underlaying shared values
+'' if you change anything in this list it will affect every other
+'' refrence to this list
+Private Function AllEntries_read() As Variant[]
+
+    Dim nextitem As Dlist
+    Dim items As New Variant[]
+    Dim newObject As Object
+
+    nextitem = EntryPtr(listhead.Next)
+    While nextitem <> Null
+        newObject = Object.New(VarMem.GetTextType(nextitem.Type), [varmem, nextitem.address])
+        items.Add(newObject)
+        nextitem = EntryPtr(NextItem.Next)
+    Wend
+    Return items
+
+End
+
 Private Function Tag_Read() As String
 
     Return Trim(ListHead.Tag.ToString())
@@ -775,12 +836,9 @@ Private Sub Tag_Write(Value As String)
 
     Dim rValue As String = Left(value & Space(ListHead.Tag.length), ListHead.Tag.length)
 
-    'Print "set tag = "; Value;; "{"; rValue; "}"
     For i As Integer = 0 To ListHead.Tag.length - 1
         ListHead.Tag[i] = Asc(rValue[i])
     Next
-    ' ListHead.Tag.FromString(rValue)
-    'Print ListHead.Tag.ToString()
 
 End
 
@@ -790,7 +848,7 @@ Public Sub textTree() As String
     Dim entry As Variant
 
     For Each entry In Me
-        Print Me.key
+        Print indent;; Me.key
     Next
 
 End

@@ -15,8 +15,8 @@ Public Sub main()
         tmp = vmem!cat
     Next
 
-    ' Print "ReWrite string data";; loops;; "times, time="; Timer - starttime
-    ' vmem.Print()
+    Print "ReWrite string data";; loops;; "times, time="; Timer - starttime
+    vmem.Print()
 
     vmem = Null
 

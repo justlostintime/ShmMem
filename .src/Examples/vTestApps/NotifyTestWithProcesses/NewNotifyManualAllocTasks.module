@@ -24,8 +24,7 @@ Public Sub main()
     Dim MyList As New ShmList(MyVarMem, 0, False, "Test The List")
     Dim MyQueue As New ShmQueue(MyVarMem, 0, False, "Test The Queue")
 
-    Print "Symbol Storage length =";; symStore.length
-    'Stop
+    Print "Symbol Storage length =";; symStore.length, MyList.count
 
     With vars
         !dog = 8
@@ -75,13 +74,13 @@ End
 
 Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value
+    If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value;; TimedOut
 
 End
 
 Public Sub Cow_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value
+    If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value;; TimedOut
 
 End
 

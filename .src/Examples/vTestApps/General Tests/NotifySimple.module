@@ -20,12 +20,12 @@ End
 
 Public Sub a_changed(VarName As String, value As Variant, TimedOut As Boolean)
 
-    Print "A changed to "; value
+    Print varname;; "changed to "; value;; Timedout
 
 End
 
 Public Sub b_changed(VarName As String, value As Variant, TimedOut As Boolean)
 
-    Print "B changed to "; value
+    Print Varname;; "changed to "; value;; Timedout
 
 End

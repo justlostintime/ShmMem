@@ -4,7 +4,6 @@ Public Sub main()
 
     Dim Tasks As New NewBGLoader[]
     Dim vmem As New ShmMem(1000000, "jiffy")
-    Dim wiggle As Integer = 0
     Dim tmp As NewBGLoader
     Dim Iterations As Integer = 10
 

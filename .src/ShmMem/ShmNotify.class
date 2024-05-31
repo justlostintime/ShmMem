@@ -37,6 +37,7 @@ Public Struct Symbol
     NameLength As Integer                     '' NameLength
     {Next} As Long                                     '' in case of a hash conflict index to the next in this chain -1 of not used
     Previous As Long                                '' in case of hash conflict index to the parent of this value -1 if not used
+    Type As Integer                                   '' data type of the data stored into the memory, -1 if gambas data type
 End Struct
 
 Extern signal(sig As Integer, sighandler As Pointer) As Pointer In "libc:6"

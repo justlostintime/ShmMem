@@ -4,6 +4,8 @@ Inherits Task
 
 Public Sub Main()
 
+    Dim r As Variant
+
     Print Application.id, "BG ***********************  Begin BackGround task"
 
     Dim qa As New ShmQueue(NewQueueTest.mqa, 0, True, "The Testing queue")
@@ -15,7 +17,7 @@ Public Sub Main()
         qa.enqueue(32.4)
         If i Mod 10 = 0 Then Print Application.id, "BG ********************************************", i
         While qa.Count
-            Dim r As Variant = qa.pop()
+            r = qa.pop()
         Wend
         Wait 0.1
     Next

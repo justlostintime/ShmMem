@@ -63,7 +63,7 @@ Public Sub cow_changed(VarName As String, Value As Variant, TimedOut As Boolean)
 
     If TypeOf(value) = gb.string Then Return
     If value % 10000 = 0 Then
-        Print Application.id;; " BG "; varname;; " = ";; Value;; " Fetched value = "; Vars!Cow;; "time for 10,000 events = "; (Now - starttime) * 100000
+        Print Application.id;; " BG "; varname;; " = ";; Value;; " Fetched value = "; Vars!Cow;; "time for 10,000 events = "; (Now - starttime) * 100000;; Str(timedOut)
         starttime = Now
     Endif
 
@@ -71,7 +71,7 @@ End
 
 Public Sub done_changed(VarName As String, Value As Variant, TimedOut As Boolean)
 
-    Print Application.id;; " BG Recieved Done directive, starting exit procedure"
+    Print Application.id;; " BG Recieved Done directive, starting exit procedure";; Str(timedOut);; Varname;; Value
     isRunning = False
 
 End

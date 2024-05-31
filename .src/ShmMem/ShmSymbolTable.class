@@ -14,11 +14,12 @@ Public Struct Symbol
     Name[128] As Byte                       '' Max length of any variable name actual length is 127 with terminating 0
     Used As Boolean                          '' This slot is in use
     NotifyBlock As Pointer               '' pointer to chain of pids waiting to be notified when This symbol changes
-    Address As Long                          '' virtual address of the value, 0 means no value yet
+    Address As Long                          '' virtual address of the value, 0 means no value yet, pointer to structures for internal shm extended data types
     Hash As Long                                 '' Hash value for the symbol, used to match when collision
     NameLength As Integer              '' the length of the symbol Name
     {Next} As Long                               '' in case of a hash conflict index to the next in this chain -1 of not used
     Previous As Long                           '' in case of hash conflict index to the parent of this value -1 if not used
+    Type As Integer                              '' data type of the data stored into the memory, -1 if gambas data type
 End Struct
 
 '' The content of table structure and each entry in the symbol table

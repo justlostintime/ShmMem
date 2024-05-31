@@ -286,6 +286,7 @@ Public Sub RemapNamed(NewLength As Long)
     P = mremap(MemoryAddress, MemoryLength, NewLength, 0)           '' resize but don't allow to move
     Dim syserror As Integer = System.Error
     If p = -1 Or p <> MemoryAddress Then
+        Print "System Error #";; syserror
         Stop
     Endif
 

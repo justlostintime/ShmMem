@@ -99,7 +99,7 @@ Public Sub main()
     Dim Var_a As Long = MyVars.set(Now)
 
     Dim y As Integer = MyVars[var_x]
-    'Print MyVars[var_x], MyVars[var_y], MyVars[var_z], MyVars[var_a]
+    Print MyVars[var_x], MyVars[var_y], MyVars[var_z], MyVars[var_a]
 
     starttime = Timer
     For i As Integer = 0 To longloop

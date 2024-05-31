@@ -1,6 +1,6 @@
 # ShmMem
 
-Gambas3 Shared Memory component Version 2
+Gambas3 Component to Use Linux Shared Memory Functions
 
 This can be used to store any valid gambas object or variable type.
 This allows the use of bothd named and un-named shared 

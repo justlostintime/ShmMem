@@ -2,7 +2,7 @@
 shmMem=[234]
 
 [Debug]
-Breakpoints={}
+Breakpoints={"NewFGEnqueue":[47],"ShmListVariables":[12],"ShmList":[615]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -21,14 +21,17 @@ Geometry=[2192,325,252,56]
 [DebugWindow/CallBack]
 Geometry=[834,445,411,261]
 
+[DebugWindow/CurrentItem]
+Geometry=[3025,771,252,56]
+
 [DebugWindow/ListHead]
-Geometry=[2754,498,252,56]
+Geometry=[834,512,252,56]
 
 [DebugWindow/ListHead.Tag]
 Geometry=[834,498,252,56]
 
 [DebugWindow/ListItem]
-Geometry=[834,381,252,290]
+Geometry=[834,381,611,290]
 
 [DebugWindow/Listof]
 Geometry=[2033,375,364,313]
@@ -44,6 +47,9 @@ Geometry=[833,502,639,420]
 
 [DebugWindow/NewElement]
 Geometry=[2203,217,252,56]
+
+[DebugWindow/NewItem]
+Geometry=[2754,498,252,56]
 
 [DebugWindow/NotifyObject]
 Geometry=[834,445,471,258]
@@ -115,10 +121,13 @@ Geometry=[2454,356,252,170]
 Geometry=[834,402,252,276]
 
 [DebugWindow/SymMem]
-Geometry=[2132,429,252,58]
+Geometry=[2836,649,252,58]
 
 [DebugWindow/SymMem.Table]
-Geometry=[2095,303,587,508]
+Geometry=[2039,649,252,220]
+
+[DebugWindow/SymMem.Table[0]]
+Geometry=[2341,701,252,210]
 
 [DebugWindow/SymMem.Table[97]]
 Geometry=[2109,317,421,306]
@@ -150,14 +159,32 @@ Geometry=[834,415,252,250]
 [DebugWindow/UserQueue]
 Geometry=[834,512,252,56]
 
+[DebugWindow/Value]
+Geometry=[2064,424,753,517]
+
 [DebugWindow/VarMem]
 Geometry=[834,498,252,130]
 
 [DebugWindow/Vars.SortedList()]
 Geometry=[834,402,252,276]
 
+[DebugWindow/bork]
+Geometry=[2754,308,252,436]
+
+[DebugWindow/listhead]
+Geometry=[2684,948,252,56]
+
 [DebugWindow/mBlock]
 Geometry=[834,372,252,336]
+
+[DebugWindow/me]
+Geometry=[2440,391,252,170]
+
+[DebugWindow/newlist]
+Geometry=[834,512,252,56]
+
+[DebugWindow/newlist.ListHead]
+Geometry=[834,512,252,56]
 
 [DebugWindow/param]
 Geometry=[834,512,252,160]
@@ -196,7 +223,7 @@ Geometry=[2754,498,252,56]
 Geometry=[2137,375,252,88]
 
 [DebugWindow/vars]
-Geometry=[834,498,252,56]
+Geometry=[2754,498,252,320]
 
 [DebugWindow/vptr]
 Geometry=[2754,498,252,110]
@@ -217,14 +244,22 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Updated Notify functions, extended to allow more than one object to request notification more than once\n\n* New : Allow more than one object to request notification, or same object to request with different call back functions"
+LastCommit="UTested and updated all test functions, correct bugs found in shared mem classes\n\n* BUG: Many fixes"
 
 [OpenFile]
-Count=1
-File[1]=".src/Examples/vTestApps/General Tests/NewArrayAccess.module:18.13"
-Active=1
+Count=8
+File[1]=".src/Examples/vTestApps/General Tests/ShmListVariables.module:16.13"
+Active=2
+File[2]=".src/ShmMem/ShmList.class:53.629"
+File[3]=".src/ShmMem/ShmSymbolTable.class:0.551"
+File[4]=".src/ShmMem/ShmNotifyEntry.class:48.34"
+File[5]=".src/ShmMem/ShmNotify.class:53.39"
+File[6]=".src/ShmMem/ShmVarStorage.class:32.27"
+File[7]=".src/ShmMem/ShmListEntry.class:19.25"
+File[8]=".src/ShmMem/ShmQueue.class:47.169"
 
 [Watches]
-Count=1
+Count=2
 Watch[1]="param"
+Watch[2]="me"
 

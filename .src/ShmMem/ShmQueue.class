@@ -24,6 +24,8 @@ Public Struct dList                         '' A defined entry in list of object
     RefCount As Long                      '' Number of refrences to this element
     Priority As Long                           '' Priority/Extended ID of a list element
     UsePriority As Boolean            '' Enable the use of priority ordering in the queue
+    enum_counter As Long              '' Used when enumerating a list structure
+    enum_listitem As Dlist               '' pointer to dlist
     Value As Pointer                        '' Value of entry or count if pool
 End Struct
 
@@ -148,23 +150,24 @@ Public Sub _next() As Variant
     If IsNull(Enum.Index) Then
 
         If listhead.Value > 0 Then
-            Enum.index = Super.EntryPtr(listhead.next)
-            Listitem = Enum.index
-            Super.key = Listitem.Priority                                            ' sets the key to be the items priority in the queue
+            Enum.index = listhead
+            ListItem = Super.EntryPtr(listhead.next)
+            Enum.index.enum_listitem = listitem
+            Enum.Index.enum_counter = Listitem.Priority                                            ' sets the key to be the items priority in the queue
         Else
             Enum.Stop()
             Return
         Endif
     Else
-        listitem = Enum.index
+        listitem = Enum.index.enum_listitem
         If ListItem.next = 0 Then
             Enum.Stop()
             Return
         Else
-            listitem = Enum.index
+            listitem = Enum.index.enum_listitem
             ListItem = Super.EntryPtr(ListItem.next)
-            Super.key = ListItem.Priority                                 ' in this case this is the priority
-            Enum.Index = listitem
+            Enum.Index.enum_listitem = ListItem.Priority                                 ' in this case this is the priority
+            Enum.Index.enum_listitem = listitem
         Endif
     Endif
 

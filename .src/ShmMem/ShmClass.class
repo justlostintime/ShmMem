@@ -2,7 +2,7 @@
 
 Export
 Fast Unsafe
-''' This class must be inherited if classes which will be shared between tasks/processes
+''' This class must be inherited by classes which will be shared between tasks/processes
 ''' If you do not use this class as the default then your non data usage class will fail
 ''' when you try to save of load from the shared memory database
 ''' or you can just define the _read and _write functions in your shared object class
@@ -183,20 +183,26 @@ Public Sub ToString() As String
 
 End
 
-'' does the conversion on the stream
+'' Does the conversion on the stream
 '' returns true if it was required or false if object
 '' read process can continue
 '' if this function returns true then the conversion function
 '' completed the loading of the object and mainline should not
 '' read anything more. This can convert from lower class version
 '' needs to decide what to do with a higher class version
+'' this needs to be implemented by each user class
+'' VersionNumber is the version of the object
+'' mFile is the current input/transfer stream being used, should be read
+'' by function to complete and conversion of data
 Private Sub _convertStream(versionnumber As Integer, mFile As File) As Boolean
 
+    Dim InputStream As Stream
     Select Case versionnumber
-        Case ClassVersion ' indicate we did Not Read Or Do conversion As They are same version
+        Case ClassVersion                     ' indicate we did Not Read Or Do conversion As They are same version
             Return False
 
         Default
+            InputStream = mfile
             Return False
 
     End Select

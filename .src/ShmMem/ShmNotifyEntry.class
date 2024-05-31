@@ -32,6 +32,7 @@ Public Struct Symbol
     NameLength As Integer                '' NameLength
     {Next} As Long                                '' in case of a hash conflict index to the next in this chain -1 of not used
     Previous As Long                            '' in case of hash conflict index to the parent of this value -1 if not used
+    Type As Integer                                '' data type of the data stored into the memory, -1 if gambas data type
 End Struct
 
 Public NotifyObject As Object
@@ -43,6 +44,7 @@ Public VarMemory As ShmVarStorage
 Public Tag As String
 Public StartTime As Float
 Private VarClock As Timer
+Private OneShot As Boolean = False
 ' Private OneShot As Boolean
 
 Event VarChanged(VarDef As ShmNotifyEntry)
@@ -52,16 +54,20 @@ Extern sched_yield() As Integer In "libpthread:0"
 
 '' Dispatch Functions must look like
 '' MyChange(SymSource as ShmMem, SymName as String, Value as Variant, TimedOut as boolean)
-
-Public Sub _new(SymName As Symbol, CallObject As Object, CallFunc As String, VarMem As ShmVarStorage, Optional fTimeout As Long = 0, Once As Boolean = False, Tag As String = "")
+Public Sub _new(SymName As Symbol, CallObject As Object, CallFunc As String, VarMem As ShmVarStorage, Optional fTimeout As Long = 0, Once As Boolean = False, mTag As String = "")
 
     NotifyObject = CallObject
     NotifyFunc = CallFunc
     NotifyVar = SymName
     NotifyTimeOut = fTimeOut
     VarMemory = VarMem
+    oneShot = Once
     VarName = SymName.Name.ToString()
-    If Tag = "" Then Tag = Str(CallObject) & CallFunc
+    If mTag = "" Then
+        Tag = Str(CallObject) & CallFunc
+    Else
+        Tag = mTag
+    Endif
 
     If fTimeOut > 0 Then
         VarClock = New Timer As "VarTimeout"

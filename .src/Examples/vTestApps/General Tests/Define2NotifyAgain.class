@@ -22,18 +22,18 @@ End
 
 Public Sub a1(SymName As String, value As Variant, TimedOut As Boolean)
 
-    Print "a1"
+    Print "changed", SymName, value, Timedout
 
 End
 
 Public Sub a2(SymName As String, value As Variant, TimedOut As Boolean)
 
-    Print "a2"
+    Print "changed", SymName, value, Timedout
 
 End
 
 Public Sub a_changed(SymName As String, value As Variant, TimedOut As Boolean)
 
-    Print "a_changed"
+    Print "changed", SymName, value, Timedout
 
 End

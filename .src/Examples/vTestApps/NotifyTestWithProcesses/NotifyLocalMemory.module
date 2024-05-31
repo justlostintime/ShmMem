@@ -64,19 +64,19 @@ End
 
 Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value
+    If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value;; Str(TimedOut)
 
 End
 
 Public Sub cow_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    If TypeOf(value) = gb.integer And If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value
+    If TypeOf(value) = gb.integer And If value % 10000 = 0 Then Print Application.id, "FG";; VarName;; "=";; Value;; Str(TimedOut)
 
 End
 
 Public Sub done_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print Application.id, "FG";; VarName;; "=";; Value
+    Print Application.id, "FG";; VarName;; "=";; Value;; Str(TimedOut)
 
 End
 
