@@ -9,9 +9,7 @@ Public ValidVariables As String[] = ["cat", "dog", "rabbit", "done"]
 
 Public Sub main()
 
-    Dim MyShare As ShmMem
     Dim Buffer As String
-    Dim elements As String[]
     Dim element As String[]
 
     'ShmMem.ForceDelete("MySharedMem")                                          ' cleanup any old testing
@@ -44,31 +42,31 @@ Public Sub main()
 
 End
 
-Public Sub PrintStuff(MyShare As ShmMem)
+Public Sub PrintStuff(vMyShare As ShmMem)
 
     Dim Value As Variant = ""
 
-    For Each Value In MyShare
-        Print MyShare.key; "="; Quote(Value)
+    For Each Value In vMyShare
+        Print vMyShare.key; "="; Quote(Value)
     Next
 
 End
 
 Public Sub cat_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print "Sent  ";; value;; " For Cat"
+    Print "Sent  ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
 
 End
 
 Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print "Sent ";; value;; " For Dog"
+    Print "Sent ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
 
 End
 
 Public Sub Rabbit_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print "Sent";; value;; "for rabbit"
+    Print "Sent";; value;; "for";; VarName;; "Timed Out="; Str(timedout)
 
 End
 
@@ -76,9 +74,9 @@ Public Sub done_changed(varname As String, value As Variant, TimedOut As Boolean
 
     If value == "True" Then
         Completed = True
-        Print "Done Is committed"
+        Print VarName;; "Is committed";; "Timed Out="; Str(timedout)
     Else
-        Print "done set to "; value
+        Print varname;; " set to "; value;; "Timed Out="; Str(timedout)
     Endif
 
 End

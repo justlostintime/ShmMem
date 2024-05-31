@@ -722,7 +722,7 @@ Public Sub TextTree(Optional VirtAddress As Pointer = 0, Indent As Integer = 0) 
 
     Dim vptr As AllocHeader
     '    Dim sIndent As String = IIf(indent > 0, "|" & Space(Indent * 2), "")
-    Dim OutBuffer As String = ""
+    Dim OutBuffer As String = Space(indent) & ""
     Dim theList As Variant
 
     If VirtAddress = 0 Then

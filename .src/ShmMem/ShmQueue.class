@@ -71,8 +71,6 @@ Public Sub EnQueue(Value As Variant, Optional Priority As Integer = 0, TagValue 
         Return
     Endif
 
-    Dim TmpListhead As Dlist = listhead
-
     Super.VarMem.Lock()
     SeekPriority(Priority)
     Super.Insert(LastIndex, Value, Priority, TagValue)

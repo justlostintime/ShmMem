@@ -17,10 +17,14 @@ Public Sub main()
 
     Dim x As Integer = 1024
     Dim var_x As Pointer = MyVars.set(x)
-    Dim var_y As Pointer = MyVars.set(5678)
-    Dim Var_z As Pointer = MyVars.set(3.45)
-    Dim Var_a As Pointer = MyVars.set(Now)
-    Dim Str_a As Pointer = MyVars.set("Hello world")
+    Dim var_y As Pointer
+    var_y = MyVars.set(5678)
+    Dim Var_z As Pointer
+    Var_z = MyVars.set(3.45)
+    Dim Var_a As Pointer
+    Var_a = MyVars.set(Now)
+    Dim Str_a As Pointer
+    Str_a = MyVars.set("Hello world")
 
     Dim y As Integer = MyVars[var_x]
 

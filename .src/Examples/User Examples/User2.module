@@ -8,8 +8,6 @@ Public Completed As Boolean = False
 
 Public Sub main()
 
-    Dim MyShare As ShmMem
-
     MyShare = New ShmMem(2000000, "MySharedMem", 8000)
     MyShare!Cat = "Felix"
     MyShare!Dog = "Rover"
@@ -32,19 +30,19 @@ Public Sub main()
 
 End
 
-Public Sub PrintStuff(MyShare As ShmMem)
+Public Sub PrintStuff(vMyShare As ShmMem)
 
     Dim Value As Variant = ""
 
-    For Each Value In MyShare
-        Print MyShare.key; "="; Quote(Value)
+    For Each Value In vMyShare
+        Print vMyShare.key; "="; Quote(Value)
     Next
 
 End
 
 Public Sub changes(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print varname;; "has been updated to";; value
+    Print varname;; "has been updated to";; value;; "Timed Out="; Str(timedout)
     If VarName == "done" And value == "true" Then Completed = True
 
 End

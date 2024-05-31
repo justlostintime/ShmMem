@@ -2,7 +2,7 @@
 
 ' Fast Unsafe
 'Extern strncpy(dest As Pointer, source As String, len As Long) In "libc:6"
-Private loopcount As Integer = 100000
+Private loopcount As Integer = 5000
 Private Letters As String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 Public varStore As ShmMemBlock
@@ -18,18 +18,15 @@ Public Sub main()
     MyVarMem = New ShmVarStorage(varMnge)
     symStore = New ShmMemBlock(5000000)
 
-    Dim withCache As Boolean = False
-
-    '  If Not WithCache Then
     vars = New ShmSymbolTable(symStore, MyVarMem, False)
     RunTest()
+
     vars.Clear()
-    vars.UseCache = True
-    'Else
-    ' vars = New ShmSymbolTable(symStore, MyVarMem, True)
+
+    vars.UseCache = True                         ' turn on the Local Cache for variables
+
     RunTest()
     Quit 0
-    '  Endif
 
 End
 
@@ -44,7 +41,7 @@ Sub RunTest()
 
         Dim RandomName As New String[]
 
-        For p As Integer = 0 To 20000
+        For p As Integer = 0 To LoopCount
             Dim wordin As String = ""
             Dim WordLength As Integer = Rand(1, 20)
             For Q As Integer = 0 To WordLength

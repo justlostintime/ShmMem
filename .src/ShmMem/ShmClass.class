@@ -120,7 +120,7 @@ End
 '' < 0 the version is greater than the objects version
 '' > 0 the class version is greater then the object version
 '' = 0 class and object have same version
-Private Sub CheckVersion(versionnumber As String) As Integer
+Public Sub CheckVersion(versionnumber As String) As Integer
 
     Return objectversion - versionnumber
 
@@ -197,6 +197,7 @@ End
 Private Sub _convertStream(versionnumber As Integer, mFile As File) As Boolean
 
     Dim InputStream As Stream
+
     Select Case versionnumber
         Case ClassVersion                     ' indicate we did Not Read Or Do conversion As They are same version
             Return False
