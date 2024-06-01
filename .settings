@@ -1,16 +1,15 @@
 [Bookmarks]
 shmMem=[234]
+ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"NewFGEnqueue":[47],"ShmListVariables":[12],"ShmList":[615]}
+Breakpoints={"NewFGEnqueue":[47],"ShmListVariables":[15,11]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
 Remote=False
 Profiling=False
 Environment=["GB_NO_JIT=1"]
-RemoteEnvironment=[]
-Arguments=[]
 
 [DebugWindow]
 Count=0
@@ -168,8 +167,32 @@ Geometry=[834,498,252,130]
 [DebugWindow/Vars.SortedList()]
 Geometry=[834,402,252,276]
 
+[DebugWindow/allitems]
+Geometry=[834,402,639,327]
+
 [DebugWindow/bork]
-Geometry=[2754,308,252,436]
+Geometry=[2754,308,752,610]
+
+[DebugWindow/bork.AllEntries]
+Geometry=[2768,322,434,340]
+
+[DebugWindow/bork.AllLists]
+Geometry=[2768,322,319,276]
+
+[DebugWindow/bork.AllLists[0]]
+Geometry=[2782,336,613,456]
+
+[DebugWindow/bork.AllLists[0].AllLists]
+Geometry=[2796,350,252,276]
+
+[DebugWindow/bork.AllLists[1]]
+Geometry=[2782,336,488,456]
+
+[DebugWindow/items]
+Geometry=[834,402,703,276]
+
+[DebugWindow/items[1]]
+Geometry=[848,416,252,170]
 
 [DebugWindow/listhead]
 Geometry=[2684,948,252,56]
@@ -178,7 +201,10 @@ Geometry=[2684,948,252,56]
 Geometry=[834,372,252,336]
 
 [DebugWindow/me]
-Geometry=[2440,391,252,170]
+Geometry=[834,519,630,224]
+
+[DebugWindow/newObject]
+Geometry=[834,455,252,170]
 
 [DebugWindow/newlist]
 Geometry=[834,512,252,56]
@@ -187,7 +213,7 @@ Geometry=[834,512,252,56]
 Geometry=[834,512,252,56]
 
 [DebugWindow/param]
-Geometry=[834,512,252,160]
+Geometry=[834,498,252,56]
 
 [DebugWindow/param.All]
 Geometry=[848,526,622,368]
@@ -244,19 +270,25 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="UTested and updated all test functions, correct bugs found in shared mem classes\n\n* BUG: Many fixes"
+LastCommit="Cleanup Compile warnings, completed\n\n* Opt: cleanup compile warnings"
 
 [OpenFile]
-Count=8
-File[1]=".src/Examples/vTestApps/General Tests/ShmListVariables.module:16.13"
-Active=2
-File[2]=".src/ShmMem/ShmList.class:53.629"
-File[3]=".src/ShmMem/ShmSymbolTable.class:0.551"
-File[4]=".src/ShmMem/ShmNotifyEntry.class:48.34"
-File[5]=".src/ShmMem/ShmNotify.class:53.39"
-File[6]=".src/ShmMem/ShmVarStorage.class:32.27"
-File[7]=".src/ShmMem/ShmListEntry.class:19.25"
-File[8]=".src/ShmMem/ShmQueue.class:47.169"
+Count=11
+File[1]="Demo/demo_user1:36.8"
+File[2]="Demo/demo_user2:35.7"
+File[3]="Demo/demo_user3:21.6"
+File[4]=".src/Examples/vTestApps/General Tests/NewArrayAccess.module:25.22"
+File[5]=".src/ShmMem/shmMem.class:3.104"
+File[6]=".src/Examples/vTestApps/SharedObjectExample.class:25.15"
+File[7]=".src/ShmMem/ShmClass.class:0.17"
+File[8]=".src/Examples/vTestApps/TestObjectRdWr2class.class:11.3"
+Active=9
+File[9]=".src/Examples/vTestApps/TestObjectrdWrClass.class:25.4"
+File[10]=".src/ShmMem/ShmList.class:0.0"
+File[11]=".src/ShmMem/ShmFiFo.class:0.0"
+
+[Package]
+Dir="~/Downloads/"
 
 [Watches]
 Count=2

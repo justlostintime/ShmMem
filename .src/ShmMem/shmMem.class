@@ -75,7 +75,8 @@ End
 Public Sub _property(...) As Boolean
 
     Debug "Param.count ="; Param.count
-    Return True
+    Dim result As Boolean = True
+    Return result
 
 End
 

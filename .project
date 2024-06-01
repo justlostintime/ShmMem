@@ -1,12 +1,21 @@
 # Gambas Project File 3.0
-Title=Shm Mem
-Startup=ShmListVariables
+Title=ShmMem
+Startup=NewShmClassTest
 Version=2.0.5
-Description="This provides an interface to the Linux Shared memory functions. Allowing the creation and sharing of shared memory segments accross any number of local applications or tasks.\n\nTo do this it implements  an interface which allows any valid gambas object of variable to be directly stored or accessed via the inteface\n\nexample::\nWith ShmMem\n !a = \"this\"\n!b = 1\n\nprint !a, !b\n\nend with\nwith shared"
-Authors="JustLostInTime, Brian G"
+Description="This provides an interface to the Linux Shared memory functions. Allowing the creation and sharing of shared memory segments accross any number of local applications or tasks.\n\nTo do this it implements  an interface which allows any valid gambas object of variable to be directly stored or accessed via the inteface\n\nexample::\nPublic Sub Main()\nMyShm = new ShmMem\n\nWith MyShm\n\n !a = \"this\"\n !b = 1\n\nprint !a, !b\n\nend with\nend"
+Authors="JustLostInTime, Westwood"
 TabSize=4
 Language=en_US
 Type=Component
 ForceBytecodeVersion=3.18
+Maintainer=brian
 Vendor=Westwood
+Address=justlostintime@gmail.com
+Url=https://github.com/justlostintime
+License=General Public License
+Prefix=1
+PackageName=gambas3-gb-shmmem-2.0.8
+RuntimeVersion="3.18"
 Packager=1
+Systems=ubuntu
+Groups=ubuntu:"utils"

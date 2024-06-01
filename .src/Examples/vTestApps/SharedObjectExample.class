@@ -11,7 +11,7 @@ Public ThisArray As String[] = ["bob", "jane", "Rabbit"]
 Public ReadString As String[] = ["Not Assigned Yet"]
 Public LengthOf As Integer = 0
 
-Static Public cShmClass As Integer = 129                  '' The Constant identifying this class name must not be a valid datatype integer
+Static Private cShmClass As Integer = 129                  '' The Constant identifying this class name must not be a valid datatype integer
 
 Static Public Sub _init()
 
