@@ -6,14 +6,6 @@ Private x As Integer = 24
 Public y As String = "This is a silly string"
 Public pp As String[] = ["This is ", "a", "big", "thing", "to", "do"]
 
-Static Private cShmClass As Integer = 131                  '' The Constant identifying this class name must not be a valid datatype integer
-
-Static Public Sub _init()
-
-    ShmVarStorage.DefineClass("TestObjectrdWrClass", cShmClass)
-
-End
-
 Public Sub callme()
 
     Print "Hello"

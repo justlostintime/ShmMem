@@ -450,7 +450,7 @@ Private Sub getObject(vptr As DPointer) As Object
     mfile = Memory tmpptr.Value.data For Read
     Try MyObject = Read #mFile As Object
     If Error Then
-        Error.Raise("Object read/Access failed")
+        Error.Raise("Object read/Access failed:" & Error.text & Error.where)
     Endif
     Close mFile
     Return MyObject

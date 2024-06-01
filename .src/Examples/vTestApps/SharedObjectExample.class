@@ -11,14 +11,6 @@ Public ThisArray As String[] = ["bob", "jane", "Rabbit"]
 Public ReadString As String[] = ["Not Assigned Yet"]
 Public LengthOf As Integer = 0
 
-Static Private cShmClass As Integer = 129                  '' The Constant identifying this class name must not be a valid datatype integer
-
-Static Public Sub _init()
-
-    ShmVarStorage.DefineClass("SharedObjectExample", cShmClass)
-
-End
-
 ' Public Sub _serialize() As Integer
 '   Dim iLen As Integer = 0
 '   iLen += mem.SizeOf(ThisString) ' add one because write does when output

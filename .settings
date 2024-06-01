@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"NewFGEnqueue":[47],"ShmListVariables":[15,11]}
+Breakpoints={"NewFGEnqueue":[47],"ShmListVariables":[15,11],"ShmClassesText":[8]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -12,7 +12,9 @@ Profiling=False
 Environment=["GB_NO_JIT=1"]
 
 [DebugWindow]
-Count=0
+Count=2
+DebugWindow[1]="vptr"
+DebugWindow[2]="svptr"
 
 [DebugWindow/BaseObject]
 Geometry=[2192,325,252,56]
@@ -222,7 +224,7 @@ Geometry=[848,526,622,368]
 Geometry=[2664,390,339,339]
 
 [DebugWindow/svptr]
-Geometry=[2754,498,252,56]
+Geometry=[834,512,252,56]
 
 [DebugWindow/sym]
 Geometry=[834,445,558,190]
@@ -252,7 +254,7 @@ Geometry=[2137,375,252,88]
 Geometry=[2754,498,252,320]
 
 [DebugWindow/vptr]
-Geometry=[2754,498,252,110]
+Geometry=[834,512,252,56]
 
 [Executable]
 DoNotIncrementVersion=False
@@ -273,19 +275,12 @@ Lock=False
 LastCommit="Cleanup Compile warnings, completed\n\n* Opt: cleanup compile warnings"
 
 [OpenFile]
-Count=11
-File[1]="Demo/demo_user1:36.8"
-File[2]="Demo/demo_user2:35.7"
-File[3]="Demo/demo_user3:21.6"
-File[4]=".src/Examples/vTestApps/General Tests/NewArrayAccess.module:25.22"
-File[5]=".src/ShmMem/shmMem.class:3.104"
-File[6]=".src/Examples/vTestApps/SharedObjectExample.class:25.15"
-File[7]=".src/ShmMem/ShmClass.class:0.17"
-File[8]=".src/Examples/vTestApps/TestObjectRdWr2class.class:11.3"
-Active=9
-File[9]=".src/Examples/vTestApps/TestObjectrdWrClass.class:25.4"
-File[10]=".src/ShmMem/ShmList.class:0.0"
-File[11]=".src/ShmMem/ShmFiFo.class:0.0"
+Count=4
+File[1]=".src/Examples/vTestApps/General Tests/ShmClassesText.module:0.8"
+File[2]=".src/ShmMem/ShmClass.class:20.23"
+File[3]=".src/ShmMem/ShmVarStorage.class:0.615"
+File[4]=".src/Examples/vTestApps/General Tests/dummyClassTarget.class:23.3"
+Active=3
 
 [Package]
 Dir="~/Downloads/"

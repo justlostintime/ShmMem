@@ -1,0 +1,18 @@
+' Gambas module file
+
+vars As New ShmMem
+
+Public Sub Main()
+
+    With vars
+
+        !d = New ShmClass
+        !e = New SharedObjectExample
+        !f = New TestObjectRdWr2class
+        !g = New TestObjectrdWrClass
+
+        Print !d.Tag, !e.Tag, !f.Tag, !g.Tag
+
+    End With
+
+End
