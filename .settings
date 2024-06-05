@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"NewFGEnqueue":[47],"ShmListVariables":[15,11],"ShmClassesText":[8]}
+Breakpoints={"NewFGEnqueue":[47],"ShmListVariables":[15,11]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -12,9 +12,7 @@ Profiling=False
 Environment=["GB_NO_JIT=1"]
 
 [DebugWindow]
-Count=2
-DebugWindow[1]="vptr"
-DebugWindow[2]="svptr"
+Count=0
 
 [DebugWindow/BaseObject]
 Geometry=[2192,325,252,56]
@@ -202,8 +200,14 @@ Geometry=[2684,948,252,56]
 [DebugWindow/mBlock]
 Geometry=[834,372,252,336]
 
+[DebugWindow/mclass]
+Geometry=[834,445,504,297]
+
+[DebugWindow/mclass.Symbols]
+Geometry=[848,459,523,412]
+
 [DebugWindow/me]
-Geometry=[834,519,630,224]
+Geometry=[834,519,630,58]
 
 [DebugWindow/newObject]
 Geometry=[834,455,252,170]
@@ -272,15 +276,10 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Cleanup Compile warnings, completed\n\n* Opt: cleanup compile warnings"
+LastCommit="Cleanup ShmClass - storable classes read/write examples\n\n* Opt: cleanup compile warnings"
 
 [OpenFile]
-Count=4
-File[1]=".src/Examples/vTestApps/General Tests/ShmClassesText.module:0.8"
-File[2]=".src/ShmMem/ShmClass.class:20.23"
-File[3]=".src/ShmMem/ShmVarStorage.class:0.615"
-File[4]=".src/Examples/vTestApps/General Tests/dummyClassTarget.class:23.3"
-Active=3
+Count=0
 
 [Package]
 Dir="~/Downloads/"

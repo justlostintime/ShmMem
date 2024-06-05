@@ -7,7 +7,7 @@
 '  See project license file.
 
 Export
-Fast Unsafe
+'Fast Unsafe
 
 Public Struct AllocHeader           '' Standard header
     Length As Long                           '' Length including header

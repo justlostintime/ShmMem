@@ -1,0 +1,20 @@
+#!/usr/bin/env gbs3
+' Gambas Script File Created 06/04/2024 09:12:29
+
+Use ":westwood.shmmem:2"
+
+Print "hello world"
+Dim mymem As New Shmmem
+Print "Memory defined"
+With mymem
+   !a = 1
+   !b = "this"
+   !c = ["this", 2, 3, 4, "that"]
+   Print !a, !b, !c
+   .["c", 0] = "pull"
+   Print !c[0]
+End With
+Print "Done"
+Quit 0
+Catch
+Error "Script Error >";; error.text & "\n" & error.where

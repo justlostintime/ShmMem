@@ -6,7 +6,7 @@ Public Sub Main()
 
     With vars
 
-        !d = New ShmClass
+        !d = New ShmStorableClass
         !e = New SharedObjectExample
         !f = New TestObjectRdWr2class
         !g = New TestObjectrdWrClass
