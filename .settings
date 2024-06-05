@@ -279,7 +279,7 @@ Lock=False
 LastCommit="Cleanup ShmClass - storable classes read/write examples\n\n* Opt: cleanup compile warnings"
 
 [OpenFile]
-Count=9
+Count=10
 File[1]="Demo/test_use_shmmem:0.0"
 File[2]=".src/ShmMem/ShmFiLo.class:0.0"
 File[3]=".src/ShmMem/ShmFiFo.class:0.9"
@@ -288,8 +288,9 @@ File[5]=".src/ShmMem/ShmStorableClass.class:0.0"
 File[6]=".src/ShmMem/SharedObjectExample.class:25.2"
 File[7]=".src/ShmMem/TestObjectRdWr2class.class:3.17"
 File[8]=".src/ShmMem/TestObjectrdWrClass.class:19.8"
-Active=9
+Active=10
 File[9]=".src/Examples/vTestApps/General Tests/NewUseShm.module:0.0"
+File[10]=".hidden/CHANGELOG:0.0"
 
 [Package]
 Dir="~/Downloads/"
