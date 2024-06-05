@@ -164,7 +164,7 @@ Public Sub _next() As Variant
         Else
             listitem = Enum.index.enum_listitem
             ListItem = Super.EntryPtr(ListItem.next)
-            Enum.Index.enum_listitem = ListItem.Priority                                 ' in this case this is the priority
+            Enum.Index.enum_Counter = ListItem.Priority                                 ' in this case this is the priority
             Enum.Index.enum_listitem = listitem
         Endif
     Endif
