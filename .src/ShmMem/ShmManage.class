@@ -13,7 +13,7 @@ Public Storage As ShmMemBlock
 
 Public Struct AllocHeader
     Length As Long                          '' Length including header
-    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Address As Pointer                   '' The virtual address of this block, speed pointer conversion
     Type As Integer                         '' Type of memory
     {Next} As Pointer                       '' null if no more in list
 End Struct
@@ -359,6 +359,7 @@ Public Sub Alloc(dataLen As Long) As Pointer                       '' returns a 
         Error.Raise("Alloc Address Out Of Bounds : " & MyBlock)
     Endif
 
+    memset(RealAddress(blkptr.address) + SizeOf(AllocHeader), 0, blkptr.Length - SizeOf(AllocHeader)) ' always clear allocated memory
     Return myblock
 
 End

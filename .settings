@@ -14,9 +14,7 @@ RemoteEnvironment=[]
 Arguments=[]
 
 [DebugWindow]
-Count=2
-DebugWindow[1]="me"
-DebugWindow[2]="me.Key_dlist"
+Count=0
 
 [DebugWindow/BaseObject]
 Geometry=[2192,325,252,56]
@@ -211,10 +209,10 @@ Geometry=[834,445,504,297]
 Geometry=[848,459,523,412]
 
 [DebugWindow/me]
-Geometry=[2779,384,252,440]
+Geometry=[2628,630,252,460]
 
 [DebugWindow/me.Key_dlist]
-Geometry=[2402,372,252,56]
+Geometry=[2158,799,252,56]
 
 [DebugWindow/newObject]
 Geometry=[834,455,252,170]
@@ -283,13 +281,13 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Fix queue _next error\n\n* Bug: error after last update of _next function"
+LastCommit="Fix the fix for  the _next and debbugger interaction\n\n* Bug: error after last update of _next function"
 
 [OpenFile]
 Count=2
 File[1]=".src/Examples/vTestApps/QueueTestWithProcesses/ShmQueueAndShmListTest.module:8.125"
-File[2]=".src/ShmMem/ShmList.class:26.629"
-Active=1
+File[2]=".src/ShmMem/ShmList.class:12.631"
+Active=2
 
 [Package]
 Dir="~/Downloads/"

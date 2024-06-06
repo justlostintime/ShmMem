@@ -138,6 +138,7 @@ Public Sub _Free(Optional OverRideGlobal As Boolean = False)
     If ListHead.RefCount <= 0 Then
         ' sem_destroy(varmem.RealDataAddress(ListHead.sema))
         ' varmem.Free(ListHead.sema)
+        ListHead.enum_listitem = Null
         Me.Free()
     Endif
 
@@ -231,6 +232,7 @@ Public Sub add(Value As Variant, Optional ExtendedId As Long = 0, TagInfo As Str
         ListHead.Prev = NewElement.Address
         NewElement.prev = LastEntry.address
         LastEntry.Next = NewElement.Address
+        NewElement.next = Null
     Endif
 
     Inc ListHead.Value                ' this holds the count of elements in this list
@@ -628,11 +630,15 @@ End
 Public Sub {Copy}() As Variant
 
     Dim newlist As Variant
+    Dim NewExtendedID As Long
+    Dim NewTag As String
 
-    newlist = Object.Class(Me).New(VarMem, 0, Me.ListHead.Global, "Copy:" & Me.tag)
+    newlist = Object.Class(Me).New([VarMem, 0, Me.ListHead.Global, "Copy:" & Me.tag])
 
     For Each v As Variant In Me                         'Move the values To the New List
-        newlist.add(v, Me.Key_ExtendedId, Me.Key_Tag)
+        NewExtendedId = Me.Key_ExtendedId
+        NewTag = Me.Key_Tag
+        newlist.add(v, NewExtendedID, NewTag)
     Next
 
     Return newlist
@@ -648,7 +654,7 @@ End
 
 Private Function Key_Tag_read() As String
 
-    If ListHead = Null Then Return ""
+    If ListHead = Null Or If ListHead.Enum_Listitem = Null Then Return ""
     Return ListHead.Enum_Listitem.Tag.ToString()
 
 End
@@ -662,7 +668,7 @@ End
 
 Private Function Key_ExtendedId_read() As Long
 
-    If ListHead = Null Then Return 0
+    If ListHead = Null Or If ListHead.Enum_Listitem = Null Then Return 0
     Return ListHead.Enum_listitem.Priority
 
 End
