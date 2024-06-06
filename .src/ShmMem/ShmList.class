@@ -51,9 +51,9 @@ Static Public cShmListEntry As Integer = 21        '' The entry in a ShmList obj
 ' Extern memcpy(dest As Dlist, src As Dlist, Len As Integer) As Integer In "libc:6"
 
 Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
-' Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
-' Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
-' Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
+Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
 ' Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
 ' Extern sched_yield() As Integer In "libpthread:0"
@@ -61,6 +61,7 @@ Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
 Private VirtualAddress As Pointer = 0              '' Pointer to the head of the list
 Public ListHead As DList                                         '' Pointer to the actual list
 Public VarMem As ShmVarStorage                    '' The storage pool to used or referenced
+Public SemAddress As Pointer                             '' real pointer to the locking sem used by this list
 Property Read Key As Long                                   '' During iterations this will be the item count
 Property Read Key_dlist As Dlist                          '' During iteration this contains the current dlist entry
 Property Read Key_ExtendedId As Long           '' ExtendedId of the entry being proessed by Next
@@ -114,13 +115,14 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Glob
         ListHead.UsePriority = False
         ListHead.Value = 0
         ListHead.tag = Byte[].FromString(tag)
-        sem_init(varmem.RealDataAddress(ListHead.sema), 1, 0)
+        SemAddress = varmem.RealDataAddress(ListHead.sema)
+        sem_init(SemAddress, 1, 0)
     Else
         VirtualAddress = VirtAddress
         RealPtr = VarMem.RealAddress(VirtAddress)
-        ' ListHead = DListPtr(RealPtr, RealPtr, 0)
         ListHead = RealPtr
         ListHead.type = SetHeadType
+        SemAddress = varmem.RealDataAddress(ListHead.sema)
     Endif
 
     Inc ListHead.RefCount
@@ -199,6 +201,34 @@ Public Sub NewEntry(Optional Value As Variant = Null) As DList
         Endif
     Endif
     Return Entry
+
+End
+
+''  Lock the list/queue  while processing the request
+'' This is not automatic, the user must do this if required
+Public Sub {lock}() As Boolean
+
+    Dim result As Integer
+
+    result = sem_wait(SemAddress)
+    Return True
+
+End
+
+''  Release the lock on the list/queue
+'' Returns false if the lock was not 0, locked
+'' be careful as this can be posted anywhere
+Public Sub {unlock}() As Boolean
+
+    Dim value As Integer
+
+    If sem_getvalue(SemAddress, VarPtr(value)) = 0 Then
+        If value = 0 Then
+            sem_post(listhead.sema)
+            Return True
+        Endif
+    Endif
+    Return False
 
 End
 

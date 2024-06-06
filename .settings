@@ -19,6 +19,9 @@ Count=0
 [DebugWindow/BaseObject]
 Geometry=[2192,325,252,56]
 
+[DebugWindow/BlkPtr]
+Geometry=[834,485,515,237]
+
 [DebugWindow/CallBack]
 Geometry=[834,445,411,261]
 
@@ -263,7 +266,7 @@ Geometry=[2137,375,252,88]
 Geometry=[2754,498,252,320]
 
 [DebugWindow/vptr]
-Geometry=[834,512,252,56]
+Geometry=[834,512,252,110]
 
 [Executable]
 DoNotIncrementVersion=False
@@ -281,7 +284,7 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Fix the fix for  the _next and debbugger interaction\n\n* Bug: error after last update of _next function"
+LastCommit="Clear Memory upon allocation for each variable\n\n* Bug: some pointers were not cleared after memory was freed"
 
 [OpenFile]
 Count=2
