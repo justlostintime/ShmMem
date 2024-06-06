@@ -108,7 +108,7 @@ Public Sub main()
             Print c.Pop(),
             Print c.Pop()
 
-        Dim d As New ShmFiLo(myMem)
+        Dim d As New ShmFiLo(myMem, 0, True, "test d")
         Dim e As ShmFiLo
         d.Push(1)
         d.Push(2)
@@ -117,9 +117,9 @@ Public Sub main()
         !Banana = d
         e = !Banana
 
-        Print d.Pop(),
-            Print d.Pop(),
-            Print d.Pop()
+        Print d.Pop();;
+        Print d.Pop();;
+        Print d.Pop()
 
         d.push("Item 1")
         d.Push("Item 2")

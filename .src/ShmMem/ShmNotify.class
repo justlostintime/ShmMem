@@ -89,8 +89,7 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
     '' This is only created by the first app/task to make a call to notify for a particular variable. And is Global to this Symtable
     '' For the variable refrenced. There is one of these for each variable being watched.
     If SymEntry.NotifyBlock = 0 Then                                                                     ' Check if a PID queue has already been created
-        PidQueue = New ShmList(VarMem, 0, True)                                            ' create a new FiFo
-        PidQueue.tag = "PIDQ-" & SymName
+        PidQueue = New ShmList(VarMem, 0, True, "PIDQ-" & SymName)                              ' create a new List
         SymEntry.NotifyBlock = PidQueue.Address
     Else
         PidQueue = New ShmList(VarMem, SymEntry.NotifyBlock)          ' Get the address to the exsisting queue

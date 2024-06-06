@@ -3,16 +3,20 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"NewFGEnqueue":[47],"ShmListVariables":[15,11]}
+Breakpoints={"ShmListVariables":[15,11]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
 Remote=False
 Profiling=False
 Environment=["GB_NO_JIT=1"]
+RemoteEnvironment=[]
+Arguments=[]
 
 [DebugWindow]
-Count=0
+Count=2
+DebugWindow[1]="me"
+DebugWindow[2]="me.Key_dlist"
 
 [DebugWindow/BaseObject]
 Geometry=[2192,325,252,56]
@@ -207,7 +211,10 @@ Geometry=[834,445,504,297]
 Geometry=[848,459,523,412]
 
 [DebugWindow/me]
-Geometry=[834,519,630,58]
+Geometry=[2779,384,252,440]
+
+[DebugWindow/me.Key_dlist]
+Geometry=[2402,372,252,56]
 
 [DebugWindow/newObject]
 Geometry=[834,455,252,170]
@@ -276,21 +283,13 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Cleanup ShmClass - storable classes read/write examples\n\n* Opt: cleanup compile warnings"
+LastCommit="Fix queue _next error\n\n* Bug: error after last update of _next function"
 
 [OpenFile]
-Count=10
-File[1]="Demo/test_use_shmmem:0.0"
-File[2]=".src/ShmMem/ShmFiLo.class:0.0"
-File[3]=".src/ShmMem/ShmFiFo.class:0.9"
-File[4]=".src/Examples/vTestApps/General Tests/ShmClassesText.module:44.13"
-File[5]=".src/ShmMem/ShmStorableClass.class:0.0"
-File[6]=".src/ShmMem/SharedObjectExample.class:25.2"
-File[7]=".src/ShmMem/TestObjectRdWr2class.class:3.17"
-File[8]=".src/ShmMem/TestObjectrdWrClass.class:19.8"
-Active=10
-File[9]=".src/Examples/vTestApps/General Tests/NewUseShm.module:0.0"
-File[10]=".hidden/CHANGELOG:0.0"
+Count=2
+File[1]=".src/Examples/vTestApps/QueueTestWithProcesses/ShmQueueAndShmListTest.module:8.125"
+File[2]=".src/ShmMem/ShmList.class:26.629"
+Active=1
 
 [Package]
 Dir="~/Downloads/"

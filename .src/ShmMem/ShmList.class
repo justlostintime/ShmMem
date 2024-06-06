@@ -7,7 +7,7 @@
 '  See project license file.
 
 Export
-Fast Unsafe
+'Fast Unsafe
 
 ''' Defines the Shm datatype - list
 ''' Lists are inherited by every other list based object
@@ -39,8 +39,8 @@ Public Struct dList                             '' A defined entry in list of ob
     RefCount As Long                          '' Number of refrences to this element
     Priority As Long                              '' in a queue this is the priority of this element
     UsePriority As Boolean                '' Enable the use of priority ordering in the list
-    enum_counter As Long              '' Used when enumerating a list structure
-    enum_listitem As Dlist                '' pointer to dlist
+    enum_counter As Long               '' Used when enumerating a list structure
+    enum_listitem As Dlist                 '' pointer to dlist
     Value As Pointer                            '' Value of entry or count if pool
 End Struct
 
@@ -627,7 +627,9 @@ End
 '' Create a deep copy of the list
 Public Sub {Copy}() As Variant
 
-    Dim newlist As Variant = Object.Class(Me).New(VarMem, 0, Me.ListHead.Global, "Copy:" & Me.tag)
+    Dim newlist As Variant
+
+    newlist = Object.Class(Me).New(VarMem, 0, Me.ListHead.Global, "Copy:" & Me.tag)
 
     For Each v As Variant In Me                         'Move the values To the New List
         newlist.add(v, Me.Key_ExtendedId, Me.Key_Tag)
@@ -639,24 +641,28 @@ End
 
 Private Function key_read() As Long
 
+    If ListHead = Null Then Return 0
     Return ListHead.Enum_counter
 
 End
 
 Private Function Key_Tag_read() As String
 
+    If ListHead = Null Then Return ""
     Return ListHead.Enum_Listitem.Tag.ToString()
 
 End
 
 Private Function Key_dlist_read() As Dlist
 
+    If ListHead = Null Then Return Null
     Return ListHead.Enum_Listitem
 
 End
 
 Private Function Key_ExtendedId_read() As Long
 
+    If ListHead = Null Then Return 0
     Return ListHead.Enum_listitem.Priority
 
 End
@@ -667,7 +673,7 @@ Public Sub _next() As Variant
 
     If IsNull(Enum.Index) Then
 
-        If ListHead.Value > 0 Then
+        If listhead <> Null And If ListHead.Value > 0 Then
             ListItem = EntryPtr(ListHead.next)
             Enum.Index = listhead
             Enum.Index.enum_listitem = listitem
@@ -679,6 +685,8 @@ Public Sub _next() As Variant
     Else
         listItem = Enum.index.Enum_listitem
         If ListItem.next = Null Then
+            Enum.Index.enum_listitem = Null
+            Enum.Index.enum_counter = 0
             Enum.Stop
             Return
         Else
@@ -779,6 +787,7 @@ End
 
 Private Function Debug_Read() As Boolean
 
+    If ListHead = Null Then Return False
     Return ListHead.bDebug
 
 End
@@ -786,6 +795,7 @@ End
 Private Sub Debug_Write(Value As Boolean)
 
     Print "Set debug to ";; value
+    If ListHead = Null Then Return
     ListHead.bDebug = Value
 
 End
@@ -828,12 +838,14 @@ End
 
 Private Function Tag_Read() As String
 
+    If ListHead = Null Then Return ""
     Return Trim(ListHead.Tag.ToString())
 
 End
 
 Private Sub Tag_Write(Value As String)
 
+    If ListHead = Null Then Return
     Dim rValue As String = Left(value & Space(ListHead.Tag.length), ListHead.Tag.length)
 
     For i As Integer = 0 To ListHead.Tag.length - 1
