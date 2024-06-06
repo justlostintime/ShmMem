@@ -8,7 +8,7 @@
 
 Export
 
-Fast Unsafe
+'Fast Unsafe
 
 Const VarMemDefault As Long = 2000000                              '' default memory size is 2 meg
 Const MaxSymbolsDefault As Integer = 8000                        '' default variable memory space 8000 entries

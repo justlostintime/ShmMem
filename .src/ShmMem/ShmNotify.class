@@ -88,17 +88,16 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
     '' Now create a queue to contain all the pid(programs/tasks) requesting to be notified about this particular symbol
     '' This is only created by the first app/task to make a call to notify for a particular variable. And is Global to this Symtable
     '' For the variable refrenced. There is one of these for each variable being watched.
-    If SymEntry.NotifyBlock = 0 Then                                                                     ' Check if a PID queue has already been created
-        PidQueue = New ShmList(VarMem, 0, True, "PIDQ-" & SymName)                              ' create a new List
+    If SymEntry.NotifyBlock = 0 Then                                                                        ' Check if a PID queue has already been created
+        PidQueue = New ShmList(VarMem, 0, True, "PIDQ-" & SymName)       ' create a new List
         SymEntry.NotifyBlock = PidQueue.Address
     Else
-        PidQueue = New ShmList(VarMem, SymEntry.NotifyBlock)          ' Get the address to the exsisting queue
+        PidQueue = New ShmList(VarMem, SymEntry.NotifyBlock)                    ' Get the address to the exsisting queue
     Endif
 
     If NotifyQueue = Null Then
-        NotifyVars = New Collection(gb.ignorecase)                                           ' Local copy of the list of variables we are waiting for
-        NotifyQueue = New ShmList(VarMem, 0, True)                                       ' Create a new queue for variable changes per task/process
-        NotifyQueue.tag = "nq_" & MyAppId                                                          ' Set a tag to identify for later tracing
+        NotifyVars = New Collection(gb.ignorecase)                                              ' Local copy of the list of variables we are waiting for
+        NotifyQueue = New ShmList(VarMem, 0, True, "nq_ " & MyAppId)     ' Create a new queue for variable changes per task/process"
     Endif
 
     ''  Add this tasks Notify queue to the pid queue for this variable, we allow more than one callback address
@@ -119,7 +118,7 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
 
     If Not NotifyVars.Exist(SymName) Then
         Dim todoList As New Collection(gb.ignorecase)   ' now create a collection of all the parts of this program asking for notification
-        NotifyVars.Add(todoList, SymName)                      ' add the collection to the list of variables
+        NotifyVars.Add(todoList, SymName)                       ' add the collection to the list of variables
     Else
         todoList = NotifyVars[SymName]
     Endif

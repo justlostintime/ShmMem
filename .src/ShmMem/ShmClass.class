@@ -42,4 +42,9 @@ End Struct
 Static Public cNativeObject As Integer = 128                  '' The Constant identifying this class name must not be a valid datatype integer
 
 Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
+Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
+' Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
+' Extern sched_yield() As Integer In "libpthread:0"

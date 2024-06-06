@@ -7,7 +7,7 @@
 '  See project license file.
 
 Export
-Fast Unsafe
+'Fast Unsafe
 
 Extern mmap(MapPoint As Pointer, MapLength As Integer, prot As Integer, flags As Integer, fd As Integer, offset As Integer) As Pointer In "libc:6"
 Extern munmap(MapPoint As Pointer, MapLength As Integer) As Integer In "libc:6"

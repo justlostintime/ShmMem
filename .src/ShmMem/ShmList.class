@@ -73,8 +73,8 @@ Property Read value As Long                             '' Returns the virtual a
 Property Read Type As Integer                        '' The type of this object
 Property Read Address As Pointer                  '' The address of the object
 Property Debug As Boolean                              '' Debugging helper
-Property Read AllLists As Variant[]                 '' Returns a table of all active List{types} in memory
-Property Read AllEntries As Variant[]             '' returns a list of all entries in the list
+'Property Read AllLists As Variant[]                 '' Returns a table of all active List{types} in memory
+'Property Read AllEntries As Variant[]             '' returns a list of all entries in the list
 Property Tag As String                                        '' memo tag for debug and identity purposed
 Property Read ClassList As String                    '' The name of the class for this list/entry
 Property Read ClassEntry As String                 '' The text name of the list/queue entries
@@ -121,7 +121,6 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Glob
         VirtualAddress = VirtAddress
         RealPtr = VarMem.RealAddress(VirtAddress)
         ListHead = RealPtr
-        ListHead.type = SetHeadType
         SemAddress = varmem.RealDataAddress(ListHead.sema)
     Endif
 
@@ -220,7 +219,7 @@ End
 '' be careful as this can be posted anywhere
 Public Sub {unlock}() As Boolean
 
-    Dim value As Integer
+    Dim value As Integer = 0
 
     If sem_getvalue(SemAddress, VarPtr(value)) = 0 Then
         If value = 0 Then
@@ -709,7 +708,7 @@ Public Sub _next() As Variant
 
     If IsNull(Enum.Index) Then
 
-        If listhead <> Null And If ListHead.Value > 0 Then
+        If listhead <> Null And If listhead.next <> Null And If ListHead.Value > 0 Then
             ListItem = EntryPtr(ListHead.next)
             Enum.Index = listhead
             Enum.Index.enum_listitem = listitem
@@ -732,6 +731,7 @@ Public Sub _next() As Variant
         Endif
     Endif
 
+    ' Print Enum.Index.enum_Counter
     Return VarMem[ListItem.value]
 
 End
@@ -745,6 +745,8 @@ Public Sub FindExtId(Value As Long) As Long
 
     'Print " FindExtId : ";; Object.Class(Me).name;; "Entries=";; Me.count
     For Each dd As Variant In Me
+        If Me.key_dlist = Null Then Return -1
+
         If Me.Key_dlist.Priority = value Then
             'Print "FindExtId : Found Extid at ";; Me.count
             Return count
@@ -764,6 +766,7 @@ Public Sub FindVirtAddress(VirtAddress As Pointer) As Long
     Dim Count As Long = 0
 
     For Each dd As Variant In Me
+        If Me.key_dlist = Null Then Return -1
         If Me.key_dlist.Address = VirtAddress Then
             Return count
         Endif
@@ -780,6 +783,7 @@ Public Sub Find(value As Variant) As Long
     Dim count As Long = 0
 
     For Each dd As Variant In Me
+        If Me.key_dlist = Null Then Return -1
         If VarMem[Me.Key_dlist.Value] = value Then
             Return count
         Endif
@@ -792,6 +796,7 @@ End
 
 Private Function max_Read() As Long
 
+    If ListHead = Null Then Return 0
     Return ListHead.Value - 1
 
 End
@@ -842,6 +847,7 @@ Private Function AllLists_Read() As Variant[]
 
     Dim ListTable As New Variant[]
 
+    If varmem = Null Then Return ListTable
     For Each mBlock As Variant In VarMem
         If mBlock.type = SetHeadType Then
             ListTable.Add(mBlock)
@@ -862,6 +868,7 @@ Private Function AllEntries_read() As Variant[]
     Dim items As New Variant[]
     Dim newObject As Object
 
+    If varmem = Null Or If listhead = Null Then Return items
     nextitem = EntryPtr(listhead.Next)
     While nextitem <> Null
         newObject = Object.New(VarMem.GetTextType(nextitem.Type), [varmem, nextitem.address])

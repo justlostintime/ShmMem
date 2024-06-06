@@ -4,7 +4,7 @@
 ''' They give an example of sharing data between application.
 ''' Notifications are used to signal the apps as data changes
 
-use "westwood.shmmem"
+use "westwood.shmmem:2"
 
 Public MyShare As ShmMem
 Public Completed As Boolean = False

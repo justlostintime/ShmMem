@@ -1,7 +1,7 @@
 ' Gambas class file
 
 Inherits ShmStorableClass
-Fast Unsafe
+'Fast Unsafe
 ' this a sample class of objects which can be shared between tasks
 ' Nothing  is fast about this !
 

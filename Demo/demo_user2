@@ -5,7 +5,7 @@
 ''' Notifications are used to signal the apps as data changes
 Public MyShare As ShmMem
 Public Completed As Boolean = False
-use "/home/brian/bin/shmmem.gambas"
+use "westwood.shmmem:2.1"
 Public Sub main()
 
     MyShare = New ShmMem(2000000, "MySharedMem", 8000)

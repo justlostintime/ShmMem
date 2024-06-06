@@ -14,7 +14,9 @@ RemoteEnvironment=[]
 Arguments=[]
 
 [DebugWindow]
-Count=0
+Count=2
+DebugWindow[1]="PidQueue"
+DebugWindow[2]="Sym"
 
 [DebugWindow/BaseObject]
 Geometry=[2192,325,252,56]
@@ -83,7 +85,7 @@ Geometry=[2754,498,252,56]
 Geometry=[2782,446,252,190]
 
 [DebugWindow/PidQueue]
-Geometry=[834,512,397,416]
+Geometry=[2241,452,397,486]
 
 [DebugWindow/PidQueue.AllLists]
 Geometry=[2477,150,252,56]
@@ -107,7 +109,7 @@ Geometry=[2276,183,252,56]
 Geometry=[834,512,252,56]
 
 [DebugWindow/Sym]
-Geometry=[834,465,546,190]
+Geometry=[2872,637,546,210]
 
 [DebugWindow/Sym.Name]
 Geometry=[848,479,328,508]
@@ -192,6 +194,9 @@ Geometry=[2796,350,252,276]
 
 [DebugWindow/bork.AllLists[1]]
 Geometry=[2782,336,488,456]
+
+[DebugWindow/element]
+Geometry=[2754,498,252,56]
 
 [DebugWindow/items]
 Geometry=[834,402,703,276]
@@ -284,13 +289,14 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Clear Memory upon allocation for each variable\n\n* Bug: some pointers were not cleared after memory was freed"
+LastCommit="Add lock and unlock for lists\n\n* New: Actually use the sem assigned to each list"
 
 [OpenFile]
-Count=2
-File[1]=".src/Examples/vTestApps/QueueTestWithProcesses/ShmQueueAndShmListTest.module:8.125"
-File[2]=".src/ShmMem/ShmList.class:12.631"
-Active=2
+Count=3
+File[1]="Demo/demo_user1:0.82"
+Active=3
+File[2]=".src/ShmMem/ShmList.class:4.808"
+File[3]=".src/ShmMem/ShmQueue.class:0.0"
 
 [Package]
 Dir="~/Downloads/"

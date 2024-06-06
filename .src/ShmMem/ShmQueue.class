@@ -7,7 +7,7 @@
 '  See project license file.
 
 Export
-Fast Unsafe
+'Fast Unsafe
 
 Inherits ShmList
 
@@ -147,7 +147,7 @@ Public Sub _next() As Variant
 
     If IsNull(Enum.Index) Then
 
-        If listhead.Value > 0 Then
+        If listhead <> Null And If listhead.next <> Null And If listhead.Value > 0 Then
             Enum.index = listhead
             ListItem = Super.EntryPtr(listhead.next)
             Enum.index.enum_listitem = listitem

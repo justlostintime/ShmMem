@@ -8,7 +8,7 @@
 
 Export
 
-Fast Unsafe
+'Fast Unsafe
 
 Private varmem As ShmManage
 Private Storage As ShmMemBlock

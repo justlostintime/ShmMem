@@ -7,7 +7,7 @@
 '  See project license file.
 
 Export
-Fast Unsafe
+'Fast Unsafe
 '' How a symbol is stored in the shared memory
 
 Public Struct Symbol
