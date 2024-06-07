@@ -68,17 +68,17 @@ Property Read Key_ExtendedId As Long           '' ExtendedId of the entry being 
 Property Read Key_Tag As String                       '' The content of the entry tag field
 
 Property Read max As Long                                '' max count for iteration
-Property Read count As Long                             '' Count of elements in this list
-Property Read value As Long                             '' Returns the virtual address of this list
-Property Read Type As Integer                        '' The type of this object
-Property Read Address As Pointer                  '' The address of the object
-Property Debug As Boolean                              '' Debugging helper
-'Property Read AllLists As Variant[]                 '' Returns a table of all active List{types} in memory
-'Property Read AllEntries As Variant[]             '' returns a list of all entries in the list
-Property Tag As String                                        '' memo tag for debug and identity purposed
-Property Read ClassList As String                    '' The name of the class for this list/entry
-Property Read ClassEntry As String                 '' The text name of the list/queue entries
-Property Read ClassMe As String                     '' the text class of the current item
+Property Read count As Long                              '' Count of elements in this list
+Property Read value As Long                              '' Returns the virtual address of this list
+Property Read Type As Integer                          '' The type of this object
+Property Read Address As Pointer                    '' The address of the object
+Property Debug As Boolean                                '' Debugging helper
+Property Read AllLists As Variant[]                   '' Returns a table of all active List{types} in memory
+Property Read AllEntries As Variant[]              '' returns a list of all entries in the list
+Property Tag As String                                         '' memo tag for debug and identity purposed
+Property Read ClassList As String                     '' The name of the class for this list/entry
+Property Read ClassEntry As String                  '' The text name of the list/queue entries
+Property Read ClassMe As String                      '' the text class of the current item
 
 Public SetHeadType As Integer = cShmList             '' The list header Class
 Public SetEntryType As Integer = cShmListEntry    '' The List Entry Class

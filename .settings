@@ -10,8 +10,6 @@ UseHttpServer=False
 Remote=False
 Profiling=False
 Environment=["GB_NO_JIT=1"]
-RemoteEnvironment=[]
-Arguments=[]
 
 [DebugWindow]
 Count=2
@@ -85,7 +83,7 @@ Geometry=[2754,498,252,56]
 Geometry=[2782,446,252,190]
 
 [DebugWindow/PidQueue]
-Geometry=[2241,452,397,486]
+Geometry=[834,512,252,56]
 
 [DebugWindow/PidQueue.AllLists]
 Geometry=[2477,150,252,56]
@@ -109,7 +107,7 @@ Geometry=[2276,183,252,56]
 Geometry=[834,512,252,56]
 
 [DebugWindow/Sym]
-Geometry=[2872,637,546,210]
+Geometry=[834,512,252,210]
 
 [DebugWindow/Sym.Name]
 Geometry=[848,479,328,508]
@@ -289,14 +287,10 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Add lock and unlock for lists\n\n* New: Actually use the sem assigned to each list"
+LastCommit="Fast unsafe causes memory access errors - removed\n\n* Bug: fast unsafe causes seg faults .. removed"
 
 [OpenFile]
-Count=3
-File[1]="Demo/demo_user1:0.82"
-Active=3
-File[2]=".src/ShmMem/ShmList.class:4.808"
-File[3]=".src/ShmMem/ShmQueue.class:0.0"
+Count=0
 
 [Package]
 Dir="~/Downloads/"

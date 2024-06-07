@@ -1,61 +1,61 @@
-#!/usr/bin/env gbs3
-
+#!/usr/bin/gbs3
+' Gambas script
 ''' Each of the User1-3 should be executed as seperate application
 ''' They give an example of sharing data between application.
 ''' Notifications are used to signal the apps as data changes
 
-use "westwood.shmmem:2"
+Use "westwood.shmmem:2.1"
 
 Public MyShare As ShmMem
 Public Completed As Boolean = False
 
 Public Sub main()
 
-    MyShare = New ShmMem(2000000, "MySharedMem", 8000)
-    MyShare!Cat = "Felix"
-    MyShare!Dog = "Rover"
-    MyShare!Rabbit = 1000
-    MyShare!Done = False
+  MyShare = New ShmMem(2000000, "MySharedMem", 8000)
+  MyShare!Cat = "Felix"
+  MyShare!Dog = "Rover"
+  MyShare!Rabbit = 1000
+  MyShare!Done = False
 
-    MyShare.Notify("Cat", Me)
-    MyShare.Notify("Dog", Me)
-    MyShare.Notify("rabbit", Me)
-    MyShare.Notify("Done", Me, "It_Is_Done")
+  MyShare.Notify("Cat", Me)
+  MyShare.Notify("Dog", Me)
+  MyShare.Notify("rabbit", Me)
+  MyShare.Notify("Done", Me, "It_Is_Done")
 
-    Print " User 3 monitoring all variables"
-    While Not completed
-        Wait 0.001
-    Wend
+  Print " User 3 monitoring all variables"
+  While Not completed
+    Wait 0.001
+  Wend
 
-    Print "User 3 Completed and exits"
+  Print "User 3 Completed and exits"
 
 End
 
 Public Sub cat_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print Varname;; "has been updated ";; value;; "Timed Out="; Str(timedout)
+  Print Varname;; "has been updated ";; value;; "Timed Out="; Str(timedout)
 
 End
 
 Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print VarName;; "has been updated ";; value;; "Timed Out="; Str(timedout)
+  Print VarName;; "has been updated ";; value;; "Timed Out="; Str(timedout)
 
 End
 
 Public Sub Rabbit_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print VarName;; "has been updated ";; value;; "Timed Out="; Str(timedout)
+  Print VarName;; "has been updated ";; value;; "Timed Out="; Str(timedout)
 
 End
 
 Public Sub It_Is_Done(varname As String, value As Variant, TimedOut As Boolean)
 
-    If value == "True" Then
-        Completed = True
-        Print VarName;; "Is committed";; "Timed Out="; Str(timedout)
-    Else
-        Print VarName;; "set to "; value;; "Timed Out="; Str(timedout)
-    Endif
+  If value == "True" Then
+    Completed = True
+    Print VarName;; "Is committed";; "Timed Out="; Str(timedout)
+  Else
+    Print VarName;; "set to "; value;; "Timed Out="; Str(timedout)
+  Endif
 
 End

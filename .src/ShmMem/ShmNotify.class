@@ -136,13 +136,13 @@ End
 
 Fast Unsafe Public Sub VarInfo_VarTimedOut(VarInfo As ShmNotifyEntry)
 
-    VarInfo.Dispatch(False)
+    VarInfo.Dispatch(True)
 
 End
 
 Fast Unsafe Public Sub VarInfo_VarChanged(VarInfo As ShmNotifyEntry)
 
-    VarInfo.Dispatch(True)
+    VarInfo.Dispatch(False)
 
 End
 
@@ -261,10 +261,8 @@ Fast Unsafe Public Sub SignalEach(Sym As Symbol)
 
         If result <> 0 Then                                                                                                                         ' if it is an invalid pid then clean this stuff up
             PidQueue.RemoveExtId(UserQueue.address)
-            ' userqueue = New ShmList(VarMem, PidQueue.key)
-            ' userqueue.clear()
-            ' VarMem.Free(userqueue.Address)
         Endif
+
         Wait
         Sched_Yield()                                                                                                                                      ' Allow the other tasks to process the signal
     Next

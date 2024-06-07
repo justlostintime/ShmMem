@@ -1,11 +1,12 @@
-
+#!/usr/bin/gbs3
+' Gambas Script
 ''' Each of the User1-3 should be executed as seperate application
 ''' They give an example of sharing data between application.
 ''' Notifications are used to signal the apps as data changes
 Public MyShare As ShmMem
 Public Completed As Boolean = False
 Public ValidVariables As String[] = ["cat", "dog", "rabbit", "done"]
-Use "westwood.shmmem:2"
+Use "westwood.shmmem:2.1"
 
 Public Sub main()
 
