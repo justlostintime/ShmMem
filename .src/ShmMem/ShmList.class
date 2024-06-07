@@ -137,8 +137,6 @@ Public Sub _Free(Optional OverRideGlobal As Boolean = False)
     If ListHead.Global Then Return    '' dont delete global used lists
 
     If ListHead.RefCount <= 0 Then
-        ' sem_destroy(varmem.RealDataAddress(ListHead.sema))
-        ' varmem.Free(ListHead.sema)
         ListHead.enum_listitem = Null
         Me.Free()
     Endif
