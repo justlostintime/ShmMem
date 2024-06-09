@@ -197,17 +197,20 @@ End
 
 Public Sub _free()
 
-    If name <> "" Then
-        Dec BlockInfo.InUseCounter
-        Try rClose(MemoryHandle)
-        If BlockInfo.InUseCounter = 0 Then
-            Try shm_unlink(Name)
+    If blockInfo <> Null Then
+        If name <> "" Then
+            Dec BlockInfo.InUseCounter
+            Try rClose(MemoryHandle)
+            If BlockInfo.InUseCounter = 0 Then
+                Try shm_unlink(Name)
+                Try sem_destroy(SemLock)
+            Endif
+            Try munmap(MemoryAddress, MemoryLength)
+        Else
             Try sem_destroy(SemLock)
+            Try munmap(MemoryAddress, MemoryLength)
         Endif
-        Try munmap(MemoryAddress, MemoryLength)
-    Else
-        Try sem_destroy(SemLock)
-        Try munmap(MemoryAddress, MemoryLength)
+        BlockInfo = Null
     Endif
 
     If $bDebug Then Print Object.Class(Me).Name;; " _free() Completed"

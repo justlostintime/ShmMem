@@ -76,6 +76,13 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Prio
 
 End
 
+Public Sub _free()
+
+    Varmem = Null
+    Entry = Null
+
+End
+
 '' Required for each user define class, returns the pointer to the under laying data structure
 Static Public Sub UserPtr(vVarmem As ShmVarStorage, VirtAddr As Pointer) As Dlist
 

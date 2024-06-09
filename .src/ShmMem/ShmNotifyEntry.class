@@ -82,10 +82,11 @@ End
 
 Public Sub _free()
 
-    VarMemory = Null
     SymTable = Null
+    VarMemory = Null
     VarClock = Null
     NotifyVar = Null
+    NotifyObject = Null
 
 End
 

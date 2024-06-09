@@ -218,6 +218,7 @@ End
 Public Sub _free()
 
     varmem = Null
+    storage = Null
 
 End
 

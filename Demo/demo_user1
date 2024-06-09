@@ -1,5 +1,5 @@
 #!/usr/bin/env gbs3
-use "westwood.shmmem:2.1"
+Use "westwood.shmmem:2.1"
 ''' Each of the User1-3 should be executed as seperate application
 ''' They give an example of sharing data between application.
 ''' Notifications are used to signal the apps as data changes

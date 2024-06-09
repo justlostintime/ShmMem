@@ -62,6 +62,7 @@ Private VirtualAddress As Pointer = 0              '' Pointer to the head of the
 Public ListHead As DList                                         '' Pointer to the actual list
 Public VarMem As ShmVarStorage                    '' The storage pool to used or referenced
 Public SemAddress As Pointer                             '' real pointer to the locking sem used by this list
+
 Property Read Key As Long                                   '' During iterations this will be the item count
 Property Read Key_dlist As Dlist                          '' During iteration this contains the current dlist entry
 Property Read Key_ExtendedId As Long           '' ExtendedId of the entry being proessed by Next
@@ -128,18 +129,19 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Glob
 
 End
 
-Public Sub _Free(Optional OverRideGlobal As Boolean = False)
+Public Sub _free()
 
-    If Listhead = Null Then Return
-    If OverRideGlobal Then ListHead.Global = False
-
-    Dec ListHead.RefCount
-    If ListHead.Global Then Return    '' dont delete global used lists
-
-    If ListHead.RefCount <= 0 Then
-        ListHead.enum_listitem = Null
-        Me.Free()
+    If Listhead <> Null Then
+        If ListHead.Refcount > 0 Then Dec ListHead.RefCount
+        If Not ListHead.Global Then
+            If ListHead.RefCount <= 0 Then
+                ListHead.enum_listitem = Null
+                Me.Free()
+            Endif
+        Endif
     Endif
+
+    varmem = Null
 
 End
 
@@ -272,11 +274,11 @@ End
 Public Sub _Assign(VEntry As DPointer)
 
     Inc ListHead.RefCount                                   '  represents the number of refrences to this entry
-    vEntry.Value = ListHead.Address              ' Assign this to the variable
+    vEntry.Value = ListHead.Address              '  Assign this to the variable
 
 End
 
-Public Sub {free}()                             '' Free the entire list
+Public Sub {Free}()                             '' Free the entire list
 
     Dim pList As DList[] = AsDListList()
 
@@ -287,6 +289,8 @@ Public Sub {free}()                             '' Free the entire list
     For Each pEntry As DList In pList
         FreeEntry(pEntry)
     Next
+
+    listhead = Null
 
 End
 

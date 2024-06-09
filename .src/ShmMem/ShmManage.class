@@ -81,6 +81,13 @@ Public Sub _new(MemBlock As ShmMemBlock, Optional CreateManagement As Boolean = 
 
 End
 
+Public Sub _free()
+
+    ManagedInfo = Null
+    Storage = Null
+
+End
+
 Public Sub AllocPtr(VirtAddress As Pointer) As AllocHeader
 
     If VirtAddress = 0 Then

@@ -27,7 +27,12 @@ Public Sub main()
   While Not completed
     Wait 0.001
   Wend
-
+  
+  MyShare.NotifyStop("Cat", Me)
+  MyShare.NotifyStop("Dog", Me)
+  MyShare.NotifyStop("rabbit", Me)
+  MyShare.NotifyStop("Done", Me, "It_Is_Done")
+  
   Print "User 3 Completed and exits"
 
 End

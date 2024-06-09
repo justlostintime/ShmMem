@@ -64,11 +64,18 @@ End
 
 Public Sub _free()
 
+    Vars._free()
     Vars = Null
-    ' SymStore = Null
-    'MyVarMem = Null
+
+    MyVarMem._free()
+    MyVarMem = Null
+
     varMnge = Null
-    'varstore = Null
+
+    SymStore._free()
+    SymStore = Null
+
+    varstore = Null
 
 End
 

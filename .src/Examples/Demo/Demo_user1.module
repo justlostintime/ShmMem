@@ -56,7 +56,6 @@ Public Sub main()
         .Notifystop("Done", Me)
         .NotifyOnNew(False, Me)
         PrintStuff(MyShare)
-
     End With
     Print "User 1 Completed and exits"
 

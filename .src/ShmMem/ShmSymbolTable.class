@@ -226,10 +226,8 @@ Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional Acti
     If $bDebug Then Print Application.id, "_new SymTblmem.exclusive"
     SymTblMem.Exclusive()
 
-    ' SymMem = SymMemPtr(MemBlock.DataAddress + SizeOf(TableInfo), MemBlock.DataAddress + SizeOf(TableInfo), 0)
     SymMem = MemBlock.DataAddress + SizeOf(TableInfo)
 
-    ' SymInfo = SymInfoPtr(MemBlock.DataAddress, MemBlock.DataAddress, 0)
     SymInfo = MemBlock.DataAddress
 
     If Not SymInfo.Initialized Then
@@ -264,13 +262,11 @@ End
 
 Public Sub _free()
 
-    If varmem = Null Then
-        Return
-    Endif
-
-    NotifyVars = Null
-    varmem = Null
     SymTblMem = Null
+    VarMem = Null
+    NotifyVars = Null
+    SymMem = Null
+    SymInfo = Null
 
 End
 

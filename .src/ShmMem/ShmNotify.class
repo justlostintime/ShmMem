@@ -65,6 +65,10 @@ Fast Unsafe Public Sub _free()
         NotifyQueue.free()
     Endif
 
+    NotifyQueue = Null
+    VarMem = Null
+    SymMem = Null
+
 End
 
 '' Create a request to be notified when the value of a specific variable has changed

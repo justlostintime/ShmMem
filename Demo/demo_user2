@@ -26,7 +26,12 @@ Public Sub main()
         Wait 2
 
     Wend
-
+    
+    MyShare.Notifystop("Cat", Me, "changes")
+    MyShare.NotifyStop("Dog", Me, "changes")
+    MyShare.NotifyStop("Rabbit", Me, "changes")
+    MyShare.NotifyStop("Done", Me, "changes")
+    
     Print "User 2 Completed and exits"
 
 End
