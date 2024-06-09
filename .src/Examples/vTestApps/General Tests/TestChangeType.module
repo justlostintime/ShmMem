@@ -31,6 +31,9 @@ Public Sub Main()
         !Sample = "string 3"
 
     End With
+
     vmem.PrintAllInfo()
+
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
 
 End

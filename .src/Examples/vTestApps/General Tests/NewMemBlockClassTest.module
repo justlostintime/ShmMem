@@ -133,4 +133,6 @@ Public Sub main()
     Next
     Print "Read using ShmVarStorage And Lock/unlock  time X "; longloop; " : "; Timer - starttime
 
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
 End

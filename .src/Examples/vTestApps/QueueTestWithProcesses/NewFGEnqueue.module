@@ -53,7 +53,13 @@ Public Sub Main()
 
         .PrintAllInfo()
 
+        Work = Null
+
     End With
+
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+    Quit
+
 Catch
     Print "error";; Error.Text
 

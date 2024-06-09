@@ -55,6 +55,7 @@ Public Sub main()
 
         .PrintAllInfo()
     End With
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
 
 End
 

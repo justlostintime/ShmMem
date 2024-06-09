@@ -91,4 +91,6 @@ Public Sub main()
     smem!goat = "this is a small goat and it will eat all your grass"
     smem.Print()
 
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
 End

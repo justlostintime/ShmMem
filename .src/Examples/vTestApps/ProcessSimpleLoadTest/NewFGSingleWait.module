@@ -13,4 +13,6 @@ Public Sub main()
         Print "Done task running = ";; mytask.running;; mytask.value
     End With
 
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
 End

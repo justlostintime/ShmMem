@@ -40,4 +40,6 @@ Public Sub main()
     aa = mymem.Alloc(700)
     mymem._Print()
 
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
 End

@@ -10,11 +10,17 @@ Public Sub Main()
     MyMem.Notify("a", Me)
     MyMem.Notify("b", Me)
     MyQueue = MyMem.notifyQ("a")
+
     MyMem!a = 20
     MyMem!b = 30
+
     Wait 1
+
     MyMem.NotifyStop("a", Me)
     MyMem.NotifyStop("b", Me)
+
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+    Quit
 
 End
 

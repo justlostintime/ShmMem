@@ -23,6 +23,8 @@ Public Sub main()
     Dim again As New Define2NotifyAgain
     again.DoAgain(vars)
 
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
 End
 
 Public Sub a1(SymName As String, value As Variant, TimedOut As Boolean)

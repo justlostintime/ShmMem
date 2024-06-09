@@ -5,13 +5,7 @@ isRunning As Boolean = True
 Public Vars As Shmmem = Null
 Public Starttime As Float
 
-' Public Logfile As File
-' Public LogfileName As String
-
 Public Sub main() As String
-
-    ' LogfileName = User.home &/ "Desktop" &/ "log_" & application.id
-    'logfile = Open LogFileName For Write Create
 
     If vars = Null Then
         Print "BG Using named memory mydata"
@@ -35,27 +29,26 @@ Public Sub main() As String
         ' Vars.PrintAllInfo("For PID " & Application.id)
 
         ' Print "Notify Set for 'cow'"
-        '   Print #LogFile, "Notify Set for 'cow and done'"
         starttime = Now
         While isRunning
             Wait Next
         Wend
 
         Wait 0.03
-
+        Print Application.id;; "BG Loop Completed, Stopping notifications"
         .NotifyStop("cow", Me)
         .NotifyStop("done", Me)
-
-        '  Print #LogFile, "BG Task exits"
+        Print Application.id;; "BG Loop Completed, All Notifications Stopped"
 
     End With
-    'Close LogFile
+
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+    Vars = Null
+
     Return "Done"
 
 Catch
     Print Application.id;; "BG Error =";; Error.text, Error.where
-    'Print Application.id, "Logfile:"; LogFileName;; "BG Error =";; Error.text, Error.where
-    'Print #Logfile, Application.id, "BG Error =";; Error.text, Error.where
 
 End
 
@@ -71,7 +64,7 @@ End
 
 Public Sub done_changed(VarName As String, Value As Variant, TimedOut As Boolean)
 
-    Print Application.id;; " BG Recieved Done directive, starting exit procedure";; Str(timedOut);; Varname;; Value
+    Print Application.id;; " BG Recieved Done directive, Timed Out=";; Str(timedOut);; Varname;; "=";; Value
     isRunning = False
 
 End

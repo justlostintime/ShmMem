@@ -22,4 +22,6 @@ Public Sub main()
 
     Wait
 
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
 End

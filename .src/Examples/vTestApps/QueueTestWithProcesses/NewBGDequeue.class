@@ -28,6 +28,7 @@ Public Sub main() As Integer
     Print "Bg Ends"
     Flush
     Wait
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
 
 Catch
     Print "bg error ";; Error.text

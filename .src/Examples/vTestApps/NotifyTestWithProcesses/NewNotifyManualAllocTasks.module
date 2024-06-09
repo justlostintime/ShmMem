@@ -70,6 +70,20 @@ Public Sub main()
 
     varMnge._Print(MyVarMem)
 
+    Print "Delete all blocks"
+
+    MyQueue = Null
+    MyList = Null
+    Vars = Null
+    SymStore = Null
+    MyVarMem = Null
+    varMnge = Null
+    VarStore = Null
+
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+    
+    Quit
+
 End
 
 Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)

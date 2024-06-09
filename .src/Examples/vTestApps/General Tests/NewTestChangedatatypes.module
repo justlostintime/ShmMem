@@ -28,4 +28,6 @@ Public Sub main()
         Next
     End With
 
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
 End

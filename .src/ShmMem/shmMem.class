@@ -31,7 +31,21 @@ Property Read Key As String
 Property Debug As Boolean Use $bDebug
 Property DefaultDirectory As String Use $sDefaultDirectory
 
-'' Remove the memory by force
+'' We need to determine if the object is a class=module or object=class instanciated object
+'' This function correctly retruns the class for both objects and modules
+Static Public Sub GetObjectClass(BasicObject As Object) As Class
+
+    Dim result As Class = Object.Class(BasicObject)
+
+    If result.Name == "class" Then
+        Return BasicObject
+    Else
+        Return result
+    Endif
+
+End
+
+'' Remove the Shared memory segment  by force
 Static Public Sub ForceDelete(SharedName As String)
 
     Try shmMemBlock.ForceDelete(SharedName & "_Data")

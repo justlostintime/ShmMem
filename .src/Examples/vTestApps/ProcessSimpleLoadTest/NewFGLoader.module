@@ -50,7 +50,7 @@ Public Sub main()
             Wait 0.001
         Wend
 
-        Print "Completed "
+        Print shmMem.GetObjectClass(Me).name;; "Completed"
 
     End With
 

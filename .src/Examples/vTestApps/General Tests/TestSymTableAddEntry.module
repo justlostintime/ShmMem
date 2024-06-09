@@ -74,4 +74,6 @@ Sub RunTest()
 
     End With
 
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
 End

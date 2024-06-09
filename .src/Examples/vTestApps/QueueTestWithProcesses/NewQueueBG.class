@@ -21,7 +21,7 @@ Public Sub Main()
         Wend
         Wait 0.1
     Next
-
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
 Catch
     Print Error.text, Error.where
 

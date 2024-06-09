@@ -5,6 +5,7 @@ Public mqa As New ShmMem(1000000)
 Public Sub Main()
 
     Dim r As Variant
+
     Print Application.id, "***************************** Start FgTask "
     Dim qa As New ShmQueue(mqa, 0, True, "Queue Test")
     Wait 0
@@ -27,5 +28,7 @@ Public Sub Main()
     MTask.Wait()
 
     mqa.PrintAllInfo()
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+    Quit
 
 End

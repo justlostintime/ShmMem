@@ -125,6 +125,8 @@ Public Sub main()
 
     symStore._free()
 
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
     Quit
 
 End

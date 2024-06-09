@@ -18,6 +18,8 @@ Public Sub DoAgain(vars As ShmMem)
 
     End With
 
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
 End
 
 Public Sub a1(SymName As String, value As Variant, TimedOut As Boolean)

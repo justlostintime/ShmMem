@@ -135,7 +135,7 @@ Public Sub main()
         Print "End of FiFo Test ******************************************************\nBegin FiLo test ************************************************************"
 
         myMem.varMnge._Print()
-
+        Print shmMem.GetObjectClass(Me).name;; "Completed"
     End With
 
 End

@@ -12,6 +12,9 @@ Public Sub main() As String
         Flush
 
     End With
+
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+
     Return "BG says Completed test"
 
 Catch

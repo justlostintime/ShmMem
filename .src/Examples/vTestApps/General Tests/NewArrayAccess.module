@@ -18,6 +18,7 @@ Public Sub main()
 
         Print .v[1]
 
+        Print "Begin Loop 100000 times setting array index value"
         Dim a As Float = Timer
         For i As Integer = 0 To 100000
             .["v", 3] = i
@@ -26,5 +27,7 @@ Public Sub main()
         Print "Total time = 100000/"; Timer - a, !v[3], !a[2]
 
     End With
+
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
 
 End
