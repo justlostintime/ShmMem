@@ -265,6 +265,12 @@ Public Sub WaitValueChange(SymName As String, Value As Variant, Optional Timeout
 
 End
 
+Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "") As Boolean
+
+    Return vars.NotifyOnNew(enabled, NotifyObject, NotifyFunction)
+
+End
+
 Public Sub Notify(SymName As String, NotifyObject As Object, Optional NotifyFunction As String = "", Timeout As Float = 0, Tag As String = "")
 
     vars.Notify(SymName, NotifyObject, NotifyFunction, TimeOut, tag)

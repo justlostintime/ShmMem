@@ -44,29 +44,30 @@ Extern signal(sig As Integer, sighandler As Pointer) As Pointer In "libc:6"
 Extern sKill(sigpid As Integer, Sig As Integer) As Integer In "libc:6" Exec "kill"
 Extern sched_yield() As Integer In "libpthread:0"
 
-Private VarMem As ShmVarStorage            '' The memory block to be used for creating queues
-Private NotifyQueue As ShmList = Null         '' the shared memory queue used to store requests
-Private NotifyVars As Collection = Null         '' The local copy of all variables to be notified of
-Private MyAppId As Long = 0                          '' This variable defines the current tasks identity
+Public VarMem As ShmVarStorage                    '' The memory block to be used for creating queues
+Public SymMem As ShmSymbolTable = Null    ''  The Symbol Table holding variable information
+Private NotifyQueue As ShmList = Null                '' the shared memory queue used to store requests
+Private NotifyVars As Collection = Null                '' The local copy of all variables to be notified of
+Private MyAppId As Long = 0                                 '' This variable defines the current tasks identity
 
 '' Create a new notify queue for this symbol table
-'' This is called by the Symbol table to create the notify queue
-Public Sub _New(VariableMemory As ShmVarStorage)
+'' This is called by the Symbol table to create the notify queue for new variable creation
+Public Sub _New(VariableMemory As ShmVarStorage, Optional SymbolMemory As ShmSymbolTable = Null)
 
     VarMem = VariableMemory
+    SymMem = SymbolMemory
 
 End
 
 Fast Unsafe Public Sub _free()
 
-    If NotifyQueue = Null Then
-        Return
+    If NotifyQueue <> Null Then
+        NotifyQueue.free()
     Endif
-
-    NotifyQueue.free()
 
 End
 
+'' Create a request to be notified when the value of a specific variable has changed
 Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc As String, Optional timeout As Long = 0, Tag As String = "")         '' Timeout of zero means wait for ever
 
     Dim PidQueue As ShmList
@@ -110,11 +111,12 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
 
     '' Update the local list of variables waiting for dispatch notification
     If tag = "" Then
-        ' We need to differenciate between being called from a module of from a class
+        ' We need to differenciate between being called from a module or from a class
         Dim name As String = GetClassName(CallBack)
         Try tag = SymName & "_" & CallFunc & "_" & name
     Endif
-    VarInfo = New ShmNotifyEntry(SymEntry, CallBack, CallFunc, VarMem, Timeout, Tag) As "VarInfo"
+
+    VarInfo = New ShmNotifyEntry(SymEntry, CallBack, CallFunc, Me, Timeout, Tag) As "VarInfo"
 
     If Not NotifyVars.Exist(SymName) Then
         Dim todoList As New Collection(gb.ignorecase)   ' now create a collection of all the parts of this program asking for notification
@@ -131,6 +133,14 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
 
 Catch
     Print Error.text, Error.where
+
+End
+
+'' special case where the variable is of the #xxx format, these have extra information
+'' for now there is only the one used for notifying of new variables
+Fast Unsafe Public Sub VarInfo_VarSpecial(VarInfo As ShmNotifyEntry, info As Variant[])
+
+    VarInfo.Dispatch(False, info[1])
 
 End
 
@@ -226,13 +236,14 @@ Public Sub _signal(Sig As Integer)                  '' Signal handler for user d
 
     If sig <> ChangeSignal Then Return
 
-    While NotifyQueue.count > 0                                                          ' for each of the queued changes notify the reqestor
-        Dim VarName As Variant = NotifyQueue.Pop()                   ' get the name of the variable that changed
-        Dim todoList As Collection = NotifyVars[VarName]          ' get the local todo list for this variable
-        If todolist = Null Then Continue
-        For Each myNotify As ShmNotifyEntry In todoList             ' Loop over the list
-            MyNotify.Newval()                                                                    ' create an event for the signal we recieved
-            Sched_Yield()                                                                             ' yield this task for another one to run
+    While NotifyQueue.count > 0                                                                                    ' for each of the queued changes notify the reqestor
+        Dim VarName As Variant = NotifyQueue.Pop()                                             ' get the name of the variable that changed
+        Dim VarExtended As Variant[] = Split(varname, ";", "\"", True, False)     ' # type control variable may have extended information
+        Dim todoList As Collection = NotifyVars[VarExtended[0]]                        ' get the local todo list for this variable
+        If todolist = Null Then Continue                                                                          ' if it does not exsist then skip to next Queue
+        For Each myNotify As ShmNotifyEntry In todoList                                        ' Loop over the list
+            MyNotify.Newval(VarExtended)                                                                     ' create an event for the signal we recieved
+            Sched_Yield()                                                                                                        ' yield this task for another one to run
         Next
     Wend
 
@@ -240,19 +251,26 @@ End
 
 '' Called by the symbol table when ever a variable changes value
 '' This only supports variables not direct memory values
-Fast Unsafe Public Sub SignalEach(Sym As Symbol)
+Fast Unsafe Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
 
     Dim PidQueue As ShmList
     Dim UserQueue As ShmList
     Dim Result As Integer
+    Dim SymName As String = ""
 
     If Sym.NotifyBlock = 0 Then Return
 
     PidQueue = New ShmList(VarMem, Sym.NotifyBlock)                                                           ' get the list of pids waiting for this variable to change
 
     For Each Pid As Integer In PidQueue                                                                                            ' loop over each of the ids waiting a notification
+        SymName = sym.name.tostring()
         userqueue = New ShmList(VarMem, PidQueue.Key_ExtendedId)                                  ' get the notifyqueue for each task waiting for notification
-        userqueue.Add(Sym.name.tostring(), 0, Sym.Name.ToString() & ":" & Str(PID))       ' set an entry onto requesting tasks  queue, slow should use an integer instead
+        If symname = "#onnew" Then
+            symname = "#onnew;" & tag
+        Else If tag = "" Then
+            tag = SymName & ":" & Str(PID)
+        Endif
+        userqueue.Add(SymName, 0, Tag)                                                                                           ' set an entry onto requesting tasks  queue, slow should use an integer instead
     Next
 
     For Each Pid As Integer In PidQueue

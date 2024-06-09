@@ -12,32 +12,52 @@ Public Sub main()
     Dim Buffer As String
     Dim element As String[]
 
-    ShmMem.ForceDelete("MySharedMem")                                          ' cleanup any old testing
+    ' ShmMem.ForceDelete("MySharedMem")                                          ' cleanup any old testing
     MyShare = New ShmMem(2000000, "MySharedMem", 8000)
-    MyShare!Cat = "Felix"
-    MyShare!Dog = "Rover"
-    MyShare!Rabbit = 1000
-    MyShare!Done = False
+    With MyShare
+        .PrintAllInfo()
+        !Cat = "Felix"
+        !Dog = "Rover"
+        !Rabbit = 1000
+        !Done = False
 
-    MyShare.Notify("Cat", Me)
-    MyShare.Notify("Dog", Me)
-    MyShare.Notify("rabbit", Me)
-    MyShare.Notify("Done", Me)
-
-    Print " User 1 monitoring all variables"
-    While Not completed
-        Print "Input Variable Name{cat,dog,rabbit,done} followed by an = and the new value\nExample: Cat=this"
-        Line Input Buffer
-        element = Split(buffer, "=", "\"", True, False)
-        If element.count <> 2 Or If Not ValidVariables.exist(element[0]) Then
-            Print "Invalid input :"; buffer
-            Continue
-        Endif
-        MyShare[element[0]] = element[1]
+        .Notify("Cat", Me)
+        .Notify("Dog", Me)
+        .Notify("rabbit", Me)
+        .Notify("Done", Me)
         PrintStuff(MyShare)
-        Wait 0.001
-    Wend
+        .NotifyOnNew(True, Me)
 
+        Print " User 1 monitoring all variables"
+        While Not completed
+            Print "Input Variable Name{cat,dog,rabbit,done} followed by an = and the new value\nExample: Cat=this"
+            Line Input Buffer
+            element = Split(buffer, "=", "\"", True, False)
+            If element.count = 2 Then
+                element[0] = Lower(Trim(element[0]))
+                element[1] = Trim(element[1])
+                If Not .Exist(element[0]) Then
+                    Print "Creating :"; element[0];;
+                Else
+                    Print "Assigning :"; element[0];;
+                Endif
+                Print "Value="; element[1]
+            Else
+                Print "You may only assign : varname=value or varname="
+            Endif
+            MyShare[element[0]] = element[1]
+            PrintStuff(MyShare)
+            Wait 0.001
+        Wend
+
+        .Notifystop("Cat", Me)
+        .Notifystop("Dog", Me)
+        .Notifystop("rabbit", Me)
+        .Notifystop("Done", Me)
+        .NotifyOnNew(False, Me)
+        PrintStuff(MyShare)
+
+    End With
     Print "User 1 Completed and exits"
 
 End
@@ -47,8 +67,14 @@ Public Sub PrintStuff(vMyShare As ShmMem)
     Dim Value As Variant = ""
 
     For Each Value In vMyShare
-        Print vMyShare.key; "="; Quote(Value)
+        Print vMyShare.key; "="; Quote(Str(Value))
     Next
+
+End
+
+Public Sub onnew_created(varname As String, value As Variant, timedOut As Boolean)
+
+    Print "Notified that";; varname;; "was created and set to";; value;; "Timeout is ignored";; Str(timedout)
 
 End
 

@@ -1,0 +1,38 @@
+#!/usr/bin/gbs3
+
+use "westwood.shmmem:2.1"
+Public MyShare As ShmMem
+Public Completed As Boolean = False
+
+Public Sub Main()
+
+    MyShare = New ShmMem(2000000, "MySharedMem", 8000)
+    With MyShare
+
+        '  Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional FuncName As String = "", Tag As String = "")
+        .NotifyOnNew(True, Me)
+        .Print()
+        !Done = "waiting"
+        .notify("done", Me)
+        While Not Completed
+            Wait 0.01
+        Wend
+        
+        .NotifyOnNew(false,Me)
+        .notifyStop("done", Me)
+
+    End With
+
+End
+
+Public Sub OnNew_Created(varname As String, value As Variant, timedout As Boolean)
+
+    Print "Variable";; Quote(varname);; "created! with Value:";;quote(value)
+    
+End
+
+Public Sub done_changed(varname As String, value As Variant, timedout As Boolean)
+
+    If MyShare!Done == "True" Then completed = True
+
+End

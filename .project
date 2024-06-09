@@ -1,7 +1,7 @@
 # Gambas Project File 3.0
 Title=ShmMem
-Startup=NewArrayAccess
-Version=2.1.4
+Startup=Demo_user1
+Version=2.1.5
 Description="This provides an interface to the Linux Shared memory functions. Allowing the creation and sharing of shared memory segments across any number of local applications or tasks.\n\nTo do this it implements  an interface which allows any valid gambas object or variable to be directly stored or accessed via the interface\n\nexample::\nPublic Sub Main()\nMyShm = new ShmMem\n\nWith MyShm\n\n !a = \"this\"\n !b = 1\n\nprint !a, !b\n\nend with\nend"
 Authors="JustLostInTime, Westwood"
 TabSize=4

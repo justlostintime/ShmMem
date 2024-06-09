@@ -12,6 +12,7 @@ Public Completed As Boolean = False
 Public Sub main()
 
   MyShare = New ShmMem(2000000, "MySharedMem", 8000)
+  MyShare.print()
   MyShare!Cat = "Felix"
   MyShare!Dog = "Rover"
   MyShare!Rabbit = 1000

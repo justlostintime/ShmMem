@@ -31,6 +31,7 @@ Public Struct TableInfo
     UsedCount As Long                      '' Number of used Entries
     MaxCount As Long                        '' Max Number of entries ever used
     TotalRetryCount As Pointer       '' Max number of retries when looking for symols
+    NotifyOnNew As Integer             '' set this when someone is waiting to be notified of var creation
 End Struct
 
 '' The structure of the actual symbol table, Virtual definition see Max default entries in ShmMem
@@ -246,7 +247,16 @@ Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional Acti
     SymTblMem.Release()
     If $bDebug Then Print Application.id, "_new SymTblmem.release"
 
-    NotifyVars = New ShmNotify(VarMem)
+    NotifyVars = New ShmNotify(VarMem, Me)
+
+    If Not Me.Exist("#onnew") Then
+        Me["#onnew"] = "Holding Queue for new symbol creation"
+        SymInfo.NotifyOnNew = 0
+        Dim index As Long = GetSymbol("#onnew")
+        Dim sym As Symbol = SymMem.Table[index]
+        Dim NotList As New ShmList(Varmem, 0, True, "On New Queue")
+        sym.NotifyBlock = NotList.Address
+    Endif
 
     If $UseCache Then UpdateCache()
 
@@ -584,6 +594,13 @@ Public Sub _put(value As Variant, SymName As String)
 
         If Not SymbolCache.Exist(SymName) Then 'updated
             Add(SymName, Value)
+            If SymInfo.NotifyOnNew > 0 Then
+                SymbolIndex = SymbolCache["#onnew"]
+                Sym = SymMem.Table[SymbolIndex]
+                If Sym.NotifyBlock <> 0 Then
+                    NotifyVars.SignalEach(Sym, SymName)
+                Endif
+            Endif
             Return
         Else
             SymbolIndex = SymbolCache[SymName] ' updated
@@ -592,7 +609,14 @@ Public Sub _put(value As Variant, SymName As String)
     Else
         index = GetSymbol(SymName)
         If index = NoEntry Then
-            Add(SymName, Value, LastHash)
+            Add(SymName, Value, lasthash)
+            If SymInfo.NotifyOnNew > 0 Then
+                index = GetSymbol("#onnew")               ' we need to do this again as the original  hash may only be a bucket
+                Sym = SymMem.Table[Index]
+                If Sym.NotifyBlock <> 0 Then
+                    NotifyVars.SignalEach(Sym, SymName)
+                Endif
+            Endif
             Return
         Else
             SymbolIndex = index
@@ -637,6 +661,32 @@ Public Sub GetObjectClass(BasicObject As Object) As Class
     Else
         Return result
     Endif
+
+End
+
+Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional FuncName As String = "") As Boolean
+
+    If FuncName = "" Then funcName = "OnNew_Created"
+    Dim Tag As String = "OnNew_PID{" & Application.id & "}"
+
+    If Enabled Then
+
+        Try Notify("#onnew", NotifyObject, FuncName, 0, Tag)
+        If Error Then
+            Return False
+        Else
+            Inc SymInfo.NotifyOnNew
+        Endif
+
+    Else If SymInfo.NotifyOnNew > 0 Then
+        Try NotifyStop("#onnew", NotifyObject, FuncName, Tag)
+        If Error Then
+            Return False
+        Else
+            Dec SymInfo.NotifyOnNew
+        Endif
+    Endif
+    Return True
 
 End
 

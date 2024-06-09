@@ -455,7 +455,6 @@ Private Sub _remove(CurrentItem As Dlist) As Variant
     Dim ptrNext As Dlist
 
     Value = VarMem[CurrentItem.value]                            ' get the value of the item being removed
-
     If addr = ListHead.next Then
         ListHead.next = CurrentItem.Next
         If CurrentItem.next = 0 Then
@@ -512,6 +511,19 @@ Public Sub RemoveExtId(ExtendedId As Long) As Variant
     FreeEntry(CurrentItem)
 
     Return value
+
+End
+
+'' Pop the next entry, but return all the fields from the entry
+Public Sub PopInfo() As Variant[]
+
+    Dim result As New Variant[]
+    Dim all As DList[] = AsDlistList()
+
+    result.Add(all.Last.Tag)
+    result.Add(all.Last.Priority)
+    Result.Add(Pop())
+    Return result
 
 End
 

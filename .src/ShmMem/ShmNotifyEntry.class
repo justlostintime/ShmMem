@@ -41,12 +41,14 @@ Public NotifyTimeout As Integer
 Public NotifyVar As Symbol
 Public VarName As String
 Public VarMemory As ShmVarStorage
+Public SymTable As ShmSymbolTable
 Public Tag As String
 Public StartTime As Float
 Private VarClock As Timer
 Private OneShot As Boolean = False
 ' Private OneShot As Boolean
 
+Event VarSpecial(VarDef As ShmNotifyEntry, Info As Variant[])
 Event VarChanged(VarDef As ShmNotifyEntry)
 Event VarTimedOut(VarDef As ShmNotifyEntry)
 
@@ -54,13 +56,14 @@ Extern sched_yield() As Integer In "libpthread:0"
 
 '' Dispatch Functions must look like
 '' MyChange(SymSource as ShmMem, SymName as String, Value as Variant, TimedOut as boolean)
-Public Sub _new(SymName As Symbol, CallObject As Object, CallFunc As String, VarMem As ShmVarStorage, Optional fTimeout As Long = 0, Once As Boolean = False, mTag As String = "")
+Public Sub _new(SymName As Symbol, CallObject As Object, CallFunc As String, NotifyMem As ShmNotify, Optional fTimeout As Long = 0, Once As Boolean = False, mTag As String = "")
 
     NotifyObject = CallObject
     NotifyFunc = CallFunc
     NotifyVar = SymName
     NotifyTimeOut = fTimeOut
-    VarMemory = VarMem
+    VarMemory = NotifyMem.VarMem
+    SymTable = NotifyMem.SymMem
     oneShot = Once
     VarName = SymName.Name.ToString()
     If mTag = "" Then
@@ -77,6 +80,15 @@ Public Sub _new(SymName As Symbol, CallObject As Object, CallFunc As String, Var
 
 End
 
+Public Sub _free()
+
+    VarMemory = Null
+    SymTable = Null
+    VarClock = Null
+    NotifyVar = Null
+
+End
+
 Public Sub VarTimeOut_Timer()
 
     Dim Result As Boolean
@@ -86,19 +98,38 @@ Public Sub VarTimeOut_Timer()
 
 End
 
-Public Sub NewVal()
+Public Sub NewVal(Optional extendedInfo As Variant[] = Null)
 
-    Raise VarChanged(Me)
+    If extendedInfo.count > 1 Then
+        Raise VarSpecial(Me, extendedInfo)
+    Else
+        Raise VarChanged(Me)
+    Endif
     Sched_Yield()
 
 End
 
-Public Sub Dispatch(Failed As Boolean)
+Public Sub Dispatch(Failed As Boolean, Optional NameOverride As String = "")
+
+    Dim onnew As Boolean = (NameOverRide <> "")
+    Dim ReportedVar As String
+    Dim value As Variant
+
+    If onnew Then
+        ReportedVar = NameOverRide     '' check for the special variable
+    Else
+        ReportedVar = varname
+    Endif
 
     VarMemory.Lock()
-    Dim value As Variant = VarMemory[NotifyVar.Address]
+    If onnew Then
+        value = SymTable[ReportedVar]
+    Else
+        value = VarMemory[NotifyVar.Address]
+    Endif
     VarMemory.Unlock()
-    Dim ParmList As Variant[] = [VarName, value, Failed]
+
+    Dim ParmList As Variant[] = [ReportedVar, value, Failed]
 
     Object.Call(NotifyObject, NotifyFunc, ParmList)
     Sched_Yield()
