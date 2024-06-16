@@ -1,12 +1,12 @@
-#!/usr/bin/env gbs3
+#!/usr/bin/env gbs3 
 'Auto Generated Script 06/16/2024 19:04:26.261 Version (3.19.90)
-#Script Startup = "FMain"
-#Script Version = "0.0.1"
+#Script Startup="FMain"
+#Script Version="0.0.1"
 Use "gb.image"
 Use "gb.gui"
 Use "gb.form"
 Use ":westwood.shmmem:2.1"
-Class FMain
+class FMain
 ' Gambas class file
 
 Public MyMemory As ShmMem
@@ -70,14 +70,15 @@ Public Sub VariableList_Data(Row As Integer, Column As Integer)
 
 End
 
-End Class
-form FMain
-#Gambas Form File 3.0
 
-{  Form Form
-  MoveScaled(0, 0, 136, 73)
+End class
+form FMain
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,136,73)
   { !VariableList GridView
-    MoveScaled(1, 0, 133, 71)
+    MoveScaled(1,0,133,71)
     #Public = True
     Expand = True
     Header = GridView.Horizontal

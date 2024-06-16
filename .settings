@@ -378,11 +378,16 @@ Lock=False
 LastCommit="Updated Readme to contain instructions on running demo\n\n* opt: Update the readme with demo instructions"
 
 [OpenFile]
-Count=3
+Count=8
 File[1]=".src/Examples/vTestApps/QueueTestWithProcesses/ShmQueueAndShmListTest.module:14.138"
 File[2]=".hidden/CHANGELOG:0.0"
-Active=3
-File[3]=".src/ShmMem/ShmNotify.class:0.306"
+Active=2
+File[3]=".src/ShmMem/ShmNotify.class:8.106"
+File[4]="Demo/shmconsole:26.7"
+File[5]="Demo/demo_user1:0.0"
+File[6]=".src/Examples/Demo/Demo_user1.module:4.11"
+File[7]=".src/ShmMem/ShmList.class:0.0"
+File[8]="Demo/demo_monitornew:0.0"
 
 [Package]
 Dir="~/Downloads/"

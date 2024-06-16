@@ -1,3 +1,6 @@
+* Sun Jun 16 2024 brian <justlostintime@gmail.com> 2.1.9
+- Cleaned up the debug messages, added script to monitor the Shared memory
+
 
 
 * Fri May 31 2024 brian <justlostintime@gmail.com> 2.0.8
