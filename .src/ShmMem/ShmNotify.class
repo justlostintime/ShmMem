@@ -95,7 +95,7 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
     '' For the variable refrenced. There is one of these for each variable being watched.
     If SymEntry.NotifyBlock = 0 Then                                                                        ' Check if a PID queue has already been created
         PidQueue = New ShmList(VarMem, 0, True, "PIDQ-" & SymName)       ' create a new List
-        PidQueue.Debug = True
+        ' PidQueue.Debug = True
         SymEntry.NotifyBlock = PidQueue.Address
     Else
         PidQueue = New ShmList(VarMem, SymEntry.NotifyBlock)                    ' Get the address to the exsisting queue
@@ -104,7 +104,7 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
     If NotifyQueue = Null Then
         NotifyVars = New Collection(gb.ignorecase)                                              ' Local copy of the list of variables we are waiting for
         NotifyQueue = New ShmList(VarMem, 0, True, "nq_ " & MyAppId)     ' Create a new queue for variable changes per task/process"
-        NotifyQueue.Debug = True
+        ' NotifyQueue.Debug = True
 
     Endif
 

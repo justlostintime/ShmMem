@@ -1,0 +1,89 @@
+#!/usr/bin/env gbs3
+'Auto Generated Script 06/16/2024 19:04:26.261 Version (3.19.90)
+#Script Startup = "FMain"
+#Script Version = "0.0.1"
+Use "gb.image"
+Use "gb.gui"
+Use "gb.form"
+Use ":westwood.shmmem:2.1"
+Class FMain
+' Gambas class file
+
+Public MyMemory As ShmMem
+Public variables As New String[]
+
+Public Sub Form_Open()
+
+    MyMemory = New ShmMem(2000000, "MySharedMem", 8000)          '' Open the test database
+    MyMemory.NotifyOnNew(True, Me)                                                             '' get notified when new variables appear
+    VariableList.Columns.count = 2
+    VariableList.Columns[0].Title = "Variable Name"
+    VariableList.Columns[1].Title = "Value"
+    VariableList.Rows.count = 100
+    For Each var As String In MyMemory
+        variables.Add(MyMemory.key)
+        MyMemory.Notify(MyMemory.key, Me, "onanychange")
+    Next
+    Variables.Sort()
+
+End
+
+Public Sub Form_Close()
+
+    MyMemory.NotifyOnNew(False, Me)
+    For Each var As String In variables
+        MyMemory.NotifyStop(var, Me, "onanychange")
+    Next
+    MyMemory = Null
+
+End
+
+'' Get the notifications
+Public Sub OnNew_Created(SymName As String, value As Variant, TimedOut As Boolean)
+
+    variables.Add(SymName)
+    Variables.Sort()
+    MyMemory.Notify(SymName, Me, "onanychange")
+    VariableList.Refresh()
+
+End
+
+Public Sub OnAnyChange(varname As String, value As Variant, timedOut As Boolean)
+
+    Dim index As Integer = Variables.Find(varname)
+
+    If index = -1 Then
+        Error.Raise("Bad variable name returned")
+    Endif
+    VariableList.Rows[index].text = value
+
+End
+
+Public Sub VariableList_Data(Row As Integer, Column As Integer)
+
+    If Row > variables.max Then Return
+    If column = 0 Then
+        VariableList.Data.text = variables[row]
+    Else
+        VariableList.Data.text = Str(MyMemory[variables[row]])
+    Endif
+
+End
+
+End Class
+form FMain
+#Gambas Form File 3.0
+
+{  Form Form
+  MoveScaled(0, 0, 136, 73)
+  { !VariableList GridView
+    MoveScaled(1, 0, 133, 71)
+    #Public = True
+    Expand = True
+    Header = GridView.Horizontal
+    ScrollBar = Scroll.Vertical
+    Sorted = True
+  }
+}
+
+End form

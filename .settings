@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"ShmList":[630,744],"ShmNotify":[306],"ShmListVariables":[41,85,10]}
+Breakpoints={"ShmList":[630,744],"ShmNotify":[306],"ShmListVariables":[41,85,10,77]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -378,15 +378,11 @@ Lock=False
 LastCommit="Updated Readme to contain instructions on running demo\n\n* opt: Update the readme with demo instructions"
 
 [OpenFile]
-Count=7
-File[1]=".src/Examples/vTestApps/General Tests/ShmListVariables.module:0.20"
-File[2]=".src/ShmMem/ShmListEntry.class:19.25"
-Active=1
-File[3]=".src/ShmMem/ShmVarStorage.class:0.694"
-File[4]=".src/ShmMem/shmMem.class:3.109"
-File[5]=".src/ShmMem/ShmList.class:28.1209"
-File[6]=".src/ShmMem/ShmManage.class:48.439"
-File[7]=".src/ShmMem/ShmQueue.class:19.13"
+Count=3
+File[1]=".src/Examples/vTestApps/QueueTestWithProcesses/ShmQueueAndShmListTest.module:14.138"
+File[2]=".hidden/CHANGELOG:0.0"
+Active=3
+File[3]=".src/ShmMem/ShmNotify.class:0.306"
 
 [Package]
 Dir="~/Downloads/"

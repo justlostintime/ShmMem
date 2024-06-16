@@ -81,7 +81,7 @@ Public Sub main()
     VarStore = Null
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
-    
+
     Quit
 
 End
