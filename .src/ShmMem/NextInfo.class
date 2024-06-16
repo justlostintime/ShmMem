@@ -1,0 +1,10 @@
+' Gambas class file
+
+Public Counter As Long = 0
+Public Elements As Variant[]
+
+Public Sub _new(vElements As Variant[])
+
+    Elements = vElements
+
+End

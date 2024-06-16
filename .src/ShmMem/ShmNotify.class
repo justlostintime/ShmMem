@@ -95,6 +95,7 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
     '' For the variable refrenced. There is one of these for each variable being watched.
     If SymEntry.NotifyBlock = 0 Then                                                                        ' Check if a PID queue has already been created
         PidQueue = New ShmList(VarMem, 0, True, "PIDQ-" & SymName)       ' create a new List
+        PidQueue.Debug = True
         SymEntry.NotifyBlock = PidQueue.Address
     Else
         PidQueue = New ShmList(VarMem, SymEntry.NotifyBlock)                    ' Get the address to the exsisting queue
@@ -103,6 +104,8 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
     If NotifyQueue = Null Then
         NotifyVars = New Collection(gb.ignorecase)                                              ' Local copy of the list of variables we are waiting for
         NotifyQueue = New ShmList(VarMem, 0, True, "nq_ " & MyAppId)     ' Create a new queue for variable changes per task/process"
+        NotifyQueue.Debug = True
+
     Endif
 
     ''  Add this tasks Notify queue to the pid queue for this variable, we allow more than one callback address
@@ -110,7 +113,7 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
     ''  value to a variable. this queue is used by the App/Task changing the variable to enqueue a change notification.
     If PidQueue.FindExtId(NotifyQueue.Address) = -1 Then
         ' The AppID is the value of the entry and q-address is the extended id of the element
-        PidQueue.Add(MyAppId, NotifyQueue.Address, "NoteQ_" & SymName & "_" & Str(myappid))
+        PidQueue.Add(MyAppId, NotifyQueue.Address, "Nq[" & SymName & "]" & Str(myappid))
     Endif
 
     '' Update the local list of variables waiting for dispatch notification
@@ -277,16 +280,34 @@ Fast Unsafe Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
         userqueue.Add(SymName, 0, Tag)                                                                                           ' set an entry onto requesting tasks  queue, slow should use an integer instead
     Next
 
+    Dim RemoveSet As New Pointer[]
     For Each Pid As Integer In PidQueue
 
         Result = sKill(Pid, ChangeSignal)                                                                                             ' try to send the signal to the other tasks
 
         If result <> 0 Then                                                                                                                         ' if it is an invalid pid then clean this stuff up
-            PidQueue.RemoveExtId(UserQueue.address)
+            RemoveSet.Add(pid)                                                                                                              ' We cant change the content while processing it
         Endif
 
         Wait
         Sched_Yield()                                                                                                                                      ' Allow the other tasks to process the signal
     Next
+
+    For Each pid In RemoveSet
+        FreePidEntry(pid, pidqueue)
+    Next
+
+End
+
+Private Sub FreePidEntry(pid As Integer, pidqueue As ShmList)
+
+    Dim MyElement As ShmListEntry
+    Dim MyQueue As ShmList
+
+    myelement = pidqueue.Find(pid, True)
+    MyQueue = ShmList.AsObject(varmem, MyElement.Priority)
+    PidQueue.RemoveByValue(pid)
+
+    MyQueue.Free()
 
 End

@@ -14,6 +14,13 @@ Inherits ShmList
 Static Public cShmFiLo As Integer = 24
 Static Public cShmFiLoEntry As Integer = 25
 
+'' Convert the Virtual address to an actual list object
+Static Public Sub AsObject(vvarmem As ShmVarStorage, VirtAddr As Pointer) As ShmList
+
+    Return Object.New(vVarMem.GetTextType(cShmFiLo), [vvarmem, VirtAddr])
+
+End
+
 Static Public Sub _init()
 
     ShmVarStorage.DefineClass("ShmFiLo", cShmFiLo)

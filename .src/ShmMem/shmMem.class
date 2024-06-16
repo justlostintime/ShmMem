@@ -45,6 +45,22 @@ Static Public Sub GetObjectClass(BasicObject As Object) As Class
 
 End
 
+' Get a list Of every block Of the type
+Static Public Sub GetListType(mVarmem As ShmVarStorage, itype As Integer) As Variant
+
+    Dim ListTable As New Variant[]
+
+    If mVarmem = Null Then Return ListTable
+    For Each mBlock As Variant In mVarMem
+        If mBlock.type = iType Then
+            ListTable.Add(mBlock)
+        Endif
+    Next
+
+    Return ListTable
+
+End
+
 '' Remove the Shared memory segment  by force
 Static Public Sub ForceDelete(SharedName As String)
 
@@ -262,9 +278,10 @@ Public Sub PrintAllInfo(Optional Title As String = "")
 
 End
 
+'Print a tree formated symbol table by hash bucket
 Public Sub PrintTree()
 
-    Print MyVarMem.TextTree()
+    Print "not implemented"
 
 End
 

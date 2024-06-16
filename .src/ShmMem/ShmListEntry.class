@@ -32,7 +32,7 @@ Public Struct dList                         '' A defined entry in list of object
     sema As Pointer                         '' The locking semephor for each list
     Global As Integer                       '' Defines if this is a global memory object or not
     bDebug As Boolean                  '' turns on or off the debug control
-    Tag[16] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
+    Tag[64] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                      '' Number of refrences to this element
     Priority As Long                           '' in a queue this is the priority of this element or the Extended Id of a list
     UsePriority As Boolean             '' Enable the use of priority ordering in the list
@@ -40,8 +40,6 @@ Public Struct dList                         '' A defined entry in list of object
     enum_listitem As Dlist               '' pointer to dlist
     Value As Pointer                         '' Value of entry or count if pool
 End Struct
-
-' Extern DListPtr(dest As Pointer, src As Pointer, Len As Integer) As DList In "libc:6" Exec "memcpy"
 
 Private VarMem As ShmVarStorage                        '' The storage pool to be used or referenced
 Private Entry As DList                                                     '' The pointer to the list
@@ -52,6 +50,16 @@ Property Read RefCount As Long                               '' The Number of re
 Property Priority As Long                                               '' The priority of this element
 Property Debug As Boolean Use $bDebug             '' Turn on or off debugging for this entry
 Property Tag As String                                                  '' user defined tag for this entry
+Property Read Dlist As Dlist                                          '' get the actual dlist for this element
+Property Read next As Pointer                                     '' next element
+Property Read prev As Pointer                                    '' previous element
+
+'' Convert the Virtual address to an actual list object
+Static Public Sub AsObject(vvarmem As ShmVarStorage, VirtAddr As Pointer) As ShmList
+
+    Return Object.New(vVarMem.GetTextType(ShmList.cShmListEntry), [vvarmem, VirtAddr])
+
+End
 
 Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Priority As Long = 0, tag As String = "")
 
@@ -69,14 +77,21 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Prio
     Else
         Dim RealPtr As Pointer
         RealPtr = VarMem.RealAddress(VirtAddress)
-        ' entry = DListPtr(RealPtr, RealPtr, 0)
         entry = RealPtr
 
     Endif
 
+    Inc entry.RefCount
+
 End
 
 Public Sub _free()
+
+    If entry.refcount > 0 Then Dec entry.refcount
+    If entry.refcount = 0 Then
+        VarMem.Free(entry.value)
+        Varmem.Free(entry.address)
+    Endif
 
     Varmem = Null
     Entry = Null
@@ -86,13 +101,13 @@ End
 '' Required for each user define class, returns the pointer to the under laying data structure
 Static Public Sub UserPtr(vVarmem As ShmVarStorage, VirtAddr As Pointer) As Dlist
 
-    If VirtAddr <= 0 Then Return Null
+    If VirtAddr = -1 Then Return Null
     Dim RealPtr As Pointer = vVarMem.RealAddress(VirtAddr)
     Return RealPtr
 
 End
 
-Public Sub NewEntry(Optional Value As Variant = Null) As DList
+Public Sub NewEntry(Optional Value As Pointer = 0) As DList
 
     Dim NewVar As Pointer
     Dim VirtAddress As Pointer
@@ -100,17 +115,20 @@ Public Sub NewEntry(Optional Value As Variant = Null) As DList
 
     VirtAddress = VarMem.Alloc(SizeOf(dList) - SizeOf(AllocHeader))
     RealAddress = VarMem.RealAddress(VirtAddress)
-    ' Entry = DListPtr(RealAddress, RealAddress, 0)
-    entry = RealAddress
-    Entry.type = VarMem.UsedClassByName(Object.Class(Me).name)
-    Entry.value = 0
 
-    If value Then
-        NewVar = VarMem.set(Value)
-        Entry.Value = NewVar
-    Endif
+    entry = RealAddress
+    Entry.type = ShmVarStorage.UserClassByName[Object.Class(Me).name]
+
+    NewVar = VarMem.set(value)
+    Entry.Value = NewVar
 
     Return entry
+
+End
+
+Public Sub _get(...) As Variant
+
+    Return Value_Read()
 
 End
 
@@ -118,6 +136,7 @@ Private Function Value_Read() As Variant
 
     Dim result As Variant
 
+    If entry.value = 0 Then Return Null
     If $bDebug Then Print Application.id, "Value_Read ListEntry VarMem.Lock "
     VarMem.Lock()
     Result = VarMem[entry.value]
@@ -127,12 +146,25 @@ Private Function Value_Read() As Variant
 
 End
 
+Public Sub _put(value As Variant, ...)
+
+    Value_Write(value)
+
+End
+
 Private Sub Value_Write(Value As Variant)
+
+    Dim newvar As Variant
 
     If $bDebug Then Print Application.id, "Value_Write ListEntry VarMem.Lock "
     VarMem.Lock()
-    VarMem[entry.value] = value
-    VarMem.Unlock()
+    If entry.value = 0 Then
+        NewVar = VarMem.set(Value)
+        Entry.Value = NewVar
+    Else
+        VarMem[entry.value] = value
+        VarMem.Unlock()
+    Endif
     If $bDebug Then Print Application.id, "Value_Write ListEntry VarMem.UnLock "
 
 End
@@ -163,10 +195,7 @@ End
 
 Private Sub Tag_Write(Value As String)
 
-    If value.len < entry.Tag.Length Then value = Left(value & Space(entry.Tag.Length), entry.Tag.Length)
-    For i As Integer = 0 To entry.Tag.Length - 1
-        entry.Tag[i] = Asc(Value[i])
-    Next
+    entry.tag = Byte[].FromString(value)
 
 End
 
@@ -179,5 +208,23 @@ End
 Private Sub Priority_Write(Value As Long)
 
     entry.priority = value
+
+End
+
+Private Function dlist_read() As DList
+
+    Return entry
+
+End
+
+Private Function next_Read() As Pointer
+
+    Return entry.next
+
+End
+
+Private Function prev_Read() As Pointer
+
+    Return entry.prev
 
 End

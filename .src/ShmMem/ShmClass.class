@@ -32,7 +32,7 @@ Public Struct dNativeClass             '' A defined entry in list of objects
     sema[16] As Byte                            '' The locking semephor for this object
     Global As Integer                           '' Defines if this is a global memory object or not
     bDebug As Boolean                      '' turns on or off the debug control
-    Tag[16] As Byte                              '' a user text tag for this list, can be used to identify nameless queues
+    Tag[64] As Byte                              '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                          '' Number of refrences to this element
     enum_counter As Long                '' Used when enumerating a list structure
     enum_listitem As DNativeClass '' pointer to dlist

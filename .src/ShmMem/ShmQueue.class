@@ -20,7 +20,7 @@ Public Struct dList                         '' A defined entry in list of object
     sema As Pointer                         '' The locking semephor for each list
     Global As Integer                       '' Defines if this is a global memory object or not
     bDebug As Boolean                  '' turns on or off the debug control
-    Tag[16] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
+    Tag[64] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                      '' Number of refrences to this element
     Priority As Long                           '' Priority/Extended ID of a list element
     UsePriority As Boolean            '' Enable the use of priority ordering in the queue
@@ -32,6 +32,13 @@ End Struct
 Static Public cShmQueue As Integer = 26
 Static Public cShmQueueEntry As Integer = 27
 Private listhead As Dlist
+
+'' Convert the Virtual address to an actual list object
+Static Public Sub AsObject(vvarmem As ShmVarStorage, VirtAddr As Pointer) As ShmList
+
+    Return Object.New(vVarMem.GetTextType(cShmQueue), [vvarmem, VirtAddr])
+
+End
 
 Static Public Sub _init()
 

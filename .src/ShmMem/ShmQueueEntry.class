@@ -10,3 +10,10 @@ Export
 'Fast Unsafe
 
 Inherits ShmListEntry
+
+'' Convert the Virtual address to an actual list object
+Static Public Sub AsObject(vvarmem As ShmVarStorage, VirtAddr As Pointer) As ShmList
+
+    Return Object.New(vVarMem.GetTextType(ShmQueue.cShmQueueEntry), [vvarmem, VirtAddr])
+
+End

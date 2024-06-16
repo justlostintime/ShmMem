@@ -430,7 +430,7 @@ Public Sub _PrintBlocks(Optional vVarStorage As ShmVarStorage = Null)
                 Dim vlist As Variant
                 If vVarStorage Then
                     vlist = vVarStorage.Getpointer(vptr.type, vptr.address)
-                    Print vlist.tag
+                    Print vlist.tag;; "RefCnt="; vlist.RefCount
                 Endif
             Else
                 Print

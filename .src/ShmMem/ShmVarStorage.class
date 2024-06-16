@@ -30,7 +30,7 @@ Public Struct dList                           '' A defined entry in list of obje
     sema As Pointer                           '' The locking semephor for each list
     Global As Integer                         '' Defines if this is a global memory object or not
     bDebug As Boolean                    '' Turns on debugging
-    Tag[16] As Byte                            '' a user text tag for this list, can be used to identify nameless queues
+    Tag[64] As Byte                            '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                       '' Number of refrences to this element
     Priority As Long                           '' in a queue this is the priority of this element or the Extended Id of a list
     UsePriority As Boolean            '' Enable the use of priority ordering in the queue
@@ -695,6 +695,11 @@ Public Sub text(VirtAddress As Pointer, Optional Indent As String = "", SetTree 
             If UserClasses.Exist(vptr.Type) Then
                 Dim xObject As Variant = Object.New(UserClasses[vptr.type], [Me, vPtr.Address])
                 result &= ", Value = " & Str(xObject.value)
+                Dim refcount As Long
+                Try refcount = xObject.refcount
+                If Not Error Then
+                    result &= ", \e[31mRefCnt = " & Str(refcount) & "\e[30m"
+                Endif
                 Dim mtag As String
                 Try mtag = xObject.tag
                 If Not Error Then

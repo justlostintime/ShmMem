@@ -35,7 +35,7 @@ Public Struct dList                             '' A defined entry in list of ob
     sema As Pointer                             '' The locking semephor for each list
     Global As Integer                           '' Defines if this is a global memory object or not
     bDebug As Boolean                      '' turns on or off the debug control
-    Tag[16] As Byte                              '' a user text tag for this list, can be used to identify nameless queues
+    Tag[64] As Byte                              '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                          '' Number of refrences to this element
     Priority As Long                              '' in a queue this is the priority of this element
     UsePriority As Boolean                '' Enable the use of priority ordering in the list
@@ -51,10 +51,10 @@ Static Public cShmListEntry As Integer = 21        '' The entry in a ShmList obj
 ' Extern memcpy(dest As Dlist, src As Dlist, Len As Integer) As Integer In "libc:6"
 
 Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
-Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
+'Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
-' Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
 ' Extern sched_yield() As Integer In "libpthread:0"
 
@@ -80,6 +80,11 @@ Property Tag As String                                         '' memo tag for d
 Property Read ClassList As String                     '' The name of the class for this list/entry
 Property Read ClassEntry As String                  '' The text name of the list/queue entries
 Property Read ClassMe As String                      '' the text class of the current item
+Property Read Next As Variant                           '' The actual list structure entry, not the value
+Property Read Prev As Variant                            '' The actual list structure entry, Not Value
+Property Read Firsts As Variant                            '' first entry in the list
+Property Read Last As Variant                               '' Last entry in the list
+Property Read RefCount As Variant                      '' Get number of refrences
 
 Public SetHeadType As Integer = cShmList             '' The list header Class
 Public SetEntryType As Integer = cShmListEntry    '' The List Entry Class
@@ -100,6 +105,8 @@ End
 
 Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, GlobalValue As Boolean = False, Tag As String = "")
 
+    Dim Result As Integer = 0
+
     If Object.Class(VarStorage).name == "ShmMem" Then
         VarMem = VarStorage.MyVarMem
     Else
@@ -117,28 +124,46 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Glob
         ListHead.Value = 0
         ListHead.tag = Byte[].FromString(tag)
         SemAddress = varmem.RealDataAddress(ListHead.sema)
-        sem_init(SemAddress, 1, 0)
+        result = sem_init(SemAddress, 1, 0)
     Else
         VirtualAddress = VirtAddress
         RealPtr = VarMem.RealAddress(VirtAddress)
         ListHead = RealPtr
         SemAddress = varmem.RealDataAddress(ListHead.sema)
+        Me.lock()
+        Inc ListHead.RefCount
     Endif
-
-    Inc ListHead.RefCount
+    Me.unlock()
 
 End
 
 Public Sub _free()
 
+    'Print Application.id, "_free Begin for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address
     If Listhead <> Null Then
-        If ListHead.Refcount > 0 Then Dec ListHead.RefCount
-        If Not ListHead.Global Then
-            If ListHead.RefCount <= 0 Then
-                ListHead.enum_listitem = Null
-                Me.Free()
-            Endif
+        '   Print Application.id, "_free Doing for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address;; "RefCount =";; listhead.refcount
+        Me.lock()
+
+        If ListHead.Refcount > IIf(ListHead.global, 1, 0) Then
+            Dec ListHead.RefCount
         Endif
+
+        If Not ListHead.Global Then
+            If ListHead.RefCount = 0 Then
+                Keys = Null
+                '          Print Application.id, "_free finish  for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address
+                Me.Free()
+            Else
+                Me.unlock()
+                '         Print Application.id, "_free Keeps for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address;; "Refcount =";; listhead.refcount
+            Endif
+        Else
+            Me.unlock()
+            '    Print Application.id, "_free Global for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address;; "Refcount =";; listhead.refcount
+        Endif
+
+        'Else
+        'Print Application.id, "_free  Failed for shmlist dlist is null error"
     Endif
 
     varmem = Null
@@ -154,11 +179,17 @@ Static Public Sub UserPtr(vvarmem As ShmVarStorage, VirtAddr As Pointer) As Dlis
 
 End
 
+'' Convert the Virtual address to an actual list object
+Static Public Sub AsObject(vvarmem As ShmVarStorage, VirtAddr As Pointer) As ShmList
+
+    Return Object.New(vVarMem.GetTextType(cShmList), [vvarmem, VirtAddr])
+
+End
+
 Public Sub EntryPtr(VirtAddress As Pointer) As DList
 
     If VirtAddress <= 0 Then Return Null
     Dim RealPtr As Pointer = VarMem.RealAddress(VirtAddress)
-    ' Return DListPtr(RealPtr, RealPtr, 0)
     Return RealPtr
 
 End
@@ -172,17 +203,22 @@ Public Sub NewEntry(Optional Value As Variant = Null) As DList
     Dim RealAddress As Pointer
     Dim iType As Integer
 
+    If listhead <> Null And If ListHead.bDebug Then
+        Print Application.id, "Create New Entry  ShmList Value =  ";; Str(Value)
+    Endif
+
+    VarMem.Lock()
     VirtAddress = VarMem.Alloc(SizeOf(dList) - SizeOf(AllocHeader))
     RealAddress = VarMem.RealAddress(VirtAddress)
+    varmem.Unlock()
 
-    ' Entry = DListPtr(RealAddress, RealAddress, 0)
     entry = RealAddress
 
     Entry.type = SetEntryType
     Entry.value = 0
     Entry.next = 0
     Entry.prev = 0
-    Entry.RefCount = 0
+    Entry.RefCount = 1
 
     If value Then
         NewVar = VarMem.set(Value)
@@ -199,6 +235,8 @@ Public Sub NewEntry(Optional Value As Variant = Null) As DList
             Stop
         Endif
     Endif
+
+    If listhead <> Null And If ListHead.bDebug Then Print Application.id, "Created New Entry  ShmList Element ID =  ";; Str(entry)
     Return Entry
 
 End
@@ -207,23 +245,39 @@ End
 '' This is not automatic, the user must do this if required
 Public Sub {lock}() As Boolean
 
-    Dim result As Integer
+    Dim result As Integer = -1
+    Dim retrycounter As Long = 10
 
-    result = sem_wait(SemAddress)
-    Return True
+    While result <> 0
+        result = sem_trywait(SemAddress)
+        If result <> 0 Then
+            Wait 0.0001
+            Dec RetryCounter
+            If retryCounter < 4 Then
+                If ListHead.bDebug Then Print Application.id, "ShmList Locking Race condition attempting fix ";; retryCounter
+                Me.unlock()
+            Endif
+        Else
+            Return True
+        Endif
+    Wend
+    If ListHead.bDebug Then Print Application.id, "ShmList Locking Race condition attempt to fix failed";; retryCounter
+    Return False
 
 End
 
 ''  Release the lock on the list/queue
 '' Returns false if the lock was not 0, locked
 '' be careful as this can be posted anywhere
+
 Public Sub {unlock}() As Boolean
 
     Dim value As Integer = 0
+    Dim iptr As Pointer = VarPtr(value)
 
-    If sem_getvalue(SemAddress, VarPtr(value)) = 0 Then
+    If sem_getvalue(SemAddress, iptr) = 0 Then
         If value = 0 Then
-            sem_post(listhead.sema)
+            sem_post(SemAddress)
             Return True
         Endif
     Endif
@@ -237,6 +291,9 @@ Public Sub add(Value As Variant, Optional ExtendedId As Long = 0, TagInfo As Str
     Dim LastEntry As Dlist
     Dim RealAddress As Pointer
 
+    If ListHead.bDebug Then Print Application.id, "Add ShmList Value = ";; Str(Value)
+    Me.lock()
+
     NewElement = NewEntry(Value)
     NewElement.Priority = ExtendedId
 
@@ -247,15 +304,11 @@ Public Sub add(Value As Variant, Optional ExtendedId As Long = 0, TagInfo As Str
         Next
     Endif
 
-    If ListHead.bDebug Then Print Application.id, "Add ShmList VarMem.Lock ";; Value
-    VarMem.Lock()
-
     If ListHead.Next = 0 Then
         ListHead.Next = NewElement.Address
         ListHead.prev = NewElement.Address
     Else
         RealAddress = VarMem.RealAddress(ListHead.prev)
-        ' LastEntry = DListPtr(RealAddress, RealAddress, 0)
         LastEntry = RealAddress
 
         ListHead.Prev = NewElement.Address
@@ -266,8 +319,9 @@ Public Sub add(Value As Variant, Optional ExtendedId As Long = 0, TagInfo As Str
 
     Inc ListHead.Value                ' this holds the count of elements in this list
 
-    VarMem.UnLock()
-    If ListHead.bDebug Then Print Application.id, "Add ShmList VarMem.UnLock ";; value
+    Me.unlock()
+
+    If ListHead.bDebug Then Print Application.id, "Add ShmList Added Value = ";; Str(value)
 
 End
 
@@ -283,6 +337,7 @@ Public Sub {Free}()                             '' Free the entire list
     Dim pList As DList[] = AsDListList()
 
     sem_destroy(VarMem.RealDataAddress(ListHead.sema))
+
     VarMem.Free(ListHead.sema)
     varmem.Free(VirtualAddress)
 
@@ -322,6 +377,7 @@ End
 
 Private Sub FreeEntry(Entry As DList)
 
+    If ListHead.bDebug Then Print Application.id, "Free Entry  in ShmList :";; entry.address
     VarMem.Free(Entry.value)                        '' entry will always point to something
     VarMem.Free(entry.address)                   '' Dispose of this item as well
 
@@ -332,17 +388,31 @@ Public Sub _get(Index As Integer) As Variant
     Dim Result As Variant
     Dim dPtr As Dlist
 
+    If ListHead.bDebug Then Print Application.id, "_get ShmList index =  " & Index
+    Me.lock()
+
     dPtr = SeekRec(Index)
+
     If Dptr = Null Then
+        Me.unlock()
+        If ListHead.bDebug Then Print Application.id, "_get ShmList Record Not Found  returned NULL "
         Return Null
     Endif
 
-    If ListHead.bDebug Then Print Application.id, "_get ShmList VarMem.Lock " & Index
+    If ListHead.bDebug Then Print Application.id, "_get ShmList VarMem.Lock  index = " & Index & " Dptr = " & Str(dptr)
     VarMem.Lock()
     Result = VarMem[dPtr.value]
     VarMem.Unlock()
     If ListHead.bDebug Then Print Application.id, "_Get ShmList VarMem.UnLock " & Index
+
+    Me.unlock()
     Return result
+
+Finally
+    Me.unlock()
+
+Catch
+    Error.Propagate()
 
 End
 
@@ -350,16 +420,26 @@ Public Sub _put(Value As Variant, Index As Integer)
 
     Dim dPtr As Dlist
 
+    If ListHead.bDebug Then Print Application.id, "_put ShmList index = " & Index & " Value = " & Str(value)
+    Me.lock()
+
     dPtr = SeekRec(Index)
+
     If Dptr = Null Then
+        If ListHead.bDebug Then Print Application.id, "_put ShmList Index not found :" & Index
         Error.Raise("Out Of Bounds ")
     Endif
 
-    If ListHead.bDebug Then Print Application.id, "_put ShmList VarMem.Lock " & Index
-    VarMem.Lock()
+    VarMem.lock()
     VarMem[dPtr.value] = Value
     VarMem.Unlock()
-    If ListHead.bDebug Then Print Application.id, "_put ShmList VarMem.UnLock " & Index
+
+    Me.unlock()
+    If ListHead.bDebug Then Print Application.id, "_put ShmList Success at " & Index & "Value = " & Str(value)
+
+Catch
+    Me.unlock()
+    Error.Propagate()
 
 End
 
@@ -368,6 +448,10 @@ Public Sub insert(Index As Long, value As Variant, Optional ExtendedId As Intege
     Dim Current As Dlist
     Dim ptrPrev As DList
     Dim NewItem As Dlist = NewEntry(Value)
+
+    If ListHead.bDebug Then Print Application.id, "Insert ShmList  at index =  " & Str(Index)
+
+    Me.lock()
 
     If TagInfo <> "" Then
         If TagInfo.len < NewItem.Tag.Length Then TagInfo = Left(TagInfo & Space(NewItem.Tag.Length), NewItem.Tag.Length)
@@ -378,8 +462,6 @@ Public Sub insert(Index As Long, value As Variant, Optional ExtendedId As Intege
 
     NewItem.Priority = ExtendedId
 
-    If ListHead.bDebug Then Print Application.id, "Insert ShmList VarMem.Lock " & Index
-    VarMem.Lock()
     If Index = 0 Then
         If ListHead.Next = 0 Then
             ListHead.next = NewItem.Address
@@ -402,8 +484,10 @@ Public Sub insert(Index As Long, value As Variant, Optional ExtendedId As Intege
         Endif
     Else
         Current = SeekRec(Index)
+
         If Not Current Then
-            VarMem.Unlock()
+            Me.Unlock()
+            If ListHead.bDebug Then Print Application.id, "Insert ShmList out of bounds index = " & Str(Index)
             Error.Raise("Out Of Bounds")
         Endif
 
@@ -423,11 +507,17 @@ Public Sub insert(Index As Long, value As Variant, Optional ExtendedId As Intege
 
     Inc ListHead.Value
 
-    VarMem.Unlock()
-    If ListHead.bDebug Then Print Application.id, "Insert ShmList VarMem.UnLock " & Index
+    Me.Unlock()
+    If ListHead.bDebug Then Print Application.id, "Insert ShmList completed for index = " & Str(Index)
+
+Catch
+    Me.unlock()
+    Error.Propagate()
 
 End
 
+'' look for the index element and return the Element(dlist Struct)
+'' containing the element entry
 Private Sub SeekRec(Index As Integer) As DList
 
     Dim Count As Integer
@@ -447,6 +537,7 @@ Private Sub SeekRec(Index As Integer) As DList
     If current = Null Then
         Stop
     Endif
+
     Return Current
 
 End
@@ -459,23 +550,33 @@ Private Sub _remove(CurrentItem As Dlist) As Variant
     Dim ptrNext As Dlist
 
     Value = VarMem[CurrentItem.value]                            ' get the value of the item being removed
-    If addr = ListHead.next Then
-        ListHead.next = CurrentItem.Next
-        If CurrentItem.next = 0 Then
-            ListHead.prev = 0
+
+    If addr = ListHead.next Then                                          ' if this is the head of the queue
+        ListHead.next = CurrentItem.Next                            ' ListHead Next should point to Whatever current item points to
+        If ListHead.next = Null Then                                        ' if this was only one on list
+            ListHead.prev = Null                                                  ' Previous also becomes null
+            ListHead.value = 0                                                      ' Empty the queue
+        Else
+            ptrnext = EntryPtr(ListHead.next)                        ' check if just one item on the queue
+            If ptrnext.Next = Null Then                                     ' If it is then
+                ListHead.Prev = ListHead.Next                          ' it also becoms the previous item
+            Endif
         Endif
-    Else If addr = ListHead.prev Then
-        ListHead.prev = CurrentItem.prev
-        PtrPrev = EntryPtr(CurrentItem.prev)
-        ptrPrev.next = 0
+    Else If addr = ListHead.prev Then                                ' if the address matches the end of the queue
+        ListHead.prev = CurrentItem.prev                           ' Set the Previous to the current item previous
+        PtrPrev = EntryPtr(CurrentItem.prev)                    ' get the physical address of the previous entry
+        ptrPrev.next = Null                                                       ' Since we are at the end of the list just set it to null
     Else
-        ptrnext = EntryPtr(currentItem.next)
-        ptrprev = EntryPtr(CurrentItem.prev)
-        ptrnext.prev = ptrprev.address
-        ptrprev.next = ptrnext.address
+        ptrnext = EntryPtr(currentItem.next)                     ' Well we must be in the list then Get Pysical address of next item
+        ptrprev = EntryPtr(CurrentItem.prev)                    ' get the pysical address of the previous item
+        ptrnext.prev = ptrprev.address                              ' Point the next items previous to current item previous
+        ptrprev.next = ptrnext.address                              ' Point the previous items next to the current items next
     Endif
 
-    Dec ListHead.value
+    If listhead.value > 0 Then Dec ListHead.value
+
+    currentItem.Next = Null
+    CurrentItem.prev = Null
 
     Return Value
 
@@ -488,33 +589,47 @@ Public Sub RemoveExtId(ExtendedId As Long) As Variant
     Dim currentItem As DList
     Dim Value As Variant
 
-    If ListHead.next = 0 Then
-        Error.Raise("Empty List - Extended ID : " & value)
-    Endif
+    If ListHead.bDebug Then Print Application.id, "RemoveExtId ShmList For " & ExtendedId
+    Me.lock()
 
-    If ListHead.bDebug Then Print Application.id, "RemoveExtId ShmList VarMem.Lock " & ExtendedId
-    varmem.Lock()
+    If ListHead.next = 0 Then
+        Me.unlock()
+        If ListHead.bDebug Then Print Application.id, "RemoveExtId ShmList For " & ExtendedId & " Failed empty list"
+        Error.Raise("Empty List - Extended ID : " & ExtendedID)
+    Endif
 
     CurrentItem = EntryPtr(ListHead.next)
 
     ' search for the matching value
-    While CurrentItem <> Null And CurrentItem.Priority <> ExtendedId
+    While CurrentItem <> Null
+        If CurrentItem.Priority = ExtendedId Then Break
         CurrentItem = EntryPtr(CurrentItem.next)
     Wend
 
-    If Not CurrentItem Then
-        varmem.Unlock()
+    If CurrentItem = Null Then
+        Me.Unlock()
         If ListHead.bDebug Then Print Application.id, "RemoveByExtId ShmList VarMem.UnLock " & ExtendedId
         Error.Raise("Not Found -  Extended ID : " & Value)
+    Else
+        If ListHead.bDebug Then Print Application.id, "RemoveExtId ShmList For " & ExtendedId & " Found"
     Endif
 
     value = _remove(CurrentItem)
 
-    varmem.Unlock()
+    Me.unlock()
+
     If ListHead.bDebug Then Print Application.id, "RemoveExtId ShmList VarMem.UnLock " & ExtendedId
+
     FreeEntry(CurrentItem)
 
     Return value
+
+Finally
+    Me.unlock()
+
+Catch
+    Dim myerror As String = Error.text & Error.where
+    Error.Raise(myerror)
 
 End
 
@@ -536,7 +651,7 @@ Public Sub Pop() As Variant
     If ListHead.value > 0 Then
         Return Remove(-1)
     Else
-        Error.Raise("Dequeue : empty queue")
+        Error.Raise("Pop : empty queue")
     Endif
 
 End
@@ -555,16 +670,16 @@ Public Sub remove(Optional Index As Long = -1) As Variant
     Dim Count As Long = 0
     Dim Value As Variant
 
+    Me.lock()
+    If ListHead.bDebug Then
+        Print Application.id, "Remove ShmList Item " & Index
+    Endif
+
     If ListHead.next = Null Or Index >= CLong(ListHead.value) Then
-        ' Return Null
+        Me.unlock()
+        If ListHead.bDebug Then Print Application.id, "Remove ShmList Item failed out of bounds " & Index
         Error.Raise("Out Of Bounds - remove Index : " & Index)
     Endif
-
-    If ListHead.bDebug Then
-        Print Application.id, "Remove ShmList VarMem.Lock " & Index
-    Endif
-
-    varmem.Lock()
 
     If Index = 0 Then
         CurrentItem = EntryPtr(ListHead.next)
@@ -582,41 +697,71 @@ Public Sub remove(Optional Index As Long = -1) As Variant
     Endif
 
     If CurrentItem = Null Then
-        varmem.Unlock()
+        Me.unlock()
         Error.Raise("Out of Bounds - Remove by index : " & index)
     Endif
 
     value = _remove(CurrentItem)
 
-    ' Dim addr As Pointer = CurrentItem.address
-    ' Value = VarMem[CurrentItem.value]                            ' get the value of the item being removed
-    '
-    ' If addr = ListHead.next Then
-    '     ListHead.next = CurrentItem.Next
-    '     If CurrentItem.next = 0 Then
-    '         ListHead.prev = 0
-    '     Endif
-    ' Else If addr = ListHead.prev Then
-    '     ListHead.prev = CurrentItem.prev
-    '     PtrPrev = EntryPtr(CurrentItem.prev)
-    '     ptrPrev.next = 0
-    ' Else
-    '     ptrnext = EntryPtr(currentItem.next)
-    '     ptrprev = EntryPtr(CurrentItem.prev)
-    '     ptrnext.prev = ptrprev.address
-    '     ptrprev.next = ptrnext.address
-    ' Endif
-    '
-    ' Dec ListHead.value
-    '
-
-    varmem.Unlock()
+    Me.unlock()
 
     If ListHead.bDebug Then Print Application.id, "Remove ShmList VarMem.UnLock " & Index & " Value=" & value
 
     FreeEntry(CurrentItem)
 
     Return Value
+
+Finally
+    Me.unlock()
+
+Catch
+    Error.Propagate()
+
+End
+' Remove an element by its value as the key
+'' returns the value of the element
+
+Public Sub RemoveByValue(vValue As Variant) As Variant
+
+    Dim currentItem As DList
+    Dim Value As Variant
+
+    If ListHead.bDebug Then Print Application.id, "RemoveByValue ShmList  " & Str(vValue)
+    Me.lock()
+
+    If ListHead.next = 0 Then
+        If ListHead.bDebug Then Print Application.id, "RemoveByValue ShmList  not found " & Str(vValue)
+        Error.Raise("Empty List - Value Not Found : " & Str(vValue))
+    Endif
+
+    CurrentItem = EntryPtr(ListHead.next)
+
+    While CurrentItem <> Null
+        Value = VarMem[CurrentItem.value]                            ' get the value of the item being removed
+        If Value = vValue Then Break
+        CurrentItem = EntryPtr(CurrentItem.next)
+    Wend
+
+    If Not CurrentItem Then
+        Print Application.id, "RemoveByValue ShmList Not found  " & Str(vValue)
+        Error.Raise("Not Found - Value : " & Str(vValue))
+    Endif
+
+    Value = _remove(CurrentItem)
+
+    Me.unlock()
+
+    If ListHead.bDebug Then Print Application.id, "RemoveByValue ShmList  Found  " & Str(vValue)
+
+    FreeEntry(CurrentItem)
+
+    Return value
+
+Finally
+    Me.unlock()
+
+Catch
+    Error.Propagate()
 
 End
 
@@ -626,34 +771,42 @@ Public Sub RemoveByVirt(VirtAddress As Pointer) As Variant
 
     Dim currentItem As DList
 
+    If ListHead.bDebug Then Print Application.id, "RemoveByVirt ShmList  " & VirtAddress
+    Me.lock()
+
     If ListHead.next = 0 Then
+        If ListHead.bDebug Then Print Application.id, "RemoveByVirt ShmList  not found " & VirtAddress
         Error.Raise("Empty List - Virtual Address Not Found : " & VirtAddress)
     Endif
 
     Dim Value As Variant
 
-    If ListHead.bDebug Then Print Application.id, "RemoveByVirt ShmList VarMem.Lock " & VirtAddress
-    varmem.Lock()
-
     CurrentItem = EntryPtr(ListHead.next)
 
-    While CurrentItem And CurrentItem.address <> VirtAddress
+    While CurrentItem <> Null
+        If CurrentItem.address = VirtAddress Then Break
         CurrentItem = EntryPtr(CurrentItem.next)
     Wend
 
     If Not CurrentItem Then
-        varmem.Unlock()
-        If ListHead.bDebug Then Print Application.id, "RemoveByVirt ShmList VarMem.UnLock " & VirtAddress
+        Print Application.id, "RemoveByVirt ShmList Not found  " & VirtAddress
         Error.Raise("Not Found - Virtual Address : " & VirtAddress)
     Endif
 
     Value = _remove(CurrentItem)
+    Me.unlock()
 
-    varmem.Unlock()
-    If ListHead.bDebug Then Print Application.id, "RemoveByVirt ShmList VarMem.UnLock " & VirtAddress
+    If ListHead.bDebug Then Print Application.id, "RemoveByVirt ShmList  Found  " & VirtAddress
+
     FreeEntry(CurrentItem)
 
     Return value
+
+Finally
+    Me.unlock()
+
+Catch
+    Error.Propagate()
 
 End
 
@@ -662,10 +815,26 @@ Public Sub Dup() As Variant
 
     Dim newlist As Variant = Object.Class(Me).New([VarMem, 0, Me.ListHead.global, "Dup:" & Me.tag])
 
+    Me.lock()
     newlist.listhead.Next = Me.ListHead.Next
     newlist.ListHead.prev = Me.ListHead.Prev
     newlist.ListHead.value = Me.ListHead.Value
+    ' now we need to increment each elements refcount to account for this list
+    Dim currentItem As Dlist = EntryPtr(newlist.listhead.next)
+
+    While currentItem <> Null
+        Inc currentItem.RefCount
+        currentItem = EntryPtr(CurrentItem.next)
+    Wend
+
+    Me.unlock()
     Return newlist
+
+Finally
+    Me.unlock()
+
+Catch
+    Error.Propagate()
 
 End
 
@@ -678,75 +847,87 @@ Public Sub {Copy}() As Variant
 
     newlist = Object.Class(Me).New([VarMem, 0, Me.ListHead.Global, "Copy:" & Me.tag])
 
+    Me.lock()
     For Each v As Variant In Me                         'Move the values To the New List
         NewExtendedId = Me.Key_ExtendedId
         NewTag = Me.Key_Tag
         newlist.add(v, NewExtendedID, NewTag)
     Next
+    Me.unlock()
 
     Return newlist
+
+Finally
+    Me.unlock()
+
+Catch
+    Error.Propagate
 
 End
 
 Private Function key_read() As Long
 
-    If ListHead = Null Then Return 0
-    Return ListHead.Enum_counter
+    If keys = Null Then Return -1
+    Return keys.counter
 
 End
 
 Private Function Key_Tag_read() As String
 
-    If ListHead = Null Or If ListHead.Enum_Listitem = Null Then Return ""
-    Return ListHead.Enum_Listitem.Tag.ToString()
+    If keys = Null Then Return ""
+    Return keys.Elements[keys.counter].tag
 
 End
 
 Private Function Key_dlist_read() As Dlist
 
-    If ListHead = Null Then Return Null
-    Return ListHead.Enum_Listitem
+    If keys = Null Then Return Null
+    Return keys.Elements[keys.counter].dlist
 
 End
 
 Private Function Key_ExtendedId_read() As Long
 
-    If ListHead = Null Or If ListHead.Enum_Listitem = Null Then Return 0
-    Return ListHead.Enum_listitem.Priority
+    If keys = Null Then Return -1
+    Return keys.Elements[keys.counter].Priority
 
 End
 
+Private Keys As NextInfo = Null
+
 Public Sub _next() As Variant
 
-    Dim ListItem As DList
+    Dim enumEntry As NextInfo
 
     If IsNull(Enum.Index) Then
 
-        If listhead <> Null And If listhead.next <> Null And If ListHead.Value > 0 Then
-            ListItem = EntryPtr(ListHead.next)
-            Enum.Index = listhead
-            Enum.Index.enum_listitem = listitem
-            Enum.Index.enum_counter = 0
+        If listhead <> Null Then
+            enumentry = New NextInfo(_allEntries())
+            If enumentry.Elements.Count = 0 Then
+                keys = Null
+                Enum.Stop()
+                Return
+            Endif
+            Enum.Index = enumentry
         Else
-            Enum.Stop
+            keys = Null
+            Enum.Stop()
             Return
         Endif
     Else
-        listItem = Enum.index.Enum_listitem
-        If ListItem.next = Null Then
-            Enum.Index.enum_listitem = Null
-            Enum.Index.enum_counter = 0
-            Enum.Stop
+        Inc Enum.Index.counter
+        If Enum.Index.counter = Enum.Index.elements.count Then
+            keys = Null
+            Enum.Stop()
             Return
-        Else
-            ListItem = EntryPtr(ListItem.next)
-            Enum.Index.enum_listitem = listItem
-            Inc Enum.Index.enum_Counter
         Endif
     Endif
 
-    ' Print Enum.Index.enum_Counter
-    Return VarMem[ListItem.value]
+    keys = Enum.index
+    Return keys.elements[keys.Counter].Value
+
+Catch
+    Error.Propagate()
 
 End
 
@@ -756,19 +937,29 @@ End
 Public Sub FindExtId(Value As Long) As Long
 
     Dim Count As Long = 0
+    Dim Result As Long = -1
 
-    'Print " FindExtId : ";; Object.Class(Me).name;; "Entries=";; Me.count
+    If listhead.bDebug Then Print Application.id, "FindExtId : ";; Object.Class(Me).name;; "Entries=";; Me.count
+
     For Each dd As Variant In Me
-        If Me.key_dlist = Null Then Return -1
+
+        If Me.key_dlist = Null Then
+            Break
+        Endif
 
         If Me.Key_dlist.Priority = value Then
-            'Print "FindExtId : Found Extid at ";; Me.count
-            Return count
+            Result = count
+            Break
         Endif
+
         Inc count
     Next
-    'Print "FindExtId : not found checked ";; Me.count + 1;; "entries"
-    Return -1
+
+    If listhead.bDebug Then Print Application.id, "FindExtId : checked ";; Me.count + 1;; "entries, index="; result
+    Return result
+
+Catch
+    Error.Propagate()
 
 End
 
@@ -778,33 +969,55 @@ End
 Public Sub FindVirtAddress(VirtAddress As Pointer) As Long
 
     Dim Count As Long = 0
+    Dim result As Long = -1
+
+    If listhead.bDebug Then Print " FindVirtAddress : ";; Object.Class(Me).name;; "Entries=";; Me.count
 
     For Each dd As Variant In Me
-        If Me.key_dlist = Null Then Return -1
+        If Me.key_dlist = Null Then Break
         If Me.key_dlist.Address = VirtAddress Then
-            Return count
+            result = count
+            Break
         Endif
         Inc count
     Next
-    Return -1
+
+    If listhead.bDebug Then Print "FindVirtAddress : checked ";; Me.count + 1;; "entries, index="; result
+    Return result
+
+Catch
+    Error.Propagate()
 
 End
 
-'' Check if a specified value exists in the list
+'' Check if a specified value is stored in the list
 '' returns the index if it is found -1 if it is not
-Public Sub Find(value As Variant) As Long
+
+Public Sub Find(value As Variant, Optional ReturnElement As Boolean = False) As Variant
 
     Dim count As Long = 0
+    Dim Result As Long = -1
+
+    If listhead.bDebug Then Print " Find Value : ";; Object.Class(Me).name;; "Entries=";; Me.count
 
     For Each dd As Variant In Me
-        If Me.key_dlist = Null Then Return -1
+        If Me.key_dlist = Null Then Break
         If VarMem[Me.Key_dlist.Value] = value Then
-            Return count
+            result = count
+            Break
         Endif
         Inc count
     Next
 
-    Return -1
+    If listhead.bDebug Then Print "Find Value : checked ";; Me.count + 1;; "entries, index="; result
+    If ReturnElement Then
+        Return Object.New(VarMem.GetTextType(Me.key_dlist.Type), [varmem, Me.key_dlist.address])
+    Else
+        Return result
+    Endif
+
+Catch
+    Error.Propagate()
 
 End
 
@@ -859,16 +1072,7 @@ End
 '' from the shared memory
 Private Function AllLists_Read() As Variant[]
 
-    Dim ListTable As New Variant[]
-
-    If varmem = Null Then Return ListTable
-    For Each mBlock As Variant In VarMem
-        If mBlock.type = SetHeadType Then
-            ListTable.Add(mBlock)
-        Endif
-    Next
-
-    Return ListTable
+    Return ShmMem.GetListType(varmem, SetHeadType)
 
 End
 
@@ -878,10 +1082,17 @@ End
 '' refrence to this list
 Private Function AllEntries_read() As Variant[]
 
+    Return _allEntries()
+
+End
+
+Function _allEntries() As Variant[]
+
     Dim nextitem As Dlist
     Dim items As New Variant[]
     Dim newObject As Object
 
+    Me.lock()
     If varmem = Null Or If listhead = Null Then Return items
     nextitem = EntryPtr(listhead.Next)
     While nextitem <> Null
@@ -889,7 +1100,15 @@ Private Function AllEntries_read() As Variant[]
         items.Add(newObject)
         nextitem = EntryPtr(NextItem.Next)
     Wend
+    Me.unlock()
+
     Return items
+
+Finally
+    Me.unlock()
+
+Catch
+    Error.Propagate()
 
 End
 
@@ -903,22 +1122,22 @@ End
 Private Sub Tag_Write(Value As String)
 
     If ListHead = Null Then Return
-    Dim rValue As String = Left(value & Space(ListHead.Tag.length), ListHead.Tag.length)
-
-    For i As Integer = 0 To ListHead.Tag.length - 1
-        ListHead.Tag[i] = Asc(rValue[i])
-    Next
+    listhead.tag = Byte[].FromString(value)
 
 End
 
 Public Sub textTree() As String
 
+    Dim result As String = ""
     Dim Indent As String = "    "
     Dim entry As Variant
 
+    Result = "Tree for : " & Me.tag & " Total Entries " & Me.count & "\n"
     For Each entry In Me
-        Print indent;; Me.key
+        Result &= Subst("&1&2 &3 &4 \t\t&5\n", indent, Me.key, Me.Key_Tag, Me.Key_ExtendedId, ShmVarStorage.GetTextType(Me.key_dlist.Type))
     Next
+
+    Return result
 
 End
 
@@ -939,5 +1158,55 @@ End
 Private Function ClassMe_Read() As String
 
     Return varmem.GetTextType(ListHead.Type)
+
+End
+
+Private Function Next_Read() As Variant
+
+    If Listhead <> Null And If listhead.Next <> Null Then
+        Dim nextitem As Dlist = EntryPtr(listhead.Next)
+        Return object.new(VarMem.GetTextType(nextitem.type), [varmem, nextitem.Address])
+    Endif
+    Return Null
+
+End
+
+Private Function Prev_Read() As Variant
+
+    If Listhead <> Null And If listhead.prev <> Null Then
+        Dim previtem As Dlist = EntryPtr(listhead.prev)
+        Return object.new(VarMem.GetTextType(previtem.type), [varmem, previtem.Address])
+    Endif
+    Return Null
+
+End
+
+Private Function Firsts_Read() As Variant
+
+    Dim value As Variant = Null
+
+    If Listhead <> Null And If listhead.next <> Null Then
+        Dim CurrentItem As Dlist = EntryPtr(listhead.next)
+        Value = VarMem[CurrentItem.value]
+    Endif
+    Return value
+
+End
+
+Private Function Last_Read() As Variant
+
+    Dim value As Variant = Null
+
+    If Listhead <> Null And If listhead.prev <> Null Then
+        Dim CurrentItem As Dlist = EntryPtr(listhead.prev)
+        Value = VarMem[CurrentItem.value]
+    Endif
+    Return value
+
+End
+
+Private Function RefCount_Read() As Variant
+
+    Return ListHead.RefCount
 
 End

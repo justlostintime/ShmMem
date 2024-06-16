@@ -1,8 +1,45 @@
 ' Gambas module file
 
-vars As New ShmMem
+Public vars As New ShmMem
 
 Public Sub main()
+
+    Dim element As ShmListEntry
+    Dim Elements As ShmList
+    Dim eList As ShmListEntry[]
+
+    vars.PrintAllInfo()
+
+    element = New ShmListEntry(vars, 0, 100, "test element entry  to go")
+    elements = New ShmList(vars, 0, 0, "Test Element List")
+    elements.Debug = True
+    elements.add("Entry 1")
+    elements.add("entry 2")
+
+    vars.PrintAllInfo()
+
+    eList = elements.AllEntries
+
+    Print elements.pop()
+
+    eList = elements.AllEntries
+
+    Print elements.Pop()
+
+    vars.PrintAllInfo()
+
+    elist = Null
+
+    vars.PrintAllInfo()
+
+    elements = Null
+
+    vars.PrintAllInfo()
+
+    element[0] = "this is a small but fast ship"
+    Print element[0]
+    element = Null
+    vars.PrintAllInfo()
 
     With vars
         !dog = New ShmList(vars, 0, True, "My Dog Info")
@@ -11,14 +48,22 @@ Public Sub main()
 
         Dim allitems As Variant[]
         AllItems = !dog.AllEntries
-
-        For Each v As Variant In !dog
-            Print v, !dog.key, !dog.Key_ExtendedId, !dog.key_tag
-            Dim bork As Shmlist = !dog.dup()                                               ' this only creates a new header, that points to the exsisting entries, be carefull
-            For Each v As Variant In bork
-                Print v, bork.key, bork.Key_ExtendedId, bork.key_tag
-            Next
+        For Each c As Variant In AllItems
+            c.value &= "-- more mutts"
         Next
+
+        Dim mylist As Shmlist = !dog
+
+        For Each v As Variant In mylist
+            Print v, MyList.key, MyList.Key_ExtendedId, MyList.key_tag
+            Dim bork As Shmlist = MyList.dup()                                               ' this only creates a new header, that points to the exsisting entries, be carefull
+            For Each v As Variant In bork
+                Print "\t";; v, bork.key, bork.Key_ExtendedId, bork.key_tag
+            Next
+            bork = Null
+        Next
+
+        vars.PrintAllInfo()
 
         Dim cat As New ShmList(vars, 0, True, "My Cat Stuff")
         cat.Add("My Dirty Cat", 1, "MyDirty Cat")
@@ -28,8 +73,16 @@ Public Sub main()
             Print v, cat.key, cat.Key_ExtendedId, cat.key_Tag
         Next
 
+        cat.remove(0)
+
+        For Each v As Variant In cat
+            Print v, cat.key, cat.Key_ExtendedId, cat.key_Tag
+        Next
+
     End With
 
-    Print shmMem.GetObjectClass(Me).name;; "Completed"
+    Print shmMem.GetObjectClass(Me).name;; "Completed======================================================================="
+
+    vars.PrintAllInfo()
 
 End
