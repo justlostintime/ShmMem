@@ -342,6 +342,9 @@ Public Sub {Free}()                             '' Free the entire list
     varmem.Free(VirtualAddress)
 
     For Each pEntry As DList In pList
+        If pEntry.address = pEntry.next Or If pEntry.address = pEntry.prev Then
+            Stop
+        Endif
         FreeEntry(pEntry)
     Next
 

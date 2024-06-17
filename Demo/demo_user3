@@ -1,4 +1,4 @@
-#!/usr/bin/gbs3
+#!/usr/bin/env gbs3
 ' Gambas script
 ''' Each of the User1-3 should be executed as seperate application
 ''' They give an example of sharing data between application.
@@ -27,12 +27,12 @@ Public Sub main()
   While Not completed
     Wait 0.001
   Wend
-  
+
   MyShare.NotifyStop("Cat", Me)
   MyShare.NotifyStop("Dog", Me)
   MyShare.NotifyStop("rabbit", Me)
   MyShare.NotifyStop("Done", Me, "It_Is_Done")
-  
+
   Print "User 3 Completed and exits"
 
 End

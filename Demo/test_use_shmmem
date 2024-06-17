@@ -1,4 +1,4 @@
-#!/usr/bin/gbs3
+#!/usr/bin/env gbs3
 ' Gambas Script File Created 06/04/2024 09:12:29
 
 Use ":westwood.shmmem:2.1"

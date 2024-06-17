@@ -581,7 +581,7 @@ End
 
 Public Sub _put(value As Variant, SymName As String)
 
-    Dim SymbolIndex As Long
+    Dim SymbolIndex As Pointer
     Dim sym As Symbol
     Dim index As Pointer
 

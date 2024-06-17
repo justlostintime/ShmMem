@@ -1,4 +1,4 @@
-#!/usr/bin/gbs3
+#!/usr/bin/env gbs3
 
 Use "westwood.shmmem:2.1"
 Public MyShare As ShmMem

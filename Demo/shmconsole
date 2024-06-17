@@ -1,12 +1,12 @@
-#!/usr/bin/env gbs3 
+#!/usr/bin/env gbs3
 'Auto Generated Script 06/16/2024 19:04:26.261 Version (3.19.90)
-#Script Startup="FMain"
-#Script Version="0.0.1"
+#Script Startup = "FMain"
+#Script Version = "0.0.1"
 Use "gb.image"
 Use "gb.gui"
 Use "gb.form"
 Use ":westwood.shmmem:2.1"
-class FMain
+Class FMain
 ' Gambas class file
 
 Public MyMemory As ShmMem
@@ -53,7 +53,7 @@ Public Sub OnAnyChange(varname As String, value As Variant, timedOut As Boolean)
     Dim index As Integer = Variables.Find(varname)
 
     If index = -1 Then
-        Error.Raise("Bad variable name returned")
+        Error.Raise("Bad variable name returned index = " & Str(index) & " for " & Quote(varname))
     Endif
     VariableList.Rows[index].text = value
 
@@ -70,15 +70,14 @@ Public Sub VariableList_Data(Row As Integer, Column As Integer)
 
 End
 
-
-End class
+End Class
 form FMain
-# Gambas Form File 3.0
+#Gambas Form File 3.0
 
-{ Form Form
-  MoveScaled(0,0,136,73)
+{  Form Form
+  MoveScaled(0, 0, 136, 73)
   { !VariableList GridView
-    MoveScaled(1,0,133,71)
+    MoveScaled(1, 0, 133, 71)
     #Public = True
     Expand = True
     Header = GridView.Horizontal

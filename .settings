@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"ShmList":[630,744],"ShmNotify":[306],"ShmListVariables":[41,85,10,77]}
+Breakpoints={"ShmList":[633,747],"ShmNotify":[306],"ShmListVariables":[41,85,10,77],"Demo_user1":[19,17]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -147,7 +147,7 @@ Geometry=[899,428,252,190]
 Geometry=[834,512,252,56]
 
 [DebugWindow/Source]
-Geometry=[834,375,252,330]
+Geometry=[834,512,252,56]
 
 [DebugWindow/Sym]
 Geometry=[2184,263,252,56]
@@ -279,7 +279,7 @@ Geometry=[834,445,504,297]
 Geometry=[848,459,523,412]
 
 [DebugWindow/me]
-Geometry=[834,512,774,476]
+Geometry=[834,512,774,504]
 
 [DebugWindow/me.AllEntries]
 Geometry=[848,526,632,276]
@@ -324,7 +324,10 @@ Geometry=[2664,390,339,339]
 Geometry=[834,512,252,56]
 
 [DebugWindow/sym]
-Geometry=[834,445,558,190]
+Geometry=[834,445,558,210]
+
+[DebugWindow/sym.Name]
+Geometry=[848,459,252,504]
 
 [DebugWindow/theDlist]
 Geometry=[834,415,516,364]
@@ -375,19 +378,12 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Updated Readme to contain instructions on running demo\n\n* opt: Update the readme with demo instructions"
+LastCommit="Added Script to graphically monitor the Shared memory database\n\n* new: Added demo script to mintor the shared memory database\n* Opt: removed all the debug messages"
 
 [OpenFile]
-Count=8
-File[1]=".src/Examples/vTestApps/QueueTestWithProcesses/ShmQueueAndShmListTest.module:14.138"
-File[2]=".hidden/CHANGELOG:0.0"
-Active=2
-File[3]=".src/ShmMem/ShmNotify.class:8.106"
-File[4]="Demo/shmconsole:26.7"
-File[5]="Demo/demo_user1:0.0"
-File[6]=".src/Examples/Demo/Demo_user1.module:4.11"
-File[7]=".src/ShmMem/ShmList.class:0.0"
-File[8]="Demo/demo_monitornew:0.0"
+Count=1
+File[1]="Demo/demo_user2:0.0"
+Active=1
 
 [Package]
 Dir="~/Downloads/"
