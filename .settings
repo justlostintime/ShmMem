@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"ShmList":[633,747],"ShmNotify":[306],"ShmListVariables":[41,85,10,77],"Demo_user1":[19,17]}
+Breakpoints={"ShmList":[697,382],"ShmListVariables":[41,85,10,77],"Demo_user1":[20,18],"ShmVarStorage":[288]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -24,7 +24,10 @@ Geometry=[834,485,515,237]
 Geometry=[834,445,411,261]
 
 [DebugWindow/CurrentItem]
-Geometry=[834,512,252,56]
+Geometry=[2331,570,544,386]
+
+[DebugWindow/CurrentItem.Tag]
+Geometry=[2345,547,252,504]
 
 [DebugWindow/Elements]
 Geometry=[834,288,252,590]
@@ -33,10 +36,10 @@ Geometry=[834,288,252,590]
 Geometry=[834,512,252,56]
 
 [DebugWindow/ListHead]
-Geometry=[834,512,252,56]
+Geometry=[834,512,416,330]
 
 [DebugWindow/ListHead.Tag]
-Geometry=[834,498,252,56]
+Geometry=[848,520,252,504]
 
 [DebugWindow/ListItem]
 Geometry=[834,381,611,330]
@@ -57,7 +60,7 @@ Geometry=[834,498,252,58]
 Geometry=[834,512,252,56]
 
 [DebugWindow/MyQueue]
-Geometry=[833,502,639,504]
+Geometry=[2449,543,480,508]
 
 [DebugWindow/MyShare]
 Geometry=[834,382,252,320]
@@ -108,7 +111,7 @@ Geometry=[2782,446,252,190]
 Geometry=[745,561,252,304]
 
 [DebugWindow/PidQueue]
-Geometry=[885,414,612,584]
+Geometry=[885,244,612,678]
 
 [DebugWindow/PidQueue.AllEntries]
 Geometry=[848,526,471,276]
@@ -193,6 +196,9 @@ Geometry=[834,512,252,216]
 
 [DebugWindow/SymbolCache.Keys]
 Geometry=[848,526,252,276]
+
+[DebugWindow/TaskQueueRemoved]
+Geometry=[2754,418,252,216]
 
 [DebugWindow/TheQueues]
 Geometry=[834,402,488,276]
@@ -279,7 +285,7 @@ Geometry=[834,445,504,297]
 Geometry=[848,459,523,412]
 
 [DebugWindow/me]
-Geometry=[834,512,774,504]
+Geometry=[2028,151,774,749]
 
 [DebugWindow/me.AllEntries]
 Geometry=[848,526,632,276]
@@ -302,6 +308,9 @@ Geometry=[834,512,252,56]
 [DebugWindow/newlist.ListHead]
 Geometry=[834,512,252,56]
 
+[DebugWindow/pEntry]
+Geometry=[2754,388,479,329]
+
 [DebugWindow/pList]
 Geometry=[834,402,252,276]
 
@@ -321,7 +330,7 @@ Geometry=[834,512,252,56]
 Geometry=[2664,390,339,339]
 
 [DebugWindow/svptr]
-Geometry=[834,512,252,56]
+Geometry=[834,512,252,110]
 
 [DebugWindow/sym]
 Geometry=[834,445,558,210]
@@ -356,6 +365,9 @@ Geometry=[2137,375,252,88]
 [DebugWindow/vars]
 Geometry=[2754,498,252,320]
 
+[DebugWindow/virt]
+Geometry=[2115,742,252,110]
+
 [DebugWindow/vptr]
 Geometry=[834,512,252,110]
 
@@ -378,12 +390,18 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Added Script to graphically monitor the Shared memory database\n\n* new: Added demo script to mintor the shared memory database\n* Opt: removed all the debug messages"
+LastCommit="Added Script to graphically monitor the Shared memory database\n\n* new: Added demo script to mintor the shared memory database\n* Opt: removed all the debug messages\n* Opt: Changed /usr/bin/gbs3 to /usr/bin/env gbs3 in scripts"
 
 [OpenFile]
-Count=1
-File[1]="Demo/demo_user2:0.0"
+Count=7
+File[1]=".src/ShmMem/ShmList.class:8.154"
 Active=1
+File[2]=".src/ShmMem/ShmListEntry.class:16.110"
+File[3]=".src/Examples/Demo/Demo_user1.module:21.20"
+File[4]=".src/ShmMem/ShmNotify.class:22.327"
+File[5]=".src/ShmMem/EntryInfo.class:3.14"
+File[6]=".src/ShmMem/ShmManage.class:39.233"
+File[7]=".src/ShmMem/ShmVarStorage.class:0.288"
 
 [Package]
 Dir="~/Downloads/"

@@ -271,7 +271,7 @@ Public Sub _free()
 End
 
 '' update the apps/tasks copy of the symbol table
-Fast Unsafe Private Sub UpdateCache()
+Private Sub UpdateCache()
 
     If Not $UseCache Then
         Stop
@@ -320,7 +320,7 @@ End
 LastHash As Long
 '' Hash table uses  pointers as index value  as they are unsigned
 
-Fast Unsafe Private Sub Hash(Symbol As String) As Pointer
+Private Sub Hash(Symbol As String) As Pointer
 
     Dim SymName As String = Lower(Symbol)
     Dim Buffer As Byte[]
@@ -340,7 +340,7 @@ End
 '' returns the table entry with this hash and symbol
 '' optionally returns the next empty slot after the hash match
 '' builds a chain if in a sublist
-Fast Unsafe Private Sub FindHash(HashValue As Pointer, SymName As String) As Pointer
+Private Sub FindHash(HashValue As Pointer, SymName As String) As Pointer
 
     Dim index As Pointer = HashValue
 
@@ -369,7 +369,7 @@ Fast Unsafe Private Sub FindHash(HashValue As Pointer, SymName As String) As Poi
 
 End
 
-Fast Unsafe Private Sub FindEmpty(HashValue As Pointer) As Pointer       '' Returns the next available entry in the symbol table
+Private Sub FindEmpty(HashValue As Pointer) As Pointer       '' Returns the next available entry in the symbol table
 
     Dim index As Pointer = HashValue
 
@@ -413,7 +413,7 @@ End
 '' Return the slot number insert the name and change the lastupdated time
 '' Create a basic variable storage to go along with this symbol
 '' Update the virtual address of Var in the table
-Fast Unsafe Public Sub Add(symName As String, value As Variant, Optional HashValue As Long = -1) As Long
+Public Sub Add(symName As String, value As Variant, Optional HashValue As Long = -1) As Long
 
     '    Dim result As Pointer
 
@@ -485,7 +485,7 @@ Fast Unsafe Public Sub Add(symName As String, value As Variant, Optional HashVal
 
 End
 
-Fast Unsafe Public Sub Remove(SymName As String)
+Public Sub Remove(SymName As String)
 
     Dim index As Long
     Dim freeData As Pointer

@@ -1,0 +1,31 @@
+Task 1                            Task 2
+   |                                 |
+   -----|-----------------------------
+        |
+        |
+        |
+        |
+    Symbol Table
+          |
+         var1.Notify_Block ----->Pid Queue______Pid Entry.Value ---------------> Pid(eg. Task 1)
+          |                                 |            .ExtendedID ----------> Task Notify List - contains a queued variable changes 
+          |                                 |    repeated for each task. Notify List
+          |                                 |    is the same one assigned to each Var
+          |
+          |
+         var2 -- Repeat for each symbol
+         
+         Notify List - one is assigned to each Task, it contains the list of notifications for each of
+                       the variables the task has requested Notification for, Only one of these 
+                       exists per task.
+                       
+         Pid List    - One is assgined to each Variable with notification requests.
+                       It contains a list of the Notification queues belonging to each
+                       task requesting notifications.
+                       
+        Notify entry - Entries contain the variable name
+                                           Tag identifying special functions if required eg On New requested
+
+    Each Task also creates a Collection containing the notify variable requests
+    Each Variable entry contains a list of Callback functions needing attantion when a variable changes
+    The dispatch information is purely a gambas collection.

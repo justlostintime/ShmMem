@@ -78,20 +78,12 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Prio
         Dim RealPtr As Pointer
         RealPtr = VarMem.RealAddress(VirtAddress)
         entry = RealPtr
-
     Endif
-
-    Inc entry.RefCount
 
 End
 
+'' Free this entry on the Gambas side, check if release on the shared memside
 Public Sub _free()
-
-    If entry.refcount > 0 Then Dec entry.refcount
-    If entry.refcount = 0 Then
-        VarMem.Free(entry.value)
-        Varmem.Free(entry.address)
-    Endif
 
     Varmem = Null
     Entry = Null
@@ -104,6 +96,19 @@ Static Public Sub UserPtr(vVarmem As ShmVarStorage, VirtAddr As Pointer) As Dlis
     If VirtAddr = -1 Then Return Null
     Dim RealPtr As Pointer = vVarMem.RealAddress(VirtAddr)
     Return RealPtr
+
+End
+
+'' free an entry - this must be called by the list head to delete the entry
+'' after it is removed from the actual list. calling this before can cause
+'' very bad things to happen
+
+Public Sub FreeEntry()
+
+    VarMem.Free(entry.value)
+    VarMem.Free(entry.address)
+
+    entry = Null
 
 End
 
@@ -128,6 +133,7 @@ End
 
 Public Sub _get(...) As Variant
 
+    If entry = Null Then Return Null
     Return Value_Read()
 
 End
@@ -136,7 +142,9 @@ Private Function Value_Read() As Variant
 
     Dim result As Variant
 
-    If entry.value = 0 Then Return Null
+    If entry = Null Then Return Null
+
+    If entry.value = Null Then Return Null
     If $bDebug Then Print Application.id, "Value_Read ListEntry VarMem.Lock "
     VarMem.Lock()
     Result = VarMem[entry.value]
@@ -156,6 +164,10 @@ Private Sub Value_Write(Value As Variant)
 
     Dim newvar As Variant
 
+    If entry = Null Then
+        Error.Raise("entry -  invalid access Null address")
+    Endif
+
     If $bDebug Then Print Application.id, "Value_Write ListEntry VarMem.Lock "
     VarMem.Lock()
     If entry.value = 0 Then
@@ -171,18 +183,27 @@ End
 
 Private Function Type_Read() As Integer
 
+    If entry = Null Then
+        Error.Raise("Entry - Invalid access deleted entry ")
+    Endif
     Return entry.Type
 
 End
 
 Private Function Address_Read() As Pointer
 
+    If entry = Null Then
+        Error.Raise("Entry - Invalid access deleted entry ")
+    Endif
     Return entry.Address
 
 End
 
 Private Function RefCount_Read() As Long
 
+    If entry = Null Then
+        Error.Raise("Entry - Invalid access deleted entry ")
+    Endif
     Return entry.RefCount
 
 End
@@ -195,36 +216,54 @@ End
 
 Private Sub Tag_Write(Value As String)
 
+    If entry = Null Then
+        Error.Raise("Entry - Invalid access deleted entry ")
+    Endif
     entry.tag = Byte[].FromString(value)
 
 End
 
 Private Function Priority_Read() As Long
 
+    If entry = Null Then
+        Error.Raise("Entry - Invalid access deleted entry ")
+    Endif
     Return entry.Priority
 
 End
 
 Private Sub Priority_Write(Value As Long)
 
+    If entry = Null Then
+        Error.Raise("Entry - Invalid access deleted entry ")
+    Endif
     entry.priority = value
 
 End
 
 Private Function dlist_read() As DList
 
+    If entry = Null Then
+        Error.Raise("Entry - Invalid access deleted entry ")
+    Endif
     Return entry
 
 End
 
 Private Function next_Read() As Pointer
 
+    If entry = Null Then
+        Error.Raise("Entry - Invalid access deleted entry ")
+    Endif
     Return entry.next
 
 End
 
 Private Function prev_Read() As Pointer
 
+    If entry = Null Then
+        Error.Raise("Entry - Invalid access deleted entry ")
+    Endif
     Return entry.prev
 
 End

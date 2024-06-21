@@ -1,5 +1,6 @@
 ' Gambas module file
 
+Use "gb.eval"
 ''' Each of the User1-3 should be executed as seperate application
 ''' They give an example of sharing data between application.
 ''' Notifications are used to signal the apps as data changes
@@ -18,20 +19,27 @@ Public Sub main()
         PrintStuff(MyShare)
 
         !Cat = "Felix"
+        PrintStuff(MyShare)
         !Dog = "Rover"
+        PrintStuff(MyShare)
         !Rabbit = 1000
+        PrintStuff(MyShare)
         !Done = False
 
         PrintStuff(MyShare)
 
         .Notify("Cat", Me)
+        PrintStuff(MyShare)
         .Notify("Dog", Me)
+        PrintStuff(MyShare)
         .Notify("rabbit", Me)
+        PrintStuff(MyShare)
         .Notify("Done", Me)
 
         PrintStuff(MyShare)
 
         .NotifyOnNew(True, Me)
+        PrintStuff(MyShare)
 
         Print " User 1 monitoring all variables"
         While Not completed

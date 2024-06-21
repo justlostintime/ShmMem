@@ -1,6 +1,6 @@
 ' Gambas module file
 
-Fast Unsafe
+'Fast Unsafe
 'Extern strncpy(dest As Pointer, source As String, len As Long) In "libc:6"
 Private loopcount As Integer = 100000
 Private Letters As String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

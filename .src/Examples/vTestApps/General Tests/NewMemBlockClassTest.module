@@ -1,6 +1,6 @@
 ' Gambas module file
 
-Fast Unsafe
+'Fast Unsafe
 
 Public Struct LongStruct
     Value As Long

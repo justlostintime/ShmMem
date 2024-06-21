@@ -59,7 +59,7 @@ Public Sub _New(VariableMemory As ShmVarStorage, Optional SymbolMemory As ShmSym
 
 End
 
-Fast Unsafe Public Sub _free()
+Public Sub _free()
 
     If NotifyQueue <> Null Then
         NotifyQueue.free()
@@ -72,7 +72,7 @@ Fast Unsafe Public Sub _free()
 End
 
 '' Create a request to be notified when the value of a specific variable has changed
-Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc As String, Optional timeout As Long = 0, Tag As String = "")         '' Timeout of zero means wait for ever
+Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc As String, Optional timeout As Long = 0, Tag As String = "")         '' Timeout of zero means wait for ever
 
     Dim PidQueue As ShmList
     Dim VarInfo As ShmNotifyEntry
@@ -86,26 +86,26 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
     '' changed for a variable. There is only one copy of this per task/app.
     If Application.id <> MyAppID Then                                                                 ' Check if we are new task, if we are create our own copy
         MyAppId = Application.id                                                                               ' Keep a local copy of the running tasks/apps i
+        NotifyQueue = Null
     Endif
 
     Dim Symname As String = SymEntry.Name.ToString()
 
     '' Now create a queue to contain all the pid(programs/tasks) requesting to be notified about this particular symbol
     '' This is only created by the first app/task to make a call to notify for a particular variable. And is Global to this Symtable
-    '' For the variable refrenced. There is one of these for each variable being watched.
+    '' For the variable referenced. There is one of these for each variable being watched.
     If SymEntry.NotifyBlock = 0 Then                                                                        ' Check if a PID queue has already been created
         PidQueue = New ShmList(VarMem, 0, True, "PIDQ-" & SymName)       ' create a new List
         ' PidQueue.Debug = True
-        SymEntry.NotifyBlock = PidQueue.Address
+        SymEntry.NotifyBlock = PidQueue.Address                                                 ' Put the Address of the PID queue into the symbol Table
     Else
         PidQueue = New ShmList(VarMem, SymEntry.NotifyBlock)                    ' Get the address to the exsisting queue
     Endif
 
     If NotifyQueue = Null Then
         NotifyVars = New Collection(gb.ignorecase)                                              ' Local copy of the list of variables we are waiting for
-        NotifyQueue = New ShmList(VarMem, 0, True, "nq_ " & MyAppId)     ' Create a new queue for variable changes per task/process"
+        NotifyQueue = New ShmList(VarMem, 0, True, "nq_" & MyAppId)      ' Create a new queue for variable changes per task/process"
         ' NotifyQueue.Debug = True
-
     Endif
 
     ''  Add this tasks Notify queue to the pid queue for this variable, we allow more than one callback address
@@ -119,8 +119,8 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
     '' Update the local list of variables waiting for dispatch notification
     If tag = "" Then
         ' We need to differenciate between being called from a module or from a class
-        Dim name As String = GetClassName(CallBack)
-        Try tag = SymName & "_" & CallFunc & "_" & name
+        Dim ClassName As String = GetClassName(CallBack)
+        Try tag = SymName & "_" & CallFunc & "_" & ClassName
     Endif
 
     VarInfo = New ShmNotifyEntry(SymEntry, CallBack, CallFunc, Me, Timeout, Tag) As "VarInfo"
@@ -133,7 +133,7 @@ Fast Unsafe Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc 
     Endif
 
     If todoList.Exist(tag) Then
-        Error.Raise("Notify  : Entry already defined for : Symbol=" & SymName & ", Class=" & Name & ",Function=" & CallFunc)
+        Error.Raise("Notify  : Entry already defined for : Symbol=" & SymName & ", Class=" & ClassName & ",Function=" & CallFunc)
     Endif
 
     NotifyVars[SymName].add(VarInfo, tag)                ' add the entry for this request
@@ -145,19 +145,19 @@ End
 
 '' special case where the variable is of the #xxx format, these have extra information
 '' for now there is only the one used for notifying of new variables
-Fast Unsafe Public Sub VarInfo_VarSpecial(VarInfo As ShmNotifyEntry, info As Variant[])
+Public Sub VarInfo_VarSpecial(VarInfo As ShmNotifyEntry, info As Variant[])
 
     VarInfo.Dispatch(False, info[1])
 
 End
 
-Fast Unsafe Public Sub VarInfo_VarTimedOut(VarInfo As ShmNotifyEntry)
+Public Sub VarInfo_VarTimedOut(VarInfo As ShmNotifyEntry)
 
     VarInfo.Dispatch(True)
 
 End
 
-Fast Unsafe Public Sub VarInfo_VarChanged(VarInfo As ShmNotifyEntry)
+Public Sub VarInfo_VarChanged(VarInfo As ShmNotifyEntry)
 
     VarInfo.Dispatch(False)
 
@@ -176,7 +176,7 @@ Public Sub GetClassName(BaseObject As Variant) As String
 
 End
 
-Fast Unsafe Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Optional CallFunc As String = "", Optional tag As String = "")
+Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Optional CallFunc As String = "", Optional tag As String = "")
 
     Dim PidQueue As ShmList
     Dim SymName As String
@@ -207,8 +207,8 @@ Fast Unsafe Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Opti
             Try value = PidQueue.RemoveExtId(NotifyQueue.Address)                  ' remove the notify request  from the list of pid entries for this variable
             If Not Error Then
                 If NotifyVars.count = 0 Then
-                    NotifyVars = Null
                     NotifyQueue.free()
+                    NotifyVars = Null
                     NotifyQueue = Null
                 Endif
                 If PidQueue.count = 0 Then
@@ -258,7 +258,9 @@ End
 
 '' Called by the symbol table when ever a variable changes value
 '' This only supports variables not direct memory values
-Fast Unsafe Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
+Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
+
+    Static TaskQueueRemoved As New Collection(gb.ignoreCase)
 
     Dim PidQueue As ShmList
     Dim UserQueue As ShmList
@@ -281,6 +283,7 @@ Fast Unsafe Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
     Next
 
     Dim RemoveSet As New Pointer[]
+
     For Each Pid As Integer In PidQueue
 
         Result = sKill(Pid, ChangeSignal)                                                                                             ' try to send the signal to the other tasks
@@ -293,21 +296,38 @@ Fast Unsafe Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
         Sched_Yield()                                                                                                                                      ' Allow the other tasks to process the signal
     Next
 
-    For Each pid In RemoveSet
-        FreePidEntry(pid, pidqueue)
-    Next
+    If RemoveSet.count > 0 Then
+
+        For Each pid In RemoveSet
+            FreePidEntry(pid, pidqueue, TaskQueueRemoved)
+        Next
+    Endif
 
 End
 
-Private Sub FreePidEntry(pid As Integer, pidqueue As ShmList)
+Private Sub FreePidEntry(pid As Integer, pidqueue As ShmList, TaskQueues As Collection)
 
     Dim MyElement As ShmListEntry
     Dim MyQueue As ShmList
+    Dim NextElement As Variant
 
-    myelement = pidqueue.Find(pid, True)
-    MyQueue = ShmList.AsObject(varmem, MyElement.Priority)
-    PidQueue.RemoveByValue(pid)
+    Dim TaskQueue As Pointer
 
-    MyQueue.Free()
+    myelement = pidqueue.Find(pid, True)                                                                   ' find the entry in the pid queue to delete, return the element
+    If MyElement = Null Then                                                                                             ' It may have been removed by another task in the mean time
+        Return
+    Endif
+
+    TaskQueue = MyElement.Priority                                                                             ' get the actual queue held by the task
+    NextElement = PidQueue.RemoveByVirt(MyElement.Address)                     ' returns the value of the list which is the count
+
+    If Not TaskQueues.exist(Str(TAskQueue)) Then
+        TaskQueues.Add(taskqueue, Str(taskQueue))
+        MyQueue = New ShmList(Varmem, TaskQueue)
+        MyQueue.Free(True)
+        MyQueue = Null
+    Endif
+
+    Return
 
 End
