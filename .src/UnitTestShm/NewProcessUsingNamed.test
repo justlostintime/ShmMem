@@ -1,0 +1,70 @@
+' Gambas test file
+
+Public Sub maintest()
+
+    Dim vmem As ShmMem
+    Dim rmem As ShmMem
+    Dim ac As NewTaskUsingMappedBG
+    Dim ab As NewProcessUsingNamedBG
+    Dim ad As New NewTaskLoadTesting[]
+
+    ShmMem.ForceDelete("tags")
+
+    For i As Integer = 1 To 1
+
+        Print "fg Start :";; i
+
+        rmem = vmem
+        vmem = New ShmMem(1280000, "tags")
+        rmem = Null
+        With vmem
+            !go = "hello"
+            !goagain = "run"
+
+            Print "Start NewProcessUsingNamedBG"
+            ab = New NewProcessUsingNamedBG
+            Wait
+
+            For j As Integer = 1 To 100
+                Dim tmp As NewTaskLoadTesting
+                tmp = New NewTaskLoadTesting
+                tmp.vmem = vmem
+                Wait
+                ad.add(tmp)
+            Next
+            Wait 3
+
+            'With vmem
+            vmem.WaitForValue("go", "yes")
+            Print "FG Got yes"
+            !go = "No"
+
+            vmem.WaitForValue("go", "done")
+            Print "FG Got Done"
+
+            !go = "quit"
+
+            '  Wait
+
+            Print "Start NewTaskUsingMappedBG"
+            ac = New NewTaskUsingMappedBG
+            ac.vmem = vmem
+            Wait 3
+
+            Print "fg goagain = Run, waiting for goagain=done"
+
+            If Not vmem.WaitForValue("goagain", "done", 2.0) Then
+                Print "Task Timeout "
+                vmem!goagain = "Failed"
+            Endif
+
+            Print "goggain "; vmem!goagain
+            Print "fg Done"
+            Wait 5
+
+        End With
+    Next
+
+    Assert.Pass("Passed")
+
+End

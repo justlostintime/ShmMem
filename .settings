@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"ShmList":[697,382],"ShmListVariables":[41,85,10,77],"Demo_user1":[20,18],"ShmVarStorage":[288]}
+Breakpoints={"ShmSymbolTable":[664]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -36,7 +36,7 @@ Geometry=[834,288,252,590]
 Geometry=[834,512,252,56]
 
 [DebugWindow/ListHead]
-Geometry=[834,512,416,330]
+Geometry=[834,512,252,56]
 
 [DebugWindow/ListHead.Tag]
 Geometry=[848,520,252,504]
@@ -96,7 +96,7 @@ Geometry=[834,421,518,280]
 Geometry=[848,435,252,504]
 
 [DebugWindow/NotifyVars]
-Geometry=[834,512,252,56]
+Geometry=[834,512,519,257]
 
 [DebugWindow/NotifyVars["a"]]
 Geometry=[2034,203,378,361]
@@ -217,6 +217,9 @@ Geometry=[2064,424,753,517]
 
 [DebugWindow/VarExtended]
 Geometry=[834,388,252,276]
+
+[DebugWindow/VarInfo]
+Geometry=[834,435,475,284]
 
 [DebugWindow/VarMem]
 Geometry=[834,498,252,130]
@@ -390,21 +393,13 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Added Script to graphically monitor the Shared memory database\n\n* new: Added demo script to mintor the shared memory database\n* Opt: removed all the debug messages\n* Opt: Changed /usr/bin/gbs3 to /usr/bin/env gbs3 in scripts"
+LastCommit="Many bug fixes\n\n* new: Added demo script to mintor the shared memory database\n* Opt: removed all the debug messages\n* Opt: Changed /usr/bin/gbs3 to /usr/bin/env gbs3 in scripts\n* BUG: _free does not work as it is called with a copy not the original"
 
 [OpenFile]
-Count=7
-File[1]=".src/ShmMem/ShmList.class:8.154"
-Active=1
-File[2]=".src/ShmMem/ShmListEntry.class:16.110"
-File[3]=".src/Examples/Demo/Demo_user1.module:21.20"
-File[4]=".src/ShmMem/ShmNotify.class:22.327"
-File[5]=".src/ShmMem/EntryInfo.class:3.14"
-File[6]=".src/ShmMem/ShmManage.class:39.233"
-File[7]=".src/ShmMem/ShmVarStorage.class:0.288"
+Count=0
 
 [Package]
-Dir="~/Downloads/"
+Dir="~/Projects/Distribution/ShmMem/"
 
 [Watches]
 Count=5

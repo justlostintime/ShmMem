@@ -1,0 +1,18 @@
+' Gambas class file
+
+Inherits Task
+Public vmem As ShmMem
+
+Public Sub main()
+
+    With vmem
+        Print "Load Mapped Task Waiting goAgain = Done";; Application.id
+        .WaitForValue("goagain", "done")
+        Print "Load Mapped All Done "; Application.id
+        Flush
+        Quit
+    End With
+Catch
+    Print "Load Mapping error";; Error.text, error.where
+
+End

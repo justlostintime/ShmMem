@@ -1,0 +1,21 @@
+' Gambas test file
+
+Public Sub notifyTest()
+
+    Dim mymem As New ShmMem(1200000, "MyMem")
+
+    With mymem
+        !cow = 100
+        .Notify("cow", Me)
+        !cow = 300
+        Wait
+    End With
+
+End
+
+Public Sub cow_changed(symname As String, value As Variant, failed As Boolean)
+
+    'Print "Recieved value =";; value
+    Assert.Equals(value, 300, "Passed value = " & value)
+
+End

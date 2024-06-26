@@ -1,0 +1,35 @@
+' Gambas test file
+
+Public Sub aSaveImage()
+
+    Dim shm As New ShmMem(1000000, "mymem")
+
+    With shm
+        !a = 400
+        !b = "this message"
+        !c = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        !d = ["this", "that", "other", "sprat", "spray", "pray"]
+        .Notify("a", Me)
+        Try .SaveImage()
+        Assert.Noterror("Save Passed")
+    End With
+
+End
+
+Public Sub a_changed(Varname As String, value As Variant, timedout As Boolean)
+
+End
+
+Public Sub bLoadImage()
+
+    Dim shm As New ShmMem(1000000, "mymem")
+
+    With shm
+        .LoadImage()
+        Assert.Equals(!a, 400, "Integer Passed")
+        Assert.Equals(!b, "this message", "String Passed")
+        Assert.Equals(!c[2], 3, "Array Passes")
+        Assert.Equals(!d[2], "other", "Array Strings passes")
+    End With
+
+End

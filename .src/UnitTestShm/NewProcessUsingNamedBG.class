@@ -1,0 +1,26 @@
+' Gambas class file
+
+Inherits Task
+
+Public Sub main()
+
+    Dim vmem As New ShmMem(1280000, "tags")
+
+    With vmem
+        !go = "yes"
+        Print "bg Start With "; !go;; "Wait for No"
+        .WaitValueChange("go", "yes")
+
+        Print "BG Got";; !go;; "Send done wait quit"
+        !go = "done"
+        .WaitValueChange("go", "done")
+
+        Print "gb Got";; !go
+        Print "bg done"
+        Quit
+
+    End With
+Catch
+    Print "bg ";; Error.text, Error.where
+
+End
