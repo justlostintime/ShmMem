@@ -1,0 +1,5 @@
+[TestSuites]
+Default="NewANotifyTest.notifyTest,NewBSaveLoadImage.aSaveImage;bLoadImage,NewProcessUsingNamed.maintest"
+Count=0
+TestWith=0
+
