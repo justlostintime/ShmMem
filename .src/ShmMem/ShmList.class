@@ -102,9 +102,12 @@ End
 '' it is also possible to pass a tag name to locate the correct list/queue
 '' GlobalValue is used to allow this list to be private or a global value
 '' Returns the list as a list
-'' Increments the refrence counter for this list
+'' Increments the reference counter for this list
+'' list may be accessed or created, VirtAddressOrTag = 0 then creat new list
+''                                                                VirtAddressOrTag = "tagname" then lookfor and return list with this tag
+''                                                                VirtAddressOrTag > 0 then return list at this virtual address
 
-Public Sub _new(VarStorage As Variant, Optional DirectLocate As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "")
+Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "")
 
     Dim Result As Integer = 0
     Dim VirtAddress As Pointer = 0
@@ -116,13 +119,13 @@ Public Sub _new(VarStorage As Variant, Optional DirectLocate As Variant = CPoint
     Endif
 
     Dim RealPtr As Pointer
-    If TypeOf(VirtAddress) = gb.string Then
-        VirtAddress = LocateByTag(VirtAddress)
+    If TypeOf(VirtAddressOrTag) = gb.string Then
+        VirtAddress = LocateByTag(VirtAddressOrTag)
         If VirtAddress = Null Then
-            Error.Raise("List / Queue : locate by tag " & Quote(directLocate))
+            Error.Raise("List / Queue : locate by tag " & Quote(VirtAddressOrTag))
         Endif
     Else
-        VirtAddress = DirectLocate
+        VirtAddress = VirtAddressOrTag
     Endif
 
     If VirtAddress = 0 Then
@@ -153,9 +156,9 @@ Private Sub locateByTag(tag As String) As Pointer
     Dim list As Variant[] = ShmMem.GetListType(varmem, SetHeadType)
 
     If list.count = 0 Then Return Null
-    For Each s As ShmArray In list
+    For Each s As Variant In list
         If s.tag = tag Then
-            Return s.VirtAddress
+            Return s.Address
         Endif
     Next
     Return Null
@@ -372,9 +375,12 @@ End
 '' Assign  this list to another variable
 Public Sub _Assign(VEntry As DPointer)
 
-    If listhead = Null Then vEntry.value = Null                     ' if the listhead is valid then continue
-    Inc ListHead.RefCount                                                         '  represents the number of refrences to this entry
-    vEntry.Value = ListHead.Address                                     '  Assign this to the variable
+    If listhead = Null Then
+        vEntry.value = Null                     ' if the listhead is valid then continue
+    Else
+        Inc ListHead.RefCount                                                         '  represents the number of refrences to this entry
+        vEntry.Value = ListHead.Address                                     '  Assign this to the variable
+    Endif
 
 End
 

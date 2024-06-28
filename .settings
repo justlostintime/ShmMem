@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"ShmSymbolTable":[664]}
+Breakpoints={"ArrayAllocFree":[20]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -13,6 +13,12 @@ Environment=["GB_NO_JIT=1"]
 
 [DebugWindow]
 Count=0
+
+[DebugWindow/ArrayData]
+Geometry=[834,512,252,58]
+
+[DebugWindow/ArrayDef]
+Geometry=[834,512,252,58]
 
 [DebugWindow/BaseObject]
 Geometry=[2192,325,252,56]
@@ -28,6 +34,9 @@ Geometry=[2331,570,544,386]
 
 [DebugWindow/CurrentItem.Tag]
 Geometry=[2345,547,252,504]
+
+[DebugWindow/Dims]
+Geometry=[834,498,252,100]
 
 [DebugWindow/Elements]
 Geometry=[834,288,252,590]
@@ -149,6 +158,9 @@ Geometry=[899,428,252,190]
 [DebugWindow/RandomName]
 Geometry=[834,512,252,56]
 
+[DebugWindow/SemaData]
+Geometry=[834,512,252,58]
+
 [DebugWindow/Source]
 Geometry=[834,512,252,56]
 
@@ -248,6 +260,9 @@ Geometry=[2796,350,252,276]
 [DebugWindow/bork.AllLists[1]]
 Geometry=[2782,336,488,456]
 
+[DebugWindow/d]
+Geometry=[834,371,730,310]
+
 [DebugWindow/eList]
 Geometry=[2186,559,252,100]
 
@@ -274,6 +289,12 @@ Geometry=[834,402,703,276]
 
 [DebugWindow/items[1]]
 Geometry=[848,416,252,170]
+
+[DebugWindow/list]
+Geometry=[834,388,447,276]
+
+[DebugWindow/list[0]]
+Geometry=[848,402,252,310]
 
 [DebugWindow/listhead]
 Geometry=[2684,948,252,56]
@@ -372,7 +393,7 @@ Geometry=[2754,498,252,320]
 Geometry=[2115,742,252,110]
 
 [DebugWindow/vptr]
-Geometry=[834,512,252,110]
+Geometry=[834,512,252,58]
 
 [DebugWindow/xObject]
 Geometry=[834,288,252,508]
@@ -393,14 +414,15 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Stable version\n\n* new: Added demo script to mintor the shared memory database\n* Opt: removed all the debug messages\n* Opt: Changed /usr/bin/gbs3 to /usr/bin/env gbs3 in scripts\n* BUG: _free does not work as it is called with a copy not the original"
+LastCommit="Added Static arrays of Variable values, access array/list/queue by tag name\n\n* New: Added shmArray types, up to 10 dimensions all values are variant\n* New: List/queue/arrays may be accessed through the tag attached see Array Test examples"
 
 [OpenFile]
-Count=0
-File[1]=".src/UnitTestShm/NewProcessUsingNamedBG.class:0.0"
-File[2]=".src/UnitTestShm/NewTaskLoadTesting.class:0.0"
-Active=3
-File[3]=".src/UnitTestShm/NewTaskUsingMappedBG.class:0.0"
+Count=4
+File[1]=".src/Examples/vTestApps/Array Tests/ArrayAllocFree.module:0.20"
+File[2]=".src/Examples/vTestApps/Array Tests/BasicArrayDef.module:0.4"
+File[3]=".src/Examples/vTestApps/Array Tests/ArrayReadWriteSpeed.module:0.0"
+Active=4
+File[4]=".src/ShmMem/ShmVarStorage.class:0.632"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

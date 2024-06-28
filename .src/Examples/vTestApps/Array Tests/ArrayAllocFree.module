@@ -5,16 +5,22 @@ Public Sub Main()
     Dim MyMem As New ShmMem
     Dim a As ShmArray
 
-    mymem.PrintAllInfo()
+    With mymem
+        .PrintAllInfo()
 
-    a = New ShmArray(MyMem, [100, 2], "ArrayDef1")
+        a = New ShmArray(MyMem, [100, 2], "ArrayDef1")
 
-    mymem.PrintAllInfo()
-    ' MyMem.varMnge.DumpVirt(a.VirtAddress, 1000)
+        .PrintAllInfo()
+        ' MyMem.varMnge.DumpVirt(a.VirtAddress, 1000)
 
-    a.free()
-    mymem.PrintAllInfo()
+        a.free()
+        .PrintAllInfo()
 
+        !a = New ShmArray(mymem, [1, 2, 3], "ThisShortArray")
+
+        !a[0, 1, 1] = "this message"
+        Print !a[0, 1, 1]
+    End With
     Quit 0
 
 End

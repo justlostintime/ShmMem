@@ -605,7 +605,7 @@ Public Sub _put(value As Variant, SymName As String)
     Else
         index = GetSymbol(SymName)
         If index = NoEntry Then
-            Add(SymName, Value, lasthash)
+            Add(SymName, Value, lasthash)                 ' Opt the hash saves the last has it created, optimization
             If SymInfo.NotifyOnNew > 0 Then
                 index = GetSymbol("#onnew")               ' we need to do this again as the original  hash may only be a bucket
                 Sym = SymMem.Table[Index]

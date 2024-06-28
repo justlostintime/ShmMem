@@ -42,6 +42,12 @@ Public Sub main()
     vars.PrintAllInfo()
 
     With vars
+        ' test using tags to locate lists
+        !list = New ShmList(vars, 0, False, "this list")
+        Dim z As New ShmList(vars, "this list")
+        !list.add("hello world")
+        Print !list[0];; z[0]
+
         !dog = New ShmList(vars, 0, True, "My Dog Info")
         !dog.Add("My Dirty Mutt", 1, "MyDirty Mut")
         !dog.Add("My Clean Mutt", 2, "Clean Mut Too")
@@ -56,10 +62,11 @@ Public Sub main()
 
         For Each v As Variant In mylist
             Print v, MyList.key, MyList.Key_ExtendedId, MyList.key_tag
-            Dim bork As Shmlist = MyList.dup()                                               ' this only creates a new header, that points to the exsisting entries, be carefull
+            Dim bork As Shmlist = MyList.Copy()                                               ' this only creates a new header, that points to the exsisting entries, be carefull
             For Each v As Variant In bork
                 Print "\t";; v, bork.key, bork.Key_ExtendedId, bork.key_tag
             Next
+            bork.Free(True)
             bork = Null
         Next
 

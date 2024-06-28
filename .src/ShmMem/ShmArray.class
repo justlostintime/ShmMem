@@ -89,13 +89,13 @@ Static Public Sub UserPtr(vvarmem As ShmVarStorage, VirtAddr As Pointer) As DArr
 
 End
 
-Public Sub _new(VarStorage As Variant, Optional defineArray As Variant, Tag As String = "")
+Public Sub _new(VarStorage As Variant, Optional SubscriptsOrVirtAddressOrTag As Variant, Tag As String = "")
 
     Dim Result As Integer = 0
     Dim total As Integer = 0
     Dim Virtaddress As Pointer = 0
     Dim Dims As New Long[]
-    Dim pType As Integer = TypeOf(defineArray)
+    Dim pType As Integer = TypeOf(SubscriptsOrVirtAddressOrTag)
 
     If Object.Class(VarStorage).name == "ShmMem" Then
         VarMem = VarStorage.MyVarMem
@@ -104,14 +104,14 @@ Public Sub _new(VarStorage As Variant, Optional defineArray As Variant, Tag As S
     Endif
 
     If ptype = gb.pointer Or If pType = gb.long Or If ptype = gb.integer Then
-        VirtAddress = defineArray
+        VirtAddress = SubscriptsOrVirtAddressOrTag
     Else If ptype = gb.string Then
-        VirtAddress = locateByTag(defineArray)
+        VirtAddress = locateByTag(SubscriptsOrVirtAddressOrTag)
         If VirtAddress = Null Then
-            Error.Raise("ShmArray: Tag name not found :" & defineArray)
+            Error.Raise("ShmArray: Tag name not found :" & SubscriptsOrVirtAddressOrTag)
         Endif
     Else
-        Dims = defineArray
+        Dims = SubscriptsOrVirtAddressOrTag
     Endif
 
     If Dims.count > MaxArrayDims Then
@@ -170,6 +170,18 @@ Private Sub locateByTag(tag As String) As Pointer
         Endif
     Next
     Return Null
+
+End
+
+'' Assign  this list to another variable, This is required to assign
+'' shmobjects to the symbol table
+Public Sub _Assign(VEntry As DPointer)
+
+    If ArrayDef = Null Then
+        vEntry.value = Null                                    ' if the listhead is valid then continue
+    Else
+        vEntry.Value = ArrayDef.Address        '  Assign this to the variable
+    Endif
 
 End
 
