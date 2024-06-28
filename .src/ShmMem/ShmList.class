@@ -99,13 +99,15 @@ End
 '' Returns a new allocated list if address is 0, else returns the exsisting list at the specified address
 '' VarStorage is the pointer to the address to allocate the list from
 '' VirtAddress is the address of an exsiting list, which is returned as a listObject type
+'' it is also possible to pass a tag name to locate the correct list/queue
 '' GlobalValue is used to allow this list to be private or a global value
 '' Returns the list as a list
 '' Increments the refrence counter for this list
 
-Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, GlobalValue As Boolean = False, Tag As String = "")
+Public Sub _new(VarStorage As Variant, Optional DirectLocate As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "")
 
     Dim Result As Integer = 0
+    Dim VirtAddress As Pointer = 0
 
     If Object.Class(VarStorage).name == "ShmMem" Then
         VarMem = VarStorage.MyVarMem
@@ -114,6 +116,15 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Glob
     Endif
 
     Dim RealPtr As Pointer
+    If TypeOf(VirtAddress) = gb.string Then
+        VirtAddress = LocateByTag(VirtAddress)
+        If VirtAddress = Null Then
+            Error.Raise("List / Queue : locate by tag " & Quote(directLocate))
+        Endif
+    Else
+        VirtAddress = DirectLocate
+    Endif
+
     If VirtAddress = 0 Then
         ListHead = NewEntry()
         VirtualAddress = ListHead.Address
@@ -134,6 +145,20 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddress As Pointer = 0, Glob
         Inc ListHead.RefCount
     Endif
     Me.unlock()
+
+End
+
+Private Sub locateByTag(tag As String) As Pointer
+
+    Dim list As Variant[] = ShmMem.GetListType(varmem, SetHeadType)
+
+    If list.count = 0 Then Return Null
+    For Each s As ShmArray In list
+        If s.tag = tag Then
+            Return s.VirtAddress
+        Endif
+    Next
+    Return Null
 
 End
 

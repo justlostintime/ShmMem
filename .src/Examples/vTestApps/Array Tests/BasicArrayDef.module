@@ -1,0 +1,44 @@
+' Gambas module file
+
+Public Sub main()
+
+    Dim MyMem As New ShmMem
+
+    Dim a As ShmArray
+
+    a = New ShmArray(mymem, [3, 3], "randomTag")
+
+    Try Print a[4, -1]
+    Print Error.text
+
+    Try Print a[4, 56]
+    Print Error.text
+
+    Try Print a[4]
+    Print Error.text
+
+    Try Print a[4, 2, 3, 4]
+    Print Error.text
+
+    Try Print a[-1]
+    Print Error.text
+
+    Print Quote(Str(a[1, 1]))
+    a[1, 2] = 6
+    a[0, 1] = "the days are short"
+    Print "A - Array element count =";; a.count
+    Print "A...";; a[1, 2];; a[0, 1]
+
+    Dim d As New ShmArray(MyMem, "randomTag")                    '' access the array using the tag assigned to it
+    Print "B - Array element count=";; d.count
+    Print "D...";; d[1, 2];; d[0, 1]
+    mymem.PrintAllInfo()
+
+    a.clear()
+
+    Print "Cleared all entries in array"
+    mymem.PrintAllInfo()
+
+    Quit 0
+
+End

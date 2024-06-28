@@ -13,6 +13,7 @@ Export
 Private varmem As ShmManage
 Private Storage As ShmMemBlock
 Static Public DefaultAlloc As Integer = 1024      '' Default increments used when allocating string and object memory
+Public Const MaxArrayDims As Integer = 10       '' Max number of array dims
 
 Public Struct AllocHeader
     Length As Long                             '' Length including header
@@ -37,6 +38,21 @@ Public Struct dList                           '' A defined entry in list of obje
     enum_counter As Long              '' Used when enumerating a list structure
     enum_listitem As Dlist               '' pointer to dlist
     Value As Pointer                          '' Value of entry or count if pool
+End Struct
+
+'' Array Header structure for all types
+Public Struct dArray
+    Length As Long                                                                  '' Length including header
+    Address As Pointer                                                          '' The virtual address of this block, speed pointer conversion
+    Type As Integer                                                                 '' Type of array
+    {Next} As Pointer                                                              '' never really used except if free block
+    dimensions[MaxArrayDims] As Long                          '' The actual dimensions of the array max 64
+    DimCount As Integer                                                        '' The number of used dimentions
+    Count As Integer                                                                '' The number of elements in the array
+    DataAddress As Pointer                                                 '' Pointer to where the memory is located
+    Sema As Pointer                                                                '' The locking sema virtual address
+    bDebug As Boolean                                                          '' debug flag for this datatype
+    Tag[64] As Byte                                                                  '' Tag id of array
 End Struct
 
 Public Struct dInteger
@@ -119,14 +135,14 @@ Public Struct dStrObj
     Value[1000000] As Byte             '' The actual value for usage assign as byte but we ref the value.data real address this is dummy
 End Struct
 
-Public Struct dIntArray                  '' Support for one dimentional arrays of single types
-    Length As Long                            '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                            '' Type of memory
-    Dims As Long                                '' Number of dimentions for this array
-    Elements As Long                        '' Number of elements
-    Value[1000000] As Integer       '' The actual value for usage is defined by length, this is dummy
-End Struct
+' Public Struct dIntArray                  '' Support for one dimentional arrays of single types
+'     Length As Long                            '' Length including header
+'     Address As Pointer                     '' The virtual address of this block, speed pointer conversion
+'     Type As Integer                            '' Type of memory
+'     Dims As Long                                '' Number of dimentions for this array
+'     Elements As Long                        '' Number of elements
+'     Value[1000000] As Integer       '' The actual value for usage is defined by length, this is dummy
+' End Struct
 
 ' Extern AllocInteger(dest As Pointer, src As Pointer, Len As Integer) As DInteger In "libc:6" Exec "memcpy"
 ' Extern AllocBoolean(dest As Pointer, src As Pointer, Len As Integer) As DBoolean In "libc:6" Exec "memcpy"

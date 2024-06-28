@@ -1,0 +1,24 @@
+' Gambas module file
+
+Public Sub main()
+
+    Dim a As New Shmmem
+    Dim b As New ShmArray(a, [10, 2, 2], "b array")
+    Dim mystart As Float = Timer()
+
+    Print "Begin to  write and clear the array 10000 times "
+    For loopcount As Integer = 0 To 10
+        For i As Integer = 0 To b.SubMax[0]
+            For j As Integer = 0 To b.SubMax[1]
+                For k As Integer = 0 To b.SubMax[2]
+                    b[i, j, k] = i * j * k
+                Next
+            Next
+        Next
+        'b.clear()
+    Next
+    Print "Ended test time "; Timer - mystart
+    b.free()
+    a.PrintAllInfo()
+
+End

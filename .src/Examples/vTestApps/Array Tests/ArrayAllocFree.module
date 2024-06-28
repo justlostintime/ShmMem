@@ -1,0 +1,20 @@
+' Gambas module file
+
+Public Sub Main()
+
+    Dim MyMem As New ShmMem
+    Dim a As ShmArray
+
+    mymem.PrintAllInfo()
+
+    a = New ShmArray(MyMem, [100, 2], "ArrayDef1")
+
+    mymem.PrintAllInfo()
+    ' MyMem.varMnge.DumpVirt(a.VirtAddress, 1000)
+
+    a.free()
+    mymem.PrintAllInfo()
+
+    Quit 0
+
+End

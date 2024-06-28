@@ -1,0 +1,427 @@
+' Gambas class file
+
+''' Shm Array is implemented as linear array of pointers each pointer pointing to the assigned value
+'''    Each assigned value used as standard dPointer header to store the data, arrays are variant
+'''   any type of data may be stored in them
+'''   For each, scanns thru the entire array row by row according to the number of dimensions
+'''   it is possible to use SUBMAX(Dim_index) for each subscript of an array
+'''   max always returns the linear max for the array
+'''   The Max number of Subscripts for an array is 10, this is way too big...
+'''   The Array Pysical index (one index per element) memory must fit within a contiguous block or it will fail
+'''   Value memory is not created until first use
+'''   Array Dimensions are static, fixed at creation, if you need dynamic array then use list
+
+Export
+
+Static Public cShmArray As Integer = 28                  '' The Constant identifying this class name must not be a valid datatype integer
+Static Public Const MaxArrayDims As Integer = 10          '' Max array dimensions
+
+Public Struct AllocHeader              '' Standard header
+    Length As Long                              '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                             '' Type of memory
+    {Next} As Pointer                          '' null if no more in list
+End Struct
+
+'' Data Pointer for complex types
+Public Struct dPointer
+    Length As Long                              '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                             '' Type of memory
+    Value As Pointer                            '' The actual value for usage
+End Struct
+
+'' Array Header structure for all types
+Public Struct dArray
+    Length As Long                                                                  '' Length including header
+    Address As Pointer                                                          '' The virtual address of this block, speed pointer conversion
+    Type As Integer                                                                 '' Type of array
+    {Next} As Pointer                                                              '' never really used except if free block
+    dimensions[MaxArrayDims] As Long                          '' The actual dimensions of the array max 64
+    DimCount As Integer                                                        '' The number of used dimentions
+    Count As Integer                                                                '' The number of elements in the array
+    DataAddress As Pointer                                                 '' Pointer to where the memory is located
+    Sema As Pointer                                                                '' The locking sema virtual address
+    bDebug As Boolean                                                          '' debug flag for this datatype
+    Tag[64] As Byte                                                                  '' Tag id of array
+End Struct
+
+Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
+'Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
+Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
+Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
+' Extern sched_yield() As Integer In "libpthread:0"
+
+Private VirtualAddress As Pointer = 0                  '' Virtual pointer to darray in memory
+Private VarMem As ShmVarStorage                    '' The storage pool to used or referenced
+Private SemAddress As Pointer                             '' pointer to the semaphor Physical address for the array
+Public ArrayDef As DArray                                       '' the actual array header
+Private DefaultValue As Variant = 0                     '' Default value returnd when accessing an empty slot
+Public ArrayData As DPointer = Null                     '' pointer to the physical memory of the array pointers
+Public SemaData As Dpointer = Null                     '' Fortesting Pointer to physical address of the semaphore
+Public DataPhysAddr As Pointer = Null                '' for debugging this is the assigned memory
+
+Property Read Count As Long                                '' return the number of elements in the array
+Property Read Max As Long                                   '' Return the max element address linear
+Property Read Dimensions As Long[]                  '' Return an array of dimensions
+Property Read Address As Pointer                      '' Returns a pointer to the virtual address of the data memory
+Property Read VirtAddress As Pointer               '' returns the darray virtual address
+Property Read SubMax As Long[]                        '' Returns an array of Max values for each subscript
+Property Default As Variant                                    '' sets or reads the default value returned when a entry is empty
+Property Read Value As Variant                            '' returns the same as count, number of elements in array
+Property Tag As String                                             '' Returns or set the tag value of the array
+Property Read Type As Integer                               '' return the array type, not the data type
+
+Static Public Sub _init()
+
+    ShmVarStorage.DefineClass("ShmArray", cShmArray)
+
+End
+
+'' Required for each user defined class, returns the pointer to the under laying data structure
+Static Public Sub UserPtr(vvarmem As ShmVarStorage, VirtAddr As Pointer) As DArray
+
+    If VirtAddr <= 0 Then Return Null
+    Dim RealPtr As Pointer = vVarMem.RealAddress(VirtAddr)
+    Return RealPtr
+
+End
+
+Public Sub _new(VarStorage As Variant, Optional defineArray As Variant, Tag As String = "")
+
+    Dim Result As Integer = 0
+    Dim total As Integer = 0
+    Dim Virtaddress As Pointer = 0
+    Dim Dims As New Long[]
+    Dim pType As Integer = TypeOf(defineArray)
+
+    If Object.Class(VarStorage).name == "ShmMem" Then
+        VarMem = VarStorage.MyVarMem
+    Else
+        VarMem = VarStorage
+    Endif
+
+    If ptype = gb.pointer Or If pType = gb.long Or If ptype = gb.integer Then
+        VirtAddress = defineArray
+    Else If ptype = gb.string Then
+        VirtAddress = locateByTag(defineArray)
+        If VirtAddress = Null Then
+            Error.Raise("ShmArray: Tag name not found :" & defineArray)
+        Endif
+    Else
+        Dims = defineArray
+    Endif
+
+    If Dims.count > MaxArrayDims Then
+        Error.Raise("ShmArray : Max Array Dimensions exceeds Maximum :" & MaxArrayDims & "Your Count :" & Dims.count)
+    Endif
+
+    If VirtAddress = 0 Then
+
+        If Dims.count = 0 Then
+            Error.Raise("ShmArray: Arrays must have at least 1 dimension")
+        Endif
+
+        VirtualAddress = VarMem.Alloc(SizeOf(dArray))
+
+        ArrayDef = varmem.RealAddress(VirtualAddress)
+        ArrayDef.type = cShmArray
+        ArrayDef.sema = VarMem.Alloc(64)
+        SemAddress = varmem.RealDataAddress(ArrayDef.sema)
+        SemaData = varmem.RealAddress(ArrayDef.Sema)
+        result = sem_init(SemAddress, 1, 0)
+        ArrayDef.DimCount = Dims.count
+        Total = Dims[0]
+        ArrayDef.dimensions[0] = Total
+        For i As Integer = 1 To Dims.max
+            ArrayDef.dimensions[i] = Dims[i]
+            Total *= Dims[i]
+        Next
+
+        ArrayDef.Count = total
+        Total *= SizeOf(gb.pointer)
+
+        ArrayDef.DataAddress = VarMem.Alloc(Total)                   ' alloc always clears the memory
+        ArrayData = VarMem.RealAddress(ArrayDef.DataAddress)
+        DataPhysAddr = VarMem.RealDataAddress(ArrayDef.DataAddress)
+        ArrayDef.tag = Byte[].FromString(tag)
+
+    Else
+        VirtualAddress = VirtAddress
+        ArrayDef = VarMem.RealAddress(VirtAddress)
+        SemAddress = varmem.RealDataAddress(ArrayDef.sema)
+        Me.lock()
+    Endif
+
+    Me.unlock()
+
+End
+
+Private Sub locateByTag(tag As String) As Pointer
+
+    Dim list As ShmArray[] = ShmMem.GetListType(varmem, cShmArray)
+
+    If list.count = 0 Then Return Null
+    For Each s As ShmArray In list
+        If s.tag = tag Then
+            Return s.VirtAddress
+        Endif
+    Next
+    Return Null
+
+End
+
+Public Sub _free()
+
+    Return
+
+End
+
+Public Sub free()
+
+    If ArrayDef = Null Or If varmem = Null Then Return
+    clear()
+
+    sem_destroy(VarMem.RealDataAddress(ArrayDef.sema))                   '' destroy the semphore
+    VarMem.Free(ArrayDef.sema)                                                                       '' free its memory
+    varmem.Free(ArrayDef.DataAddress)                                                         '' free the array index memory
+    VarMem.Free(ArrayDef.Address)                                                                 '' free the array definition memory
+    ArrayDef = Null                                                                                                   '' mark this object as invalid
+    Varmem = Null                                                                                                     '' release the varmem
+
+End
+
+Public Sub clear()
+
+    Dim PhysAddr As Pointer
+
+    If ArrayDef = Null Then Return
+
+    PhysAddr = VarMem.RealDataAddress(ArrayDef.DataAddress)     ' Get a pointer to the real memory array of pointers
+    For i As Integer = 0 To ArrayDef.Count - 1
+        Dim memptr As Pointer
+        memptr = Pointer@(PhysAddr)                                '' get the Virtual address of the data
+        If memptr <> Null Then
+            varmem.free(memptr)                                                 '' free the variable data
+            Pointer@(PhysAddr) = Null                                        '' mark the slot as empty
+        Endif
+        PhysAddr += SizeOf(gb.pointer)                             '' move to the next slot
+    Next
+
+End
+
+''  Lock the Array  while processing the request
+'' This is not automatic, the user must do this if required
+Public Sub {lock}() As Boolean
+
+    Dim result As Integer = -1
+    Dim retrycounter As Long = 10
+
+    If ArrayDef = Null Then
+        Error.Raise("ShmArray - invald Refrence")
+    Endif
+
+    While result <> 0
+        result = sem_trywait(SemAddress)
+        If result <> 0 Then
+            Wait 0.0001
+            Dec RetryCounter
+            If retryCounter < 4 Then
+                If ArrayDef.bDebug Then Print Application.id, "ShmArray Locking Race condition attempting fix ";; retryCounter
+                Me.unlock()
+            Endif
+        Else
+            Return True
+        Endif
+    Wend
+    If ArrayDef.bDebug Then Print Application.id, "ShmArray Locking Race condition attempt to fix failed";; retryCounter
+    Return False
+
+End
+
+''  Release the lock on the Array
+'' Returns false if the lock was not 0, locked
+'' be careful as this can be posted anywhere
+
+Public Sub {unlock}() As Boolean
+
+    If ArrayDef = Null Then
+        Error.Raise("ShmArray - invald Refrence")
+    Endif
+
+    Dim value As Integer = 0
+    Dim iptr As Pointer = VarPtr(value)
+
+    If sem_getvalue(SemAddress, iptr) = 0 Then
+        If value = 0 Then
+            sem_post(SemAddress)
+            Return True
+        Endif
+    Endif
+    Return False
+
+End
+
+Public Sub GetOffset(Dims As Variant[]) As Pointer
+
+    Dim realptr As Pointer = 0
+    Dim position As Long = 0
+    Dim factor As Long = 1
+
+    If Dims.count <> ArrayDef.DimCount Then
+        Error.Raise("ShmArray : Invalid dimesions count on access given " & Dims.count & ", Needed " & ArrayDef.count)
+    Endif
+
+    For i As Long = 0 To ArrayDef.DimCount - 1
+        If Dims[i] < 0 Or If Dims[i] >= ArrayDef.dimensions[i] Then
+            Error.Raise("ShmArray : invalid array subscript :" & Str(Dims[i]) & ",expected  0 to " & Str(ArrayDef.dimensions[i] - 1) & ", At Subscript " & Str(i))
+        Endif
+
+        position += factor * Dims[i]
+        factor *= ArrayDef.dimensions[i]
+
+    Next
+
+    Position *= SizeOf(gb.pointer)
+
+    RealPtr = VarMem.RealDataAddress(ArrayDef.DataAddress)                                        ' Get a pointer to the real memory array of pointers
+    RealPtr += Position                                                                                                                        ' Get the correct virtual address
+    Return RealPtr                                                                                                                                 ' return the virtual address of the variable assogned to this element
+
+End
+
+'' Put a vaulue into the array
+Public Sub _put(Value As Variant, ...)
+
+    If arrayDef = Null Then Return
+    Dim MemPtr As Pointer
+    Dim RealPtr As Pointer
+
+    realptr = GetOffset(param.all)                                       ' get the offset within our memory area
+    memptr = Pointer@(realPtr)                                           ' get the virtual address of the dpointer variable
+    If memptr = Null Then
+        Pointer@(RealPtr) = varmem.set(value)                 ' allocate a new variable in memory
+    Else
+        varmem[memptr] = value                                            ' store the data at this location
+    Endif
+
+End
+
+Public Sub _get(...) As Variant
+
+    If arrayDef = Null Then Return Null
+
+    Dim RealPtr As Pointer = 0
+    Dim MemPtr As Pointer
+    Dim Value As Variant
+
+    realPtr = GetOffset(param.all)                                       ' get the offset within our memory area
+    memptr = Pointer@(realPtr)                                           ' get the virtual address of the dpointer variable
+
+    If memptr = Null Then
+        Value = DefaultValue                                                    ' return the default dummy value
+    Else
+        Value = varmem[memptr]                                           ' retrieve the data at this location
+    Endif
+
+    Return value
+
+End
+
+'' Returns the linear count of elements in the array
+Private Function Count_Read() As Long
+
+    If arrayDef = Null Then Return 0
+    Return ArrayDef.Count
+
+End
+
+'' Returns the max Linear count of elements in the array
+Private Function Max_Read() As Long
+
+    If arrayDef = Null Then Return 0
+    Return ArrayDef.count - 1
+
+End
+
+'' returns an array of subscripts in the array
+Private Function Dimensions_Read() As Long[]
+
+    If arrayDef = Null Then Return Null
+    Return ArrayDef.dimensions
+
+End
+
+'' returns the virtual memory address of the data portion of the array
+'' the data portion is an array of pointers to the users data
+Private Function Address_Read() As Pointer
+
+    If arrayDef = Null Then Return Null
+    Return ArrayDef.DataAddress + SizeOf(dPointer)
+
+End
+
+'' returns an array of max indexes for each subscript in the array
+Private Function SubMax_Read() As Long[]
+
+    If arrayDef = Null Then Return Null
+    Dim result As New Long[]
+
+    For i As Long = 0 To ArrayDef.DimCount - 1
+        result.Add(ArrayDef.dimensions[i] - 1)
+    Next
+
+    Return result
+
+End
+
+'' Returns the default value for the array
+Private Function Default_Read() As Variant
+
+    If arrayDef = Null Then Return 0
+    Return DefaultValue
+
+End
+
+'' writes the default value for the array
+Private Sub Default_Write(Value As Variant)
+
+    If arrayDef = Null Then Return
+    DefaultValue = value
+
+End
+
+'' Returns the number of elements in the array
+Private Function Value_Read() As Variant
+
+    If arrayDef = Null Then Return 0
+    Return ArrayDef.Count
+
+End
+
+'' returns the virtual address of the Array control block
+Private Function VirtAddress_Read() As Pointer
+
+    Return VirtualAddress
+
+End
+
+Private Function Tag_Read() As String
+
+    Return ArrayDef.Tag.ToString()
+
+End
+
+Private Sub Tag_Write(Value As String)
+
+    ArrayDef.tag = Byte[].FromString(Value)
+
+End
+
+Private Function Type_Read() As Integer
+
+    Return ArrayDef.type
+
+End
