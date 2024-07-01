@@ -13,8 +13,10 @@
 
 Export
 
-Static Public cShmArray As Integer = 28                  '' The Constant identifying this class name must not be a valid datatype integer
+Static Public cShmArray As Integer = 28                             '' The Constant identifying this class name must not be a valid datatype integer
 Static Public Const MaxArrayDims As Integer = 10          '' Max array dimensions
+Private $IterateAll As Boolean = False                                 '' set default behaviour for iteration
+Private $UseLock As Boolean = False                                    '' Set default to not lock array during access
 
 Public Struct AllocHeader              '' Standard header
     Length As Long                              '' Length including header
@@ -73,6 +75,9 @@ Property Default As Variant                                    '' sets or reads 
 Property Read Value As Variant                            '' returns the same as count, number of elements in array
 Property Tag As String                                             '' Returns or set the tag value of the array
 Property Read Type As Integer                               '' return the array type, not the data type
+Property IterateAll As Boolean                                '' sets if should iterate through every value or only occupied cell values
+Property UseLock As Boolean                                  '' sets if the array is locked during every access
+Property Read Key As Long[] Use $key                '' the array subscript of the last value read
 
 Static Public Sub _init()
 
@@ -133,9 +138,9 @@ Public Sub _new(VarStorage As Variant, Optional SubscriptsOrVirtAddressOrTag As 
         SemaData = varmem.RealAddress(ArrayDef.Sema)
         result = sem_init(SemAddress, 1, 0)
         ArrayDef.DimCount = Dims.count
-        Total = Dims[0]
-        ArrayDef.dimensions[0] = Total
-        For i As Integer = 1 To Dims.max
+
+        Total = 1
+        For i As Integer = 0 To Dims.max
             ArrayDef.dimensions[i] = Dims[i]
             Total *= Dims[i]
         Next
@@ -159,6 +164,38 @@ Public Sub _new(VarStorage As Variant, Optional SubscriptsOrVirtAddressOrTag As 
 
 End
 
+'' Redimension an array, all data is lost
+Public Sub ReDim(dims As Long[])
+
+    Dim i As Integer
+
+    If Dims.count > MaxArrayDims Then
+        Error.Raise("ShmArray : Max Array Dimensions exceeds Maximum :" & MaxArrayDims & "Your Count :" & Dims.count)
+    Endif
+    If Dims.count = 0 Then
+        Error.Raise("ShmArray: Arrays must have at least 1 dimension")
+    Endif
+
+    Me.lock()
+    Me.clear()                                                                                                                                            ' clear the existing array, frees all the data containg in it
+    varmem.Free(ArrayDef.DataAddress)                                                                                       ' free the array if pointers to array values
+    ArrayDef.dimcount = dims.Count
+    Array.count = 1
+    For i = 0 To dims.max
+        ArrayDef.dimensions[i] = dims[i]
+        Array.count *= Dims[i]
+    Next
+
+    ArrayDef.DataAddress = VarMem.Alloc(ArrayDef.Count * SizeOf(gb.pointer))        ' alloc always clears the memory
+    ArrayData = VarMem.RealAddress(ArrayDef.DataAddress)
+    DataPhysAddr = VarMem.RealDataAddress(ArrayDef.DataAddress)
+
+Finally
+    Me.unlock()
+
+End
+
+'' Locate an array by tag name in the shared memory soace
 Private Sub locateByTag(tag As String) As Pointer
 
     Dim list As ShmArray[] = ShmMem.GetListType(varmem, cShmArray)
@@ -224,12 +261,50 @@ Public Sub clear()
 
 End
 
+'Iterate through the array and return occupied/all cells only
+Public Sub _next() As Variant
+
+    Dim PhysAddr As Pointer
+
+    If IsNull(Enum.Index) Then
+        Enum.Index = 0
+    Else
+        Inc Enum.Index
+    Endif
+
+TryAgain:
+
+    If Enum.index >= ArrayDef.Count Then
+        Enum.Stop()
+        Return
+    Endif
+
+    $key = LinearToSubScript(Enum.index)
+    PhysAddr = VarMem.RealDataAddress(ArrayDef.DataAddress)                                        ' Get a pointer to the real memory array of pointers
+    PhysAddr += Enum.Index * SizeOf(gb.pointer)
+    PhysAddr = Pointer@(PhysAddr)                                                                                                  ' get the virtual address of the value
+
+    If PhysAddr = Null Then
+        If $IterateAll Then
+            Return DefaultValue
+        Else
+            Inc Enum.Index
+            Goto TryAgain
+        Endif
+    Else
+        Return VarMem[PhysAddr]                                                                                                          ' get the value from that virtual address
+    Endif
+
+End
+
 ''  Lock the Array  while processing the request
 '' This is not automatic, the user must do this if required
 Public Sub {lock}() As Boolean
 
     Dim result As Integer = -1
     Dim retrycounter As Long = 10
+
+    If Not $UseLock Then Return True
 
     If ArrayDef = Null Then
         Error.Raise("ShmArray - invald Refrence")
@@ -258,6 +333,8 @@ End
 '' be careful as this can be posted anywhere
 
 Public Sub {unlock}() As Boolean
+
+    If Not $UseLock Then Return True
 
     If ArrayDef = Null Then
         Error.Raise("ShmArray - invald Refrence")
@@ -304,6 +381,30 @@ Public Sub GetOffset(Dims As Variant[]) As Pointer
 
 End
 
+'' Translate the linear address Of the element To the correct position subscripts
+Private Sub LinearToSubScript(Position As Long) As Long[]
+
+    Dim result As New Long[arrayDef.DimCount]
+    Dim factor As New Long[ArrayDef.dimCount]
+    ' calculate the factors first
+    factor.first = 1
+    '  Result.last = Position % factor.last
+
+    For i As Integer = 1 To factor.max
+        factor[i] = ArrayDef.dimensions[i] * factor[i - 1]
+    Next
+
+    '                 position += factor * Dims[i]
+    '                 factor *= ArrayDef.dimensions[i]
+
+    For i As Integer = factor.max DownTo 0
+        result[i] = position \ factor[i]
+        position -= (position \ factor[i]) * factor[i]
+    Next
+    Return result
+
+End
+
 '' Put a vaulue into the array
 Public Sub _put(Value As Variant, ...)
 
@@ -311,6 +412,7 @@ Public Sub _put(Value As Variant, ...)
     Dim MemPtr As Pointer
     Dim RealPtr As Pointer
 
+    Me.lock()
     realptr = GetOffset(param.all)                                       ' get the offset within our memory area
     memptr = Pointer@(realPtr)                                           ' get the virtual address of the dpointer variable
     If memptr = Null Then
@@ -318,6 +420,9 @@ Public Sub _put(Value As Variant, ...)
     Else
         varmem[memptr] = value                                            ' store the data at this location
     Endif
+
+Finally
+    Me.unlock()
 
 End
 
@@ -329,6 +434,8 @@ Public Sub _get(...) As Variant
     Dim MemPtr As Pointer
     Dim Value As Variant
 
+    Me.lock()
+
     realPtr = GetOffset(param.all)                                       ' get the offset within our memory area
     memptr = Pointer@(realPtr)                                           ' get the virtual address of the dpointer variable
 
@@ -338,7 +445,246 @@ Public Sub _get(...) As Variant
         Value = varmem[memptr]                                           ' retrieve the data at this location
     Endif
 
+    Me.unlock()
+
     Return value
+
+Catch
+    Dim errormsg As String = Error.text & Error.where
+    Me.unlock()
+    Error.Raise(errormsg)
+
+End
+
+Public Sub {copy}(Optional tag As String = "") As ShmArray
+
+    Dim Source As ShmArray = Me
+    Dim vArgs As New Variant[]
+
+    If tag = "" Then tag = Source.tag
+    Dim newShmArray As New ShmArray(varmem, ArrayDef.dimensions.Copy(0, ArrayDef.dimcount), tag)
+
+    For Each vVal As Variant In Source
+        vArgs.Clear()
+        vArgs.Add(vval)
+        vArgs.Insert($key, 1)
+        Object.Call(Me, "_put", vargs)
+    Next
+    Return NewShmArray
+
+End
+
+'' Returns the array content As A coma seperated string Array
+'' this will not work as expected on an array of objects
+'' Will return an error if array has more than two dimensions
+Public Sub ToCvs() As String[]
+
+    Dim i As Integer
+    Dim rowVals As New Variant[]
+    Dim Result As New String[]
+
+    If ArrayDef.DimCount > 2 Then
+        Error.Raise("ShmArray : too many dimensions to convert to cvs Max 2")
+    Endif
+    If ArrayDef.DimCount = 1 Then
+        rowVals.Add(GetRow())
+    Else
+        For i = 0 To Me.submax[0]
+            rowVals.Add(GetRow(i))
+        Next
+    Endif
+    For i = 0 To rowVals.max
+        result.Add(ToCvsText(rowVals[i]))
+    Next
+
+    Return result
+
+End
+
+'' Load an array from the provided cvs blob, row must be seperated by \n
+'' if row count or col count is > or < then array dimensions then
+'' < remander is not populated
+'' > then remainder of data is ignored
+Public Sub fromCvs(value As String)
+
+    Dim lines As String[]
+
+    If ArrayDef.DimCount > 2 Then
+        Error.Raise("ShmArray : too many dimensions to convert from cvs Max 2")
+    Endif
+
+    Lines = Split(value, "\n", "\"", False, True)
+    fromCvsText(Lines)
+
+End
+
+'' convert the rows to actual value array
+Private Sub ToCvsText(value As Variant[]) As String
+
+    Dim result As String = ""
+
+    If value.count = 0 Then Return ""
+    result &= IIf(TypeOf(value[0]) = gb.string, Quote(value[0]), value[0])
+    For i As Integer = 1 To value.Max
+        result &= ","
+        result &= IIf(TypeOf(value[i]) = gb.string, Quote(value[i]), value[i])
+    Next
+
+    Return result
+
+End
+
+Private Sub fromCvsText(value As String[])
+
+    Dim result As New Variant[]
+    Dim row As New Variant[]
+    Dim items As String[]
+    Dim vEval As Variant
+
+    For i As Integer = 0 To value.max
+        row = New Variant[]
+        items = Split(value[i], ",", "\"", False, True)
+        For Each s As String In items
+            vEval = Eval(s)
+            row.Add(vEval)
+        Next
+        result.Add(row)
+    Next
+
+    For i = 0 To Me.submax[0]
+        If i > Result.max Then Break
+        For j As Integer = 0 To Me.submax[1]
+            If j > Result[i].max Then Break
+            Me[i, j] = Result[i][j]
+        Next
+    Next
+
+End
+
+'' export  the assigned values, array size
+'' the array is exported completely, with information required to
+'' recreate the array, or reload the array
+Public Sub {Export}() As String
+
+    Dim vValue As Variant
+    Dim i As Integer
+    Dim Index As Long = 0
+
+    If ArrayDef = Null Then Return ""
+    Dim result As String = Subst("&1:&2", ArrayDef.Count, FormatDim(ArrayDef.dimensions.Copy(0, ArrayDef.DimCount))) & "\n"
+
+    ' we only output value that have been defined
+    Dim PhysAddr As Pointer
+    PhysAddr = VarMem.RealDataAddress(ArrayDef.DataAddress)     ' Get a pointer to the real memory array of pointers
+    For i As Integer = 0 To ArrayDef.Count - 1
+        Dim memptr As Pointer
+        memptr = Pointer@(PhysAddr)                                ' get the Virtual address of the data
+        If memptr <> Null Then
+            vValue = varmem[memptr]
+            If TypeOf(vValue) = gb.string Then vValue = Quote(vValue)
+            result &= Subst("&3:&1:&2\n", FormatDim(LinearToSubScript(index)), Str(vValue), Format(index, "000000"))
+        Else
+            result &= Subst("&3 :&1 : &2\n", FormatDim(LinearToSubScript(index)), Str(DefaultValue), Format(index, "000000"))
+        Endif
+        Inc index
+        PhysAddr += SizeOf(gb.pointer)                             ' move to the next slot
+    Next
+    Return result
+
+End
+
+'' import data into a new array, the data me resize the array
+'' all exsisting data in the array is lost
+'' header format             : elementCount;sub1,sub2,sub3,..sub9 <- elementCount must match the number of total elements defined by the subscript or -1 not used
+'' each element format : index:sub1,...:data expression <- the index should match the actual index into the linear space speed import or -1 not used
+Public Sub Import(data As String)
+
+    Dim dataset As String[] = Split(data, "\n", "\"", True, True)
+    Dim working As String[] = Split(dataset[0], ":", "[]", True, False)
+    Dim value As Variant
+    Dim RealPtr As Pointer
+
+    If working.count <> 2 Then
+        Error.Raise("Import Header invalid: format = elementCount;sub1,sub2,sub3,..sub9\n")
+    Endif
+    Dim dims As Long[] = Eval("[" & working[1] & "]")
+    ReDim(dims)
+    Me.lock()
+    For i As Integer = 1 To dataset.Max
+        working = Split(dataset[i], ":", "\"", True, True)
+        dims = Eval(working[1])
+        value = Eval(working[2])
+        realptr = GetOffset(dims)                                       ' get the offset within our memory area
+        Pointer@(RealPtr) = varmem.set(value)                      ' allocate a new variable in memory
+    Next
+
+Finally
+    Me.unlock()
+
+End
+
+'' Format the dimentions into a correct printable definition
+Private Sub FormatDim(dims As Long[]) As String
+
+    Dim result As String = "[" & Format(dims[0], "000000")
+
+    For i As Integer = 1 To dims.Max
+        result &= "," & Format(dims[i], "000000")
+    Next
+    result &= "]"
+    Return result
+
+End
+
+'' Get the values in the selected row
+'' iterates over the last subscript  in an array definition  and returns the value
+Public Sub GetRow(...) As Variant[]
+
+    Dim result As New Variant[]
+    Dim i As Integer
+    Dim physAddr As Pointer
+
+    If Param.count <> ArrayDef.Dimcount - 1 Then
+        Error.Raise("Get row must specifiy all Sub scripts except the last one, needed : " & Str(ArrayDef.DimCount - 1) & ", Got " & Str(Param.count))
+    Endif
+
+    For i = 0 To Me.SubMax[ArrayDef.DimCount - 1]                              ' the last row
+        Dim dimset As Long[] = Param.All
+        dimset.Add(i)
+        physAddr = GetOffset(dimset)
+        physAddr = Pointer@(physAddr)
+        If physaddr = 0 Then
+            result.Add(defaultValue)
+        Else
+            result.Add(varmem[physaddr])
+        Endif
+    Next
+
+    Return result
+
+End
+
+'' Get a single column value from the array
+'' Provide the subscripts of the columns, the value for the col wanted is ignored
+'' provide the subscript number of col wanted , 0 based number
+Public Sub GetCol(SubscriptWanted As Integer, ...) As Variant[]
+
+    Dim Result As New Variant[]
+    Dim dimset As Long[] = Param.All
+    Dim PhysAddr As Pointer
+
+    For i As Integer = 0 To Me.SubMax[SubscriptWanted]
+        dimset[SubScriptWanted] = i
+        physAddr = GetOffset(dimset)
+        physAddr = Pointer@(physAddr)
+        If physaddr = 0 Then
+            result.Add(defaultValue)
+        Else
+            result.Add(varmem[physaddr])
+        Endif
+    Next
+
+    Return Result
 
 End
 
@@ -420,20 +766,58 @@ Private Function VirtAddress_Read() As Pointer
 
 End
 
+'' Get the Tag associated with this array
 Private Function Tag_Read() As String
 
     Return ArrayDef.Tag.ToString()
 
 End
 
+'' write a tag string to the array
 Private Sub Tag_Write(Value As String)
 
     ArrayDef.tag = Byte[].FromString(Value)
 
 End
 
+'' Get the Type Ie.ShmArray Of this object, used
+'' by the ShmMem Variable Handler
 Private Function Type_Read() As Integer
 
     Return ArrayDef.type
+
+End
+
+'' set or reset if iteration should return every cell
+'' or just those that have been set to a value
+'' when set the default value for cells is returned for empty
+'' cells
+Private Function IterateAll_Read() As Boolean
+
+    Return $IterateAll
+
+End
+
+'' set or reset if iteration should return every cell
+'' or just those that have been set to a value
+'' when set the default value for cells is returned for empty
+'' cells
+Private Sub IterateAll_Write(Value As Boolean)
+
+    $IterateAll = value
+
+End
+
+'' Reads if Locking is used during array access
+Private Function UseLock_Read() As Boolean
+
+    Return $UseLock
+
+End
+
+'' Sets or resets if Locking is used during array access
+Private Sub UseLock_Write(Value As Boolean)
+
+    $Uselock = value
 
 End

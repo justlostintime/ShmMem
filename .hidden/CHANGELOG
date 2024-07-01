@@ -1,3 +1,11 @@
+* Fri Jun 28 2024 brian <justlostintime@gmail.com> 2.1.11
+- Allow shmmem new to only provide named memory name
+
+* Fri Jun 28 2024 brian <justlostintime@gmail.com> 2.1.11
+- Bug fix list tag search/assign failed - fixed
+- ShmArray failed when assigned to symbol table entry, fixed
+- Some test scripts still tested deleted feature dup, removed
+
 * Thu Jun 27 2024 brian <justlostintime@gmail.com> 2.1.10
 - Added support for Arrays of static size, values are variable, max of 10 dimensions
 - Added ability to access Queue, Lists and Arrays by tag name

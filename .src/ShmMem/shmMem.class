@@ -70,9 +70,14 @@ Static Public Sub ForceDelete(SharedName As String)
 End
 
 '' Allocate the memory
-Public Sub _new(Optional VarMemLength As Long = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault)
+Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault)
 
     $sDefaultDirectory = User.home &/ "vars"
+
+    If TypeOf(VarMemLength) = gb.string Then
+        MemName = VarMemLength
+        VarMemLength = VarMemDefault
+    Endif
 
     If MemName <> "" Then
         VarStoreName = Memname & "_Data"

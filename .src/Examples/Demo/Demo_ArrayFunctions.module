@@ -1,0 +1,96 @@
+' Gambas module file
+
+Public Sub main()
+
+    Dim i As Integer
+    Dim j As Integer
+
+    shmMem.ForceDelete("myseg")                                ' force remove the named segment in case crash leaves it over
+    Dim mem As New Shmmem("myseg")                     ' using named memory, other apps can access Space
+    ' if in the same user or group defaults to rw-rw----
+    With mem
+        !a = New Shmarray(mem, [3, 3, 3], "This Array 1")
+        !ac = New ShmArray(mem, [5, 5], "The Matrix")
+        !ad = New ShmArray(mem, [5, 5], "The Matrix2")
+        !TheyBreed = New ShmArray(mem, [128, 128], "the crew Space")
+
+        ' initialize array to a number of values
+        i = 0
+        For ia As Integer = 0 To !a.submax[0]
+            For ib As Integer = 0 To !a.submax[1]
+                For ic As Integer = 0 To !a.submax[2]
+                    !a[ia, ib, ic] = "Test " & i
+                    Inc i
+                Next
+            Next
+        Next
+        Dim cc As Shmarray = !a.Copy("A good Copy")
+        For ia = 0 To !a.submax[0]
+            For ib = 0 To !a.submax[1]
+                For ic = 0 To !a.submax[2]
+                    Print "By Element address["; ia;; ib;; ic; "]";; !a[ia, ib, ic];; cc[ia, ib, ic]
+                Next
+            Next
+        Next
+
+        '' Test if we can get a single row
+        Print "%%%%%%%%%%%%%%%%% Fetch a single row from the array %%%%%%%%%%%%%%"
+        Dim ro As Variant[]
+        ro = !a.GetRow(1, 1)                 ' we provide the first two subscripts as example, always provide one less that last subscript
+        For Each va As Variant In ro
+            Print va,
+        Next
+        Print
+
+        '' test if we can get a single column
+        Print "%%%%%%%%%%%%%%%%%% fetch a col from the array %%%%%%%%%%%%%%%%%%%%"
+        Dim co As Variant[]
+        co = !a.GetCol(1, 2, 0, 0)  ' the first number is the col index I am interested in, the remender defines the subscripts to start with
+        ' the col index  defines the subscript to iterate over, the starting index in that subscript is ignored
+        For Each va In co
+            Print va,
+        Next
+        Print
+
+        Print "^^^^^^^^^^^^^^^^^^ iterate through the array, list only cells with values ^^^^^^^^^^^^^^^^^^^^^^^^"
+        i = 0
+        For Each vS As Variant In !a
+            Print i, vs
+            Inc i
+        Next
+
+        Print "$$$$$$$$$$$$$$$$$$$ convert the matrix to a cvs format array $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+        For i = 0 To !Ac.submax[0]
+            For j = 0 To !Ac.submax[1]
+                !ac[i, j] = Format(Rnd(30, 3000), "0000#.#0000")
+            Next
+        Next
+
+        Dim cvs As String[] = !Ac.toCvs()
+        For i = 0 To cvs.Max
+            Print cvs[i]
+        Next
+
+        !Ad.FromCvs(cvs.Join("\n"))
+        Print System.Datatypes[TypeOf(!Ad[0, 0])]
+        For i = 0 To !Ad.submax[0]
+            For j = 0 To !Ad.submax[1]
+                Print !Ad[i, j];;
+            Next
+            Print
+        Next
+
+        !a[0, 0, 1] = 10000
+        !a[0, 1, 0] = New ShmList(mem, 0, False, "new list")
+        vs = !A.Export()
+        Print vs
+        !A.Import(vs)
+        vs = !A.Export()
+        Print vs
+
+        mem.PrintAllInfo()
+
+    End With
+    Quit 0
+
+End

@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"ArrayAllocFree":[20]}
+Breakpoints={"Demo_ArrayFunctions":[85,81],"ShmArray":[581]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -18,7 +18,10 @@ Count=0
 Geometry=[834,512,252,58]
 
 [DebugWindow/ArrayDef]
-Geometry=[834,512,252,58]
+Geometry=[834,512,252,250]
+
+[DebugWindow/ArrayDef.dimensions]
+Geometry=[848,526,252,276]
 
 [DebugWindow/BaseObject]
 Geometry=[2192,325,252,56]
@@ -36,7 +39,7 @@ Geometry=[2331,570,544,386]
 Geometry=[2345,547,252,504]
 
 [DebugWindow/Dims]
-Geometry=[834,498,252,100]
+Geometry=[834,498,252,276]
 
 [DebugWindow/Elements]
 Geometry=[834,288,252,590]
@@ -67,6 +70,15 @@ Geometry=[834,498,252,58]
 
 [DebugWindow/MyElement]
 Geometry=[834,512,252,56]
+
+[DebugWindow/MyMem]
+Geometry=[2139,713,252,100]
+
+[DebugWindow/MyMem["a"]]
+Geometry=[2716,479,252,310]
+
+[DebugWindow/MyMem["list"]]
+Geometry=[2716,479,252,504]
 
 [DebugWindow/MyQueue]
 Geometry=[2449,543,480,508]
@@ -158,6 +170,24 @@ Geometry=[899,428,252,190]
 [DebugWindow/RandomName]
 Geometry=[834,512,252,56]
 
+[DebugWindow/Result]
+Geometry=[834,512,252,276]
+
+[DebugWindow/Result[0]]
+Geometry=[848,512,252,276]
+
+[DebugWindow/Result[1]]
+Geometry=[848,512,252,276]
+
+[DebugWindow/Result[2]]
+Geometry=[848,512,252,276]
+
+[DebugWindow/Result[3]]
+Geometry=[848,512,252,276]
+
+[DebugWindow/Result[4]]
+Geometry=[848,512,252,276]
+
 [DebugWindow/SemaData]
 Geometry=[834,512,252,58]
 
@@ -225,7 +255,7 @@ Geometry=[834,415,252,250]
 Geometry=[834,512,252,56]
 
 [DebugWindow/Value]
-Geometry=[2064,424,753,517]
+Geometry=[834,498,316,276]
 
 [DebugWindow/VarExtended]
 Geometry=[834,388,252,276]
@@ -239,11 +269,14 @@ Geometry=[834,498,252,130]
 [DebugWindow/Vars.SortedList()]
 Geometry=[834,402,252,276]
 
+[DebugWindow/a]
+Geometry=[2339,413,252,58]
+
 [DebugWindow/allitems]
 Geometry=[834,402,639,327]
 
 [DebugWindow/bork]
-Geometry=[2754,308,752,610]
+Geometry=[2151,214,252,56]
 
 [DebugWindow/bork.AllEntries]
 Geometry=[2768,322,434,340]
@@ -263,6 +296,9 @@ Geometry=[2782,336,488,456]
 [DebugWindow/d]
 Geometry=[834,371,730,310]
 
+[DebugWindow/dimset]
+Geometry=[834,498,252,56]
+
 [DebugWindow/eList]
 Geometry=[2186,559,252,100]
 
@@ -281,11 +317,14 @@ Geometry=[355,298,392,230]
 [DebugWindow/element.dList]
 Geometry=[369,312,442,385]
 
+[DebugWindow/factor]
+Geometry=[834,402,252,276]
+
 [DebugWindow/item]
 Geometry=[834,512,252,56]
 
 [DebugWindow/items]
-Geometry=[834,402,703,276]
+Geometry=[834,402,703,504]
 
 [DebugWindow/items[1]]
 Geometry=[848,416,252,170]
@@ -323,6 +362,9 @@ Geometry=[848,526,549,405]
 [DebugWindow/me.Key_dlist]
 Geometry=[2158,799,252,56]
 
+[DebugWindow/mylist]
+Geometry=[2143,386,252,56]
+
 [DebugWindow/newObject]
 Geometry=[834,455,252,170]
 
@@ -342,13 +384,31 @@ Geometry=[834,402,252,276]
 Geometry=[848,416,569,330]
 
 [DebugWindow/param]
-Geometry=[834,498,252,56]
+Geometry=[834,498,252,156]
 
 [DebugWindow/param.All]
 Geometry=[848,526,622,368]
 
+[DebugWindow/param.all]
+Geometry=[834,388,252,276]
+
 [DebugWindow/ptrPrev]
 Geometry=[834,512,252,56]
+
+[DebugWindow/rowVals]
+Geometry=[834,388,252,276]
+
+[DebugWindow/rowVals[0]]
+Geometry=[848,402,252,276]
+
+[DebugWindow/rowVals[1]]
+Geometry=[848,402,252,276]
+
+[DebugWindow/rowVals[3]]
+Geometry=[848,402,252,276]
+
+[DebugWindow/s]
+Geometry=[834,274,534,625]
 
 [DebugWindow/srcstr]
 Geometry=[2664,390,339,339]
@@ -386,17 +446,32 @@ Geometry=[2754,498,252,56]
 [DebugWindow/userclass.Symbols.Bounds]
 Geometry=[2137,375,252,88]
 
+[DebugWindow/values]
+Geometry=[834,402,252,276]
+
+[DebugWindow/values[0]]
+Geometry=[848,416,252,504]
+
 [DebugWindow/vars]
-Geometry=[2754,498,252,320]
+Geometry=[2108,45,252,56]
+
+[DebugWindow/vars["dog"]]
+Geometry=[2196,554,252,56]
 
 [DebugWindow/virt]
 Geometry=[2115,742,252,110]
 
 [DebugWindow/vptr]
-Geometry=[834,512,252,58]
+Geometry=[834,512,252,110]
+
+[DebugWindow/working]
+Geometry=[834,498,252,56]
 
 [DebugWindow/xObject]
 Geometry=[834,288,252,508]
+
+[DebugWindow/z]
+Geometry=[2126,578,252,88]
 
 [Executable]
 DoNotIncrementVersion=False
@@ -414,24 +489,25 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Added Static arrays of Variable values, access array/list/queue by tag name\n\n* New: Added shmArray types, up to 10 dimensions all values are variant\n* New: List/queue/arrays may be accessed through the tag attached see Array Test examples"
+LastCommit="Bug fixes for list tag search, array symbol table assign\n\n* BUG: Tag search/allocate failed for lists - fixed\n* BUG: assign ShmArrays to symbol table failed - fixed\n* New: Added shmArray types, up to 10 dimensions all values are variant\n* New: List/queue/arrays may be accessed through the tag attached see Array Test examples"
 
 [OpenFile]
-Count=4
-File[1]=".src/Examples/vTestApps/Array Tests/ArrayAllocFree.module:0.20"
-File[2]=".src/Examples/vTestApps/Array Tests/BasicArrayDef.module:0.4"
-File[3]=".src/Examples/vTestApps/Array Tests/ArrayReadWriteSpeed.module:0.0"
-Active=4
-File[4]=".src/ShmMem/ShmVarStorage.class:0.632"
+Count=3
+Active=1
+File[1]=".src/ShmMem/ShmArray.class:104.560"
+File[2]=".src/Examples/Demo/Demo_ArrayFunctions.module:16.86"
+File[3]=".src/ShmMem/ShmList.class:0.124"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"
 
 [Watches]
-Count=5
+Count=7
 Watch[1]="param"
 Watch[2]="me"
 Watch[3]="notifyqueue[0]"
 Watch[4]="error.text"
 Watch[5]="application.id"
+Watch[6]="params"
+Watch[7]="param.all"
 

@@ -1,0 +1,82 @@
+#!/usr/bin/env gbs3
+' Gambas Script File Created 06/28/2024 08:13:35
+
+Use ":westwood.shmmem:2"
+Dim mem As New Shmmem("myseg")                     ' using named memory, other apps can access Space
+                                                   ' if in the same user or group defaults to rw-rw----
+With mem
+  !a = New Shmarray(mem, [3, 3, 3], "This Array 1")
+  !b = New ShmList(mem, 0, False, "This List 1")
+  !c = New ShmQueue(mem, 0, False, "This Queue 1", True)
+  !d = New ShmFiFo(mem, 0, False, "This FiFo 1")
+  !e = New ShmFiLo(mem, 0, False, "This FiLo 1")
+  ' initialize array to a number of values
+  For ia As Integer = 0 To !a.submax[0]
+    For ib As Integer = 0 To !a.submax[1]
+     For ic As Integer = 0 To !a.submax[2]
+       !a[ia, ib, ic] = "Test " & Timer
+     Next
+    Next
+  Next
+  For ia = 0 To !a.submax[0]
+    For ib = 0 To !a.submax[1]
+     For ic = 0 To !a.submax[2]
+       Print "By Element address";; !a[ia, ib, ic]
+     Next
+    Next
+  Next
+  
+  For Each vS As Variant In !a
+     Print vs
+  Next
+  
+  ' Assign the list by direct and tag values
+  Dim b As New ShmList(mem, "This List 1")
+  Dim ba As ShmList = !b
+  
+  For Each s As Variant In mem
+    If TypeOf(s) = gb.object Then
+       Print mem.key;; "=";; s.tag
+    Else
+       Print mem.key;; "=";; s
+    Endif
+  Next
+  
+  ' create a random list,put into fifo and filo as well
+  For Each d As Variant In Dir(user.home, "[^.]*[^~]").sort()
+     !b.add(d)
+     !d.add(d)                       ' get back in same order
+     !e.add(d)                       ' get back In reverse order
+  Next
+  
+  ' compare the list they all point to the same list so should be equal
+  Print "######################In order!b = Access list 'b' = fifo 'ba' ###############################"
+  Dim result As Boolean
+  For i As Integer = 0 To !b.max
+     Print ((!b[i] = b[i]) And (!b[i] = ba[i]));; ba[i];; "=";; !b[i];; "=";; b[i]
+  Next
+  Print "======================In order list and fifo ============================================="
+  ' Print the random list and add to the queue
+  Dim r As Variant
+  Dim counter As Integer = 1   ' sets the priority for each element Higher is sooner
+  For Each f As String In !b
+     r = !d.pop()
+     Print (r == f), r;; "==";; f
+     !c.push(f, counter)       ' reverse the list using queue priority
+     Inc counter
+  Next
+  
+  Print "~~~~~~~~~~~~~~~~~~ Retrieve from queue by priority, and Filo ~~~~~~~~~~~~~~~~~~~"
+  Print "--------Get from Queue and filo compare revesed order------------------------------"
+  Dim g As Variant
+  While !c.count > 0
+  f = !c.pop()
+  g = !e.pop()
+   Print (g == f), f;; "==";; g
+  Wend
+  
+End With
+
+Quit 0
+Catch
+Error "Script Error >";; error.text & "\n" & error.where
