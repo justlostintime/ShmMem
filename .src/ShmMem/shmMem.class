@@ -158,7 +158,7 @@ Public Sub _put(value As Variant, SymName As String, ...)
 
     If Param.count > 0 Then
         Dim tmpvar As Variant = vars[SymName]
-        params.Insert(value)
+        params.add(value)
         params.Insert(Param.all)
         Object.Call(tmpvar, "_put", Params)
         vars[SymName] = tmpvar

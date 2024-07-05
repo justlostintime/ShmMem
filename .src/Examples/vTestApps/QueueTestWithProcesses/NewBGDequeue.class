@@ -13,7 +13,8 @@ Public Sub main() As Integer
         Print "BG starts, Q length = ";; TheQ.count
         Print "BG Queue contains:"
         For Each g As Variant In TheQ
-            Print g, "Priorty ="; TheQ.key
+            Dim s As String = theq.key_tag
+            Print g, "Priorty ="; TheQ.key;; ", Tag="; Quote(TheQ.key_tag)
             Flush
         Next
         Print "BG End Queue"

@@ -5,11 +5,18 @@ Export
 Property Read Tag As String Use $Tag
 Property Read ExtendedId As Variant Use $ExtendedID                           ' also referred to as priority
 Property Read Value As Variant Use $Value
+Property Read Priority As Integer
 
 Public Sub _new(vValue As Variant, vExtendedID As Variant, sTag As String)
 
     $Tag = sTag
     $value = vValue
     $ExtendedId = vExtendedId
+
+End
+
+Private Function Priority_Read() As Integer
+
+    Return $ExtendedId
 
 End

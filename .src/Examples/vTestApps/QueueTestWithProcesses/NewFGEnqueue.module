@@ -11,12 +11,17 @@ Public Sub Main()
         !Testy1 = "hello world"
         !Testy2 = 1
         !Testy3 = 2.6
-        !TheQ.enqueue("1-0", 0)
-        !TheQ.enqueue("23-6", 6)
-        !TheQ.enqueue("S2-5", 5)
-        !TheQ.EnQueue("3-4", 4)
-        !TheQ.enqueue("S4-3", 3)
-        !TheQ.enqueue("5-100", 100)
+        !TheQ.enqueue("1-0", 0, "Tag this 0")
+        !TheQ.enqueue("23-6", 6, "Tag this 6")
+        !TheQ.enqueue("S2-5", 5, "Tag this 5")
+        !TheQ.EnQueue("3-4", 4, "Tag this 4")
+        !TheQ.enqueue("S4-3", 3, "Tag this 3")
+        !TheQ.enqueue("5-100", 100, "Tag this 100")
+
+        For Each qe As Variant In !TheQ
+            Dim tag As String = !TheQ.key_tag
+            Print qe, !TheQ.key, !TheQ.key_tag
+        Next
 
         .PrintTree()
 

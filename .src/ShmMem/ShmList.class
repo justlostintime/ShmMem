@@ -64,6 +64,7 @@ Private VirtualAddress As Pointer = 0              '' Pointer to the head of the
 Public ListHead As DList                                         '' Pointer to the actual list
 Public VarMem As ShmVarStorage                    '' The storage pool to used or referenced
 Public SemAddress As Pointer                             '' real pointer to the locking sem used by this list
+Private Keys As NextInfo = Null                            '' Information about the last iteration
 
 Property Read Key As Long                                   '' During iterations this will be the item count
 Property Read Key_dlist As Dlist                          '' During iteration this contains the current dlist entry
@@ -1084,8 +1085,6 @@ Private Function Key_ExtendedId_read() As Long
     Return keys.Elements[keys.counter].Priority
 
 End
-
-Private Keys As NextInfo = Null
 
 '' Iteration throught the list
 Public Sub _next() As Variant

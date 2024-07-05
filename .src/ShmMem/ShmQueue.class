@@ -26,12 +26,15 @@ Public Struct dList                         '' A defined entry in list of object
     UsePriority As Boolean            '' Enable the use of priority ordering in the queue
     enum_counter As Long              '' Used when enumerating a list structure
     enum_listitem As Dlist               '' pointer to dlist
-    Value As Pointer                        '' Value of entry or count if pool
+    Value As Pointer                         '' Value of entry or count if pool
 End Struct
 
 Static Public cShmQueue As Integer = 26
 Static Public cShmQueueEntry As Integer = 27
 Private listhead As Dlist
+
+Property Read key As Long                                    ''  This returns the priority
+Property Read Key_Tag As String                       '' The content of the entry tag field
 
 '' Convert the Virtual address to an actual list object
 Static Public Sub AsObject(vvarmem As ShmVarStorage, VirtAddr As Pointer) As ShmList
@@ -181,5 +184,17 @@ Public Sub _next() As Variant
 Catch
     Print "ShmQueue Next error ";; Error.text;; Error.where
     Print Hex(listitem.Address)
+
+End
+
+Private Function key_Read() As Long
+
+    Return ListHead.enum_counter
+
+End
+
+Private Function Key_Tag_Read() As String
+
+    Return ListHead.enum_listitem.Tag.ToString()
 
 End
