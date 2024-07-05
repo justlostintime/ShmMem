@@ -19,6 +19,7 @@ Public Struct AllocHeader              '' Standard header
     {Next} As Pointer                          '' null if no more in list
 End Struct
 
+'' This is a virtual pointer to a value in shared memory
 Public Struct dPointer
     Length As Long                              '' Length including header
     Address As Pointer                      '' The virtual address of this block, speed pointer conversion
@@ -26,6 +27,7 @@ Public Struct dPointer
     Value As Pointer                            '' The actual value for usage
 End Struct
 
+'' Thi is the structure used to manage lists in shared memory
 Public Struct dList                             '' A defined entry in list of objects
     Length As Long                              '' Length including header
     Address As Pointer                      '' The virtual address of this block, speed pointer conversion
@@ -151,13 +153,15 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = CP
 
 End
 
+'' Locate an entry by its Tag information
+'' Returns  the virtual address of the List having the specified tag
 Private Sub locateByTag(tag As String) As Pointer
 
     Dim list As Variant[] = ShmMem.GetListType(varmem, SetHeadType)
 
     If list.count = 0 Then Return Null
     For Each s As Variant In list
-        If s.tag = tag Then
+        If s.tag == tag Then
             Return s.Address
         Endif
     Next
@@ -165,6 +169,7 @@ Private Sub locateByTag(tag As String) As Pointer
 
 End
 
+'' free this list when the refcount = 0
 Public Sub _free()
 
     Return
@@ -218,6 +223,7 @@ Static Public Sub AsObject(vvarmem As ShmVarStorage, VirtAddr As Pointer) As Shm
 
 End
 
+'' Return the real address pointed to by a virtual pointer
 Public Sub EntryPtr(VirtAddress As Pointer) As DList
 
     If VirtAddress <= 0 Then Return Null
@@ -405,6 +411,7 @@ Public Sub {Free}(Optional OverRideGlobal As Boolean = False)           '' Free 
 
 End
 
+'' clear the content of a list, free the values and the entries
 Public Sub Clear()
 
     Dim pEntry As Variant
@@ -445,6 +452,7 @@ Public Sub AsDlistList() As DList[]
 
 End
 
+'' Free an entry from its data structure information
 Private Sub FreeEntry(Entry As DList)
 
     If listhead = Null Then
@@ -460,6 +468,7 @@ Private Sub FreeEntry(Entry As DList)
 
 End
 
+'' Get the value of the entry at index position
 Public Sub _get(Index As Integer) As Variant
 
     Dim Result As Variant
@@ -497,6 +506,7 @@ Catch
 
 End
 
+'' Put a value into an exsisting element based upon the index
 Public Sub _put(Value As Variant, Index As Integer)
 
     Dim dPtr As Dlist
@@ -528,6 +538,7 @@ Catch
 
 End
 
+'' Insert a new value into the list at the index position, -1 means end of list
 Public Sub insert(Index As Long, value As Variant, Optional ExtendedId As Integer = 0, TagInfo As String = "")
 
     Dim Current As Dlist
@@ -636,6 +647,7 @@ Private Sub SeekRec(Index As Integer) As DList
 
 End
 
+'' remove the current element from the list, optionally return the value of the entry
 Private Sub _remove(CurrentItem As Dlist, Optional WithValue As Boolean = True) As Variant
 
     Dim addr As Pointer = CurrentItem.address
@@ -737,6 +749,61 @@ Catch
 
 End
 
+'' Remove an element from the list based upon the tag
+'' Returns the value of the entry
+Public Sub RemoveTag(sTag As String) As Variant
+
+    Dim currentItem As DList
+    Dim Value As Variant
+
+    If listhead = Null Then
+        Error.Raise("List/Queue remove Tag - invalid listhead")
+    Endif
+
+    If ListHead.bDebug Then Print Application.id, "RemoveTag ShmList For " & sTag
+    Me.lock()
+
+    If ListHead.next = 0 Then
+        Me.unlock()
+        If ListHead.bDebug Then Print Application.id, "RemoveTag ShmList For " & sTag & " Failed empty list"
+        Error.Raise("Empty List - Tag : " & sTag)
+    Endif
+
+    CurrentItem = EntryPtr(ListHead.next)
+
+    ' search for the matching value
+    While CurrentItem <> Null
+        If CurrentItem.Tag == stag Then Break
+        CurrentItem = EntryPtr(CurrentItem.next)
+    Wend
+
+    If CurrentItem = Null Then
+        Me.Unlock()
+        If ListHead.bDebug Then Print Application.id, "RemoveByTag ShmList VarMem.UnLock " & sTag
+        Error.Raise("Not Found -  sTag : " & sTag)
+    Else
+        If ListHead.bDebug Then Print Application.id, "RemoveTag ShmList For " & sTag & " Found"
+    Endif
+
+    value = _remove(CurrentItem)
+
+    Me.unlock()
+
+    If ListHead.bDebug Then Print Application.id, "RemoveTag ShmList VarMem.UnLock " & sTag
+
+    FreeEntry(CurrentItem)
+
+    Return value
+
+Finally
+    Me.unlock()
+
+Catch
+    Dim myerror As String = Error.text & Error.where
+    Error.Raise(myerror)
+
+End
+
 '' Pop the next entry, but return all the fields from the entry
 '' Including the value
 Public Sub PopInfo() As EntryInfo
@@ -754,6 +821,7 @@ Public Sub PopInfo() As EntryInfo
 
 End
 
+'' Remove the last item in the list and return the value
 Public Sub Pop() As Variant
 
     If listhead = Null Then
@@ -768,6 +836,7 @@ Public Sub Pop() As Variant
 
 End
 
+'' Push a value onto the end of the queue
 Public Sub Push(value As Variant, Optional ExtendedID As Long = 0, TagInfo As String = "Push")
 
     If listhead = Null Then
@@ -846,9 +915,9 @@ Catch
     Error.Propagate()
 
 End
-' Remove an element by its value as the key
-'' returns the value of the element
 
+''  Remove an element by its value as the key
+''  returns the value of the element
 Public Sub RemoveByValue(vValue As Variant) As Variant
 
     Dim currentItem As DList
@@ -984,6 +1053,7 @@ Catch
 
 End
 
+'' Returns index of current item in for next
 Private Function key_read() As Long
 
     If listhead = Null Or If keys = Null Then Return -1
@@ -991,6 +1061,7 @@ Private Function key_read() As Long
 
 End
 
+'' Returns the Tag of the current item in for next
 Private Function Key_Tag_read() As String
 
     If listhead = Null Or If keys = Null Then Return ""
@@ -998,6 +1069,7 @@ Private Function Key_Tag_read() As String
 
 End
 
+'' Returns the dListentry  pointer of the current item in for next
 Private Function Key_dlist_read() As Dlist
 
     If listhead = Null Or If keys = Null Then Return Null
@@ -1005,6 +1077,7 @@ Private Function Key_dlist_read() As Dlist
 
 End
 
+'' Returns the extended Id or Priority of the current Item in a for next
 Private Function Key_ExtendedId_read() As Long
 
     If listhead = Null Or If keys = Null Then Return -1
@@ -1014,6 +1087,7 @@ End
 
 Private Keys As NextInfo = Null
 
+'' Iteration throught the list
 Public Sub _next() As Variant
 
     Dim enumEntry As NextInfo
@@ -1053,7 +1127,7 @@ End
 '' Finds the element with the extended id
 '' Returns the index if it is found
 '' Returns -1 if not found
-Public Sub FindExtId(Value As Long, Optional returnElement As Boolean = False) As Long
+Public Sub FindExtId(Value As Long, Optional returnElement As Boolean = False) As Variant
 
     Dim Count As Long = 0
     Dim Result As Long = -1
@@ -1094,10 +1168,54 @@ Catch
 
 End
 
+'' Finds the element with the tag
+'' Returns the index if it is found
+'' Returns -1 if not found
+Public Sub FindTag(Value As String, Optional returnElement As Boolean = False) As Variant
+
+    Dim Count As Long = 0
+    Dim Result As Long = -1
+
+    If listhead = Null Then
+        Error.Raise("List/Queue Find extended id - invald listhead")
+    Endif
+
+    If listhead.bDebug Then Print Application.id, "FindExtId : ";; Object.Class(Me).name;; "Entries=";; Me.count
+
+    For Each dd As Variant In Me
+
+        If Me.key_dlist = Null Then
+            Break
+        Endif
+
+        If Me.Key_dlist.Tag.ToString == value Then
+            Result = count
+            Break
+        Endif
+
+        Inc count
+    Next
+
+    If listhead.bDebug Then Print Application.id, "FindExtId : checked ";; Me.count + 1;; "entries, index="; result
+    If ReturnElement Then
+        If result = -1 Then
+            Return Null
+        Else
+            Return Object.New(VarMem.GetTextType(Me.key_dlist.Type), [varmem, Me.key_dlist.address])
+        Endif
+    Else
+        Return result
+    Endif
+
+Catch
+    Error.Propagate()
+
+End
+
 '' Finds the element with the Virtual Address
 '' Returns the index if it is found
 '' Returns -1 if not found
-Public Sub FindVirtAddress(VirtAddress As Pointer, Optional ReturnElement As Boolean = False) As Long
+Public Sub FindVirtAddress(VirtAddress As Pointer, Optional ReturnElement As Boolean = False) As Variant
 
     Dim Count As Long = 0
     Dim result As Long = -1
@@ -1170,6 +1288,7 @@ Catch
 
 End
 
+'' Returns the last element address in the list
 Private Function max_Read() As Long
 
     If ListHead = Null Then Return 0
@@ -1177,6 +1296,7 @@ Private Function max_Read() As Long
 
 End
 
+'' Returns the number of entries in the list
 Private Function count_Read() As Long
 
     If ListHead = Null Then Return 0
@@ -1184,6 +1304,7 @@ Private Function count_Read() As Long
 
 End
 
+'' Returns the Virtual Address of the list
 Private Function value_Read() As Long
 
     If ListHead = Null Then Return 0
@@ -1191,6 +1312,7 @@ Private Function value_Read() As Long
 
 End
 
+'' returns the Type of list as an integer ID
 Private Function Type_Read() As Integer
 
     If ListHead = Null Then Return 0
@@ -1198,6 +1320,7 @@ Private Function Type_Read() As Integer
 
 End
 
+'' Returns the virtual address of list
 Private Function Address_Read() As Pointer
 
     If ListHead = Null Then Return 0
@@ -1205,6 +1328,7 @@ Private Function Address_Read() As Pointer
 
 End
 
+'' returns the Debug flag. when set debug info is printed
 Private Function Debug_Read() As Boolean
 
     If ListHead = Null Then Return False
@@ -1212,6 +1336,7 @@ Private Function Debug_Read() As Boolean
 
 End
 
+'' Sets or resets the Debug flag
 Private Sub Debug_Write(Value As Boolean)
 
     Print "Set debug to ";; value
@@ -1238,6 +1363,7 @@ Private Function AllEntries_read() As Variant[]
 
 End
 
+'' returns an array of list entry objects
 Function _allEntries() As Variant[]
 
     Dim nextitem As Dlist
@@ -1265,6 +1391,7 @@ Catch
 
 End
 
+'' returns the Tag associated with this list
 Private Function Tag_Read() As String
 
     If ListHead = Null Then Return ""
@@ -1272,6 +1399,7 @@ Private Function Tag_Read() As String
 
 End
 
+'' Set /change the tag associated with this list
 Private Sub Tag_Write(Value As String)
 
     If ListHead = Null Then Return
@@ -1279,6 +1407,7 @@ Private Sub Tag_Write(Value As String)
 
 End
 
+'' Create a text representation of this list in tree format
 Public Sub textTree() As String
 
     Dim result As String = ""
@@ -1298,18 +1427,21 @@ End
 
 'cShmList As Integer = 20                  '' The Constant identifying this class name must not be a valid datatype integer
 'cShmListEntry As Integer = 21        '' The entry in a ShmList object type
+'' return the text name of the list/queue being accessed
 Private Function ClassList_Read() As String
 
-    Return varmem.GetTextType(cShmList)
+    Return varmem.GetTextType(ListHead.Type)
 
 End
 
+'' return the TextName of the class used for entries in this list
 Private Function ClassEntry_Read() As String
 
-    Return varmem.GetTextType(cShmListEntry)
+    Return varmem.GetTextType(Me.SetEntryType)
 
 End
 
+'' Redundant, gets text name of the class for the list object
 Private Function ClassMe_Read() As String
 
     If varmem = Null Or If listhead = Null Then Return "Invalid list"
@@ -1317,6 +1449,7 @@ Private Function ClassMe_Read() As String
 
 End
 
+'' Returns the next entry in the list, based on the current entry
 Private Function Next_Read() As Variant
 
     If Listhead <> Null And If listhead.Next <> Null Then
@@ -1328,6 +1461,7 @@ Private Function Next_Read() As Variant
 
 End
 
+'' Returns the Previous entry based upon the current entry
 Private Function Prev_Read() As Variant
 
     If Listhead <> Null And If listhead.prev <> Null Then
@@ -1339,6 +1473,7 @@ Private Function Prev_Read() As Variant
 
 End
 
+'' Returns the value of the first entry on the list
 Private Function First_Read() As Variant
 
     Dim value As Variant = Null
@@ -1352,6 +1487,7 @@ Private Function First_Read() As Variant
 
 End
 
+'' returns the value of the last entry in the list
 Private Function Last_Read() As Variant
 
     Dim value As Variant = Null
@@ -1365,6 +1501,7 @@ Private Function Last_Read() As Variant
 
 End
 
+'' returns the refrence count of this list
 Private Function RefCount_Read() As Variant
 
     If varmem = Null Or If listhead = Null Then Return 0

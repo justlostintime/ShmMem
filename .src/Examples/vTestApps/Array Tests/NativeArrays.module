@@ -1,0 +1,16 @@
+' Gambas module file
+
+Public Sub Main()
+
+    Dim MyMem As New ShmMem
+    Dim a As New Integer[5, 5, 5]
+
+    With mymem
+        !a = a
+        a[1, 1, 1] = 500
+        !a[1, 1, 1] = 600
+        Print !a[1, 1, 1]
+    End With
+    Quit 0
+
+End

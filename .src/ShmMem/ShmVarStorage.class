@@ -135,27 +135,6 @@ Public Struct dStrObj
     Value[1000000] As Byte             '' The actual value for usage assign as byte but we ref the value.data real address this is dummy
 End Struct
 
-' Public Struct dIntArray                  '' Support for one dimentional arrays of single types
-'     Length As Long                            '' Length including header
-'     Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-'     Type As Integer                            '' Type of memory
-'     Dims As Long                                '' Number of dimentions for this array
-'     Elements As Long                        '' Number of elements
-'     Value[1000000] As Integer       '' The actual value for usage is defined by length, this is dummy
-' End Struct
-
-' Extern AllocInteger(dest As Pointer, src As Pointer, Len As Integer) As DInteger In "libc:6" Exec "memcpy"
-' Extern AllocBoolean(dest As Pointer, src As Pointer, Len As Integer) As DBoolean In "libc:6" Exec "memcpy"
-' Extern AllocByte(dest As Pointer, src As Pointer, Len As Integer) As DByte In "libc:6" Exec "memcpy"
-' Extern AllocShort(dest As Pointer, src As Pointer, Len As Integer) As DShort In "libc:6" Exec "memcpy"
-' Extern AllocLong(dest As Pointer, src As Pointer, Len As Integer) As DLong In "libc:6" Exec "memcpy"
-' Extern AllocSingle(dest As Pointer, src As Pointer, Len As Integer) As DSingle In "libc:6" Exec "memcpy"
-' Extern AllocFloat(dest As Pointer, src As Pointer, Len As Integer) As DFloat In "libc:6" Exec "memcpy"
-' Extern AllocDate(dest As Pointer, src As Pointer, Len As Integer) As DDate In "libc:6" Exec "memcpy"
-' Extern AllocStrObj(dest As Pointer, src As Pointer, Len As Integer) As DStrObj In "libc:6" Exec "memcpy"
-' Extern AllocPointer(dest As Pointer, src As Pointer, Len As Integer) As DPointer In "libc:6" Exec "memcpy"
-' Extern strncpy(dest As Pointer, source As String, len As Long) In "libc:6"
-
 Const StrData As Integer = 18
 Const ObjData As Integer = 19
 Const FreeBlock As Integer = -1

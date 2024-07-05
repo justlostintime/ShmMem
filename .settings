@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"Demo_ArrayFunctions":[85,81],"ShmArray":[581]}
+Breakpoints={"ShmListVariables":[18],"NativeArrays":[8],"Demo_ArrayFunctions":[63],"Conversion":[9],"ShmArray":[908,928,926]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -23,6 +23,9 @@ Geometry=[834,512,252,250]
 [DebugWindow/ArrayDef.dimensions]
 Geometry=[848,526,252,276]
 
+[DebugWindow/Ary.Bounds]
+Geometry=[834,498,252,56]
+
 [DebugWindow/BaseObject]
 Geometry=[2192,325,252,56]
 
@@ -39,10 +42,28 @@ Geometry=[2331,570,544,386]
 Geometry=[2345,547,252,504]
 
 [DebugWindow/Dims]
-Geometry=[834,498,252,276]
+Geometry=[2081,540,252,276]
 
 [DebugWindow/Elements]
-Geometry=[834,288,252,590]
+Geometry=[834,288,627,508]
+
+[DebugWindow/Elements.AllEntries]
+Geometry=[848,302,359,276]
+
+[DebugWindow/Elements.AllLists]
+Geometry=[848,302,252,276]
+
+[DebugWindow/Elements.ListHead]
+Geometry=[848,302,431,395]
+
+[DebugWindow/Elements.Next]
+Geometry=[848,302,252,230]
+
+[DebugWindow/Elements.Prev]
+Geometry=[848,302,252,230]
+
+[DebugWindow/Elements.VarMem]
+Geometry=[848,302,415,130]
 
 [DebugWindow/Entry]
 Geometry=[834,512,252,56]
@@ -171,7 +192,19 @@ Geometry=[899,428,252,190]
 Geometry=[834,512,252,56]
 
 [DebugWindow/Result]
-Geometry=[834,512,252,276]
+Geometry=[751,325,691,470]
+
+[DebugWindow/Result.ArrayData]
+Geometry=[848,526,252,110]
+
+[DebugWindow/Result.ArrayDef]
+Geometry=[848,526,252,250]
+
+[DebugWindow/Result.Bounds]
+Geometry=[765,339,252,504]
+
+[DebugWindow/Result.dimensions]
+Geometry=[765,339,252,276]
 
 [DebugWindow/Result[0]]
 Geometry=[848,512,252,276]
@@ -192,7 +225,10 @@ Geometry=[848,512,252,276]
 Geometry=[834,512,252,58]
 
 [DebugWindow/Source]
-Geometry=[834,512,252,56]
+Geometry=[834,498,252,56]
+
+[DebugWindow/SubMax]
+Geometry=[834,388,252,276]
 
 [DebugWindow/Sym]
 Geometry=[2184,263,252,56]
@@ -255,7 +291,7 @@ Geometry=[834,415,252,250]
 Geometry=[834,512,252,56]
 
 [DebugWindow/Value]
-Geometry=[834,498,316,276]
+Geometry=[2224,387,316,504]
 
 [DebugWindow/VarExtended]
 Geometry=[834,388,252,276]
@@ -270,10 +306,22 @@ Geometry=[834,498,252,130]
 Geometry=[834,402,252,276]
 
 [DebugWindow/a]
-Geometry=[2339,413,252,58]
+Geometry=[2617,372,252,504]
+
+[DebugWindow/a.Bounds]
+Geometry=[834,498,252,508]
 
 [DebugWindow/allitems]
 Geometry=[834,402,639,327]
+
+[DebugWindow/b]
+Geometry=[834,498,252,58]
+
+[DebugWindow/b.Bounds]
+Geometry=[2081,329,252,504]
+
+[DebugWindow/bb]
+Geometry=[2165,363,526,470]
 
 [DebugWindow/bork]
 Geometry=[2151,214,252,56]
@@ -292,6 +340,12 @@ Geometry=[2796,350,252,276]
 
 [DebugWindow/bork.AllLists[1]]
 Geometry=[2782,336,488,456]
+
+[DebugWindow/c]
+Geometry=[2734,458,252,508]
+
+[DebugWindow/cc]
+Geometry=[2754,355,667,466]
 
 [DebugWindow/d]
 Geometry=[834,371,730,310]
@@ -395,6 +449,12 @@ Geometry=[834,388,252,276]
 [DebugWindow/ptrPrev]
 Geometry=[834,512,252,56]
 
+[DebugWindow/result]
+Geometry=[834,498,252,56]
+
+[DebugWindow/result.Bounds]
+Geometry=[848,402,252,84]
+
 [DebugWindow/rowVals]
 Geometry=[834,388,252,276]
 
@@ -412,6 +472,9 @@ Geometry=[834,274,534,625]
 
 [DebugWindow/srcstr]
 Geometry=[2664,390,339,339]
+
+[DebugWindow/subs]
+Geometry=[834,388,252,276]
 
 [DebugWindow/svptr]
 Geometry=[834,512,252,110]
@@ -446,6 +509,12 @@ Geometry=[2754,498,252,56]
 [DebugWindow/userclass.Symbols.Bounds]
 Geometry=[2137,375,252,88]
 
+[DebugWindow/vArgs]
+Geometry=[834,498,252,56]
+
+[DebugWindow/value]
+Geometry=[834,388,252,504]
+
 [DebugWindow/values]
 Geometry=[834,402,252,276]
 
@@ -453,7 +522,7 @@ Geometry=[834,402,252,276]
 Geometry=[848,416,252,504]
 
 [DebugWindow/vars]
-Geometry=[2108,45,252,56]
+Geometry=[2108,45,440,361]
 
 [DebugWindow/vars["dog"]]
 Geometry=[2196,554,252,56]
@@ -463,6 +532,9 @@ Geometry=[2115,742,252,110]
 
 [DebugWindow/vptr]
 Geometry=[834,512,252,110]
+
+[DebugWindow/where]
+Geometry=[834,388,252,276]
 
 [DebugWindow/working]
 Geometry=[834,498,252,56]
@@ -489,14 +561,14 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Bug fixes for list tag search, array symbol table assign\n\n* BUG: Tag search/allocate failed for lists - fixed\n* BUG: assign ShmArrays to symbol table failed - fixed\n* New: Added shmArray types, up to 10 dimensions all values are variant\n* New: List/queue/arrays may be accessed through the tag attached see Array Test examples"
+LastCommit="Added New features for array, tocvs, from cvs, import export, copy\n\n* New: ToCvs and FromCvs for 2d arrays\n* New: Export and Import for any dimension arrays - exports as text \n* New: Copy, produces a deep copy of the array"
 
 [OpenFile]
 Count=3
+File[1]=".src/ShmMem/ShmArray.class:3.928"
+File[2]=".src/Examples/vTestApps/Array Tests/Conversion.module:13.9"
+File[3]=".src/ShmMem/ShmList.class:9.120"
 Active=1
-File[1]=".src/ShmMem/ShmArray.class:104.560"
-File[2]=".src/Examples/Demo/Demo_ArrayFunctions.module:16.86"
-File[3]=".src/ShmMem/ShmList.class:0.124"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

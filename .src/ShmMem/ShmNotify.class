@@ -72,7 +72,7 @@ Public Sub _free()
 End
 
 '' Create a request to be notified when the value of a specific variable has changed
-Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc As String, Optional timeout As Long = 0, Tag As String = "")         '' Timeout of zero means wait for ever
+Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String, Optional timeout As Long = 0, Tag As String = "")         '' Timeout of zero means wait for ever
 
     Dim PidQueue As ShmList
     Dim VarInfo As ShmNotifyEntry
@@ -119,11 +119,11 @@ Public Sub Notify(SymEntry As Symbol, CallBack As Variant, CallFunc As String, O
     '' Update the local list of variables waiting for dispatch notification
     If tag = "" Then
         ' We need to differenciate between being called from a module or from a class
-        Dim ClassName As String = GetClassName(CallBack)
+        Dim ClassName As String = GetClassName(CallObject)
         Try tag = SymName & "_" & CallFunc & "_" & ClassName
     Endif
 
-    VarInfo = New ShmNotifyEntry(SymEntry, CallBack, CallFunc, Me, Timeout, Tag) As "VarInfo"
+    VarInfo = New ShmNotifyEntry(SymEntry, CallObject, CallFunc, Me, Timeout, Tag) As "VarInfo"
 
     If Not NotifyVars.Exist(SymName) Then
         Dim todoList As New Collection(gb.ignorecase)   ' now create a collection of all the parts of this program asking for notification
@@ -170,12 +170,14 @@ Public Sub GetClassName(BaseObject As Variant) As String
     Dim name As String = Object.Class(BaseObject).name
 
     If name == "class" Then
-        Return BaseObject.name
+        Dim myclass As Class = BaseObject
+        Return myclass.name
     Endif
     Return name
 
 End
 
+'' Stop notification of varable change
 Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Optional CallFunc As String = "", Optional tag As String = "")
 
     Dim PidQueue As ShmList

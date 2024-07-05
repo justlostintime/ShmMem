@@ -4,11 +4,23 @@ Public Sub main()
 
     Dim i As Integer
     Dim j As Integer
+    Dim Bounds As Integer
 
     shmMem.ForceDelete("myseg")                                ' force remove the named segment in case crash leaves it over
     Dim mem As New Shmmem("myseg")                     ' using named memory, other apps can access Space
     ' if in the same user or group defaults to rw-rw----
     With mem
+        Dim a As New Integer[6, 6, 6]
+        bounds = a.Bounds[0]
+        Dim b As New ShmArray(mem, [6, 6, 6])
+        Dim bb As New ShmArray(mem, [100])
+        Dim c As New ShmList(mem, 0, True, "this list")
+        c.add(5000)
+        c.add(20000)
+        a[1, 1, 1] = 2
+        b[1, 1, 1] = 2
+        b[0, 0, 0] = 1000
+        b[5, 5, 5] = 500
         !a = New Shmarray(mem, [3, 3, 3], "This Array 1")
         !ac = New ShmArray(mem, [5, 5], "The Matrix")
         !ad = New ShmArray(mem, [5, 5], "The Matrix2")
@@ -24,6 +36,7 @@ Public Sub main()
                 Next
             Next
         Next
+
         Dim cc As Shmarray = !a.Copy("A good Copy")
         For ia = 0 To !a.submax[0]
             For ib = 0 To !a.submax[1]
@@ -31,6 +44,28 @@ Public Sub main()
                     Print "By Element address["; ia;; ib;; ic; "]";; !a[ia, ib, ic];; cc[ia, ib, ic]
                 Next
             Next
+        Next
+
+        '' Iterate through the entire array
+        For ia = 0 To b.submax[0]
+            For ib = 0 To b.submax[1]
+                For ic = 0 To b.submax[2]
+                    b[ia, ib, ic] = "Test b" & i
+                    Inc i
+                Next
+            Next
+        Next
+
+        For Each vValue As Variant In b
+            Print vValue,
+        Next
+        Print
+
+        Dim ty As Integer = 0
+        Dim iIndex As Integer = b.max
+        For ty As Integer = 0 To iIndex
+            Dim subs As Long[] = b.LinearToSubScript(ty)
+            Print b.FormatDim(subs); "="; b[ty]
         Next
 
         '' Test if we can get a single row
