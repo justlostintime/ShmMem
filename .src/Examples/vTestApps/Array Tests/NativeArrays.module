@@ -11,7 +11,7 @@ Public Sub Main()
     With mymem
         !a = a                                   '' this will automatically convert the array to a shmarray in the shared space and copy the data
         a[1, 1, 1] = 500
-
+        b[0, 0, 0] = 567
         !a[1, 1, 1] = 600
         Print !a[1, 1, 1]
     End With

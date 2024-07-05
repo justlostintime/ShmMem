@@ -8,7 +8,7 @@ Public Sub Main()
     Dim a As New Integer[10, 10, 10]
     a.Fill(99)
     Dim b As ShmArray = ShmArray._convert(mem, a)
-
+    b[9, 8, 7] = 300
     Stop
 
 End

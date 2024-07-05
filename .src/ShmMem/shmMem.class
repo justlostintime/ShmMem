@@ -164,8 +164,7 @@ Public Sub _put(value As Variant, SymName As String, ...)
         vars[SymName] = tmpvar
     Else
         ' otherwise we have to create the value entry
-        Print Object.Class(value).name
-        If Value Is Array Then
+        If TypeOf(Value) = gb.object And If value Is Array Then
             Dim nvalue As ShmArray
             nValue = ShmArray._convert(Me, Value)
             vars[SymName] = nValue

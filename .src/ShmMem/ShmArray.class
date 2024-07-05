@@ -100,6 +100,23 @@ Static Public Sub UserPtr(vvarmem As ShmVarStorage, VirtAddr As Pointer) As DArr
 
 End
 
+'' Return a list of arrays in memory
+Static Public Sub list(VarStorage As Variant) As ShmArray[]
+
+    Dim vvarmem As ShmVarStorage
+
+    If Object.Class(VarStorage).name == "ShmMem" Then
+        vVarMem = VarStorage.MyVarMem
+    Else
+        vVarMem = VarStorage
+    Endif
+
+    Dim Result As ShmArray[] = ShmMem.GetListType(vvarmem, cShmArray)
+
+    Return result
+
+End
+
 '' Create a new Array or a new refrence to an exsisting array
 Public Sub _new(VarStorage As Variant, Optional SubscriptsOrVirtAddressOrTag As Variant, Tag As String = "")
 
@@ -159,8 +176,11 @@ Public Sub _new(VarStorage As Variant, Optional SubscriptsOrVirtAddressOrTag As 
         ArrayData = VarMem.RealAddress(ArrayDef.DataAddress)
         DataPhysAddr = VarMem.RealDataAddress(ArrayDef.DataAddress)
         ArrayDef.tag = Byte[].FromString(tag)
-
     Else
+        ' VirtualAddress = locateByAddress(VirtAddress) ' caused endleass loop must do it here
+        ' If VirtualAddress = Null Then
+        '     Error.Raise("ShmArray new: Invalid Virtual address provided")
+        ' Endif
         VirtualAddress = VirtAddress
         ArrayDef = VarMem.RealAddress(VirtAddress)
         SemAddress = varmem.RealDataAddress(ArrayDef.sema)
@@ -205,11 +225,26 @@ End
 '' Locate an array by tag name in the shared memory soace
 Private Sub locateByTag(tag As String) As Pointer
 
-    Dim list As ShmArray[] = ShmMem.GetListType(varmem, cShmArray)
+    Dim vlist As ShmArray[] = ShmMem.GetListType(varmem, cShmArray)
 
-    If list.count = 0 Then Return Null
-    For Each s As ShmArray In list
-        If s.tag = tag Then
+    If vlist.count = 0 Then Return Null
+    For Each s As ShmArray In vlist
+        If s.tag == tag Then
+            Return s.VirtAddress
+        Endif
+    Next
+    Return Null
+
+End
+
+'' Locate an array by virtual address in the shared memory soace
+Private Sub locateByAddress(Virt As Pointer) As Pointer
+
+    Dim vlist As ShmArray[] = ShmMem.GetListType(varmem, cShmArray)
+
+    If vlist.count = 0 Then Return Null
+    For Each s As ShmArray In vlist
+        If s.VirtAddress = Virt Then
             Return s.VirtAddress
         Endif
     Next
@@ -373,7 +408,7 @@ Public Sub GetOffset(Dims As Variant[], Optional SingleIndex As Long) As Pointer
 
     If SingleIndex Or If Dims.count = 1 Then
         If Dims[0] < 0 Or If Dims[0] > ArrayDef.count - 1 Then
-            Error.Raise("ShmArray: Out of bounds, must be  : 0-" & ArrayDef.Count - 1)
+            Error.Raise("ShmArray : Out of bounds, must be  : 0-" & Str(ArrayDef.Count - 1))
         Else
             position = Dims[0]
         Endif
@@ -916,23 +951,23 @@ Static Public Sub _convert(VarStorage As Variant, ary As Variant) As ShmArray
 
     Dim result As ShmArray
     Dim Params As New Variant[]
-    Dim Varmem As Variant
+    Dim vVarmem As Variant
 
     If Ary Not Is Array Then
         Return Null
     Endif
 
     If Object.Class(VarStorage).name == "ShmMem" Then
-        VarMem = VarStorage.MyVarMem
+        vVarMem = VarStorage.MyVarMem
     Else
-        VarMem = VarStorage
+        vVarMem = VarStorage
     Endif
 
     Dim dims As New Long[Ary.bounds.count]
     For i As Integer = 0 To Ary.bounds.count - 1
         dims[i] = Ary.bounds[i]
     Next
-    Params.add(varmem)
+    Params.add(vvarmem)
     Params.add(dims)
     result = Object.New("ShmArray", Params)
     dims.Fill(0)

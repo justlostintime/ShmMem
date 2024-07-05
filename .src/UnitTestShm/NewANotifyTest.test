@@ -16,6 +16,6 @@ End
 Public Sub cow_changed(symname As String, value As Variant, failed As Boolean)
 
     'Print "Recieved value =";; value
-    Assert.Equals(value, 300, "Passed value = " & value)
+    Assert.Equals(value, 300, Quote(SymName) & " Was Passed value = " & value & "Timeout=" & Str(failed))
 
 End

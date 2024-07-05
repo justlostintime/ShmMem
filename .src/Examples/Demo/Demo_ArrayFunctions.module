@@ -21,6 +21,7 @@ Public Sub main()
         b[1, 1, 1] = 2
         b[0, 0, 0] = 1000
         b[5, 5, 5] = 500
+        bb[2] = "this message"
         !a = New Shmarray(mem, [3, 3, 3], "This Array 1")
         !ac = New ShmArray(mem, [5, 5], "The Matrix")
         !ad = New ShmArray(mem, [5, 5], "The Matrix2")

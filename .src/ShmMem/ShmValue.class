@@ -1,0 +1,227 @@
+' Gambas class file
+
+'' This class represents a single Shared memory value
+'' It can be created and destroyed, the value is stored in
+'' Shared memory
+
+Export
+
+Static Public cShmValue As Integer = 29                           '' The Constant identifying this class name must not be a valid datatype integer
+
+Public Struct AllocHeader                                                       '' Standard header
+    Length As Long                                                                       '' Length including header
+    Address As Pointer                                                                '' The virtual address of this block, speed pointer conversion
+    Type As Integer                                                                       '' Type of memory
+    {Next} As Pointer                                                                    '' null if no more in list
+End Struct
+
+'' Data Pointer for complex types
+Public Struct dPointer
+    Length As Long                                                                   '' Length including header
+    Address As Pointer                                                           '' The virtual address of this block, speed pointer conversion
+    Type As Integer                                                                  '' Type of memory
+    Value As Pointer                                                                 '' The actual value for usage
+End Struct
+
+'' Value Header structure for all types
+Public Struct dValue
+    Length As Long                                                                  '' Length including header
+    Address As Pointer                                                          '' The virtual address of this block, speed pointer conversion
+    Type As Integer                                                                 '' Type of array
+    {Next} As Pointer                                                              '' never really used except if free block
+    bDebug As Boolean                                                         '' debug flag for this datatype
+    Tag[64] As Byte                                                                  '' Tag id of Value
+    RefCount As Integer                                                         '' Refrence counter to this value
+    DataAddress As Pointer                                                 '' Pointer to where the memory is located
+
+End Struct
+
+ValueDef As DValue = Null                                                 '' the actual memory info
+Private VarMem As ShmVarStorage                              '' The storage pool to used or referenced
+
+Property Read VirtAddress As Pointer                          '' where the value header is stored
+Property Value As Variant                                                  ''  read or write the value
+Property Read type As Integer                                           '' the type of data
+Property tag As String                                                          '' tag value
+Property Read RealAddress As Pointer                           '' Return the real address of the ValueHeader
+Property Read RealDataAddress As Pointer                  '' Returns a pointer to the data header structure
+
+' Initialize the new  class by adding it to the list of datatypes
+Static Public Sub _init()
+
+    ShmVarStorage.DefineClass("ShmValue", cShmValue)
+
+End
+
+Static Public Sub list(VarStorage As Variant) As ShmValue[]
+
+    Dim vvarmem As ShmVarStorage
+
+    If Object.Class(VarStorage).name == "ShmMem" Then
+        vVarMem = VarStorage.MyVarMem
+    Else
+        vVarMem = VarStorage
+    Endif
+
+    Dim Result As ShmValue[] = ShmMem.GetListType(vvarmem, cShmValue)
+
+    Return result
+
+End
+
+'' Assign  this value to another variable, This is required to assign
+'' shmobjects to the symbol table
+Public Sub _Assign(VEntry As DPointer)
+
+    If ValueDef = Null Then
+        vEntry.value = Null                                    ' if the listhead is valid then continue
+    Else
+        vEntry.Value = ValueDef.Address        '  Assign this to the variable
+    Endif
+
+End
+
+Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = 0, Tag As String = "")
+
+    Dim VirtAddress As Pointer = Null
+    Dim pType As Integer = TypeOf(VirtAddressOrTag)
+
+    If Object.Class(VarStorage).name == "ShmMem" Then
+        VarMem = VarStorage.MyVarMem
+    Else
+        VarMem = VarStorage
+    Endif
+
+    If ptype = gb.pointer Or If pType = gb.long Or If ptype = gb.integer Then
+        VirtAddress = VirtAddressOrTag
+    Else If ptype = gb.string Then
+        VirtAddress = locateByTag(VirtAddressOrTag)
+        If VirtAddress = Null Then
+            Error.Raise("ShmValue: Tag name not found :" & VirtAddressOrTag)
+        Endif
+    Else
+        Error.Raise("ShmValue new: must get tag or virtaddress, wrong data type")
+    Endif
+
+    If VirtAddress = 0 Then
+        VirtAddress = VarMem.Alloc(SizeOf(dValue))
+        ValueDef = varmem.RealAddress(VirtAddress)
+        ValueDef.type = cShmValue
+        ValueDef.tag = Byte[].FromString(tag)
+    Else
+        ' Dim vAddr As Pointer = locateByAddress(VirtAddress) ' causes endless loop must do here
+        ' If vAddr = Null Then
+        '     Error.Raise("ShmValue new: Invalid Virtual address provided")
+        ' Endif
+        ValueDef = VarMem.RealAddress(VirtAddress)
+    Endif
+
+End
+
+Public Sub _get() As Variant
+
+    If ValueDef = Null Or If ValueDef.DataAddress = Null Then Return Null
+    Return varmem[ValueDef.dataAddress]
+
+End
+
+Public Sub _put(value As Variant)
+
+    If ValueDef = Null Then Return
+    If ValueDef.DataAddress = Null Then
+        ValueDef.DataAddress = VarMem.set(value)
+    Else
+        VarMem[ValueDef.DataAddress] = value
+    Endif
+
+End
+
+'' Free the value
+Public Sub {free}()
+
+    varmem.Free(ValueDef.DataAddress)
+    VarMem.Free(ValueDef.address)
+    ValueDef = Null
+
+End
+
+'' Locate an array by tag name in the shared memory soace
+Private Sub locateByTag(tag As String) As Pointer
+
+    Dim vlist As ShmValue[] = ShmMem.GetListType(varmem, cShmValue)
+
+    If vlist.count = 0 Then Return Null
+
+    For Each s As ShmArray In vlist
+        If s.tag == tag Then
+            Return s.VirtAddress
+        Endif
+    Next
+    Return Null
+
+End
+
+' Locate an array by tag name in the shared memory soace
+Private Sub locateByAddress(Virt As Pointer) As Pointer
+
+    Dim vlist As ShmValue[] = ShmMem.GetListType(varmem, cShmValue)
+
+    If vlist.count = 0 Then Return Null
+
+    For Each s As ShmArray In vlist
+        If s.VirtAddress = virt Then
+            Return s.VirtAddress
+        Endif
+    Next
+    Return Null
+
+End
+
+Private Function VirtAddress_Read() As Pointer
+
+    If valuedef = Null Then Return Null
+    Return ValueDef.address
+
+End
+
+Private Function Value_Read() As Variant
+
+    Return _get()
+
+End
+
+Private Sub Value_Write(Value As Variant)
+
+    _put(value)
+
+End
+
+Private Function type_Read() As Integer
+
+    Return ValueDef.type
+
+End
+
+Private Function tag_Read() As String
+
+    Return ValueDef.tag.tostring()
+
+End
+
+Private Sub tag_Write(Value As String)
+
+    ValueDef.tag.FromString(Value)
+
+End
+
+Private Function RealAddress_Read() As Pointer
+
+    Return varmem.RealAddress(ValueDef.Address)
+
+End
+
+Private Function RealDataAddress_Read() As Pointer
+
+    Return varmem.RealAddress(ValueDef.DataAddress)
+
+End

@@ -7,7 +7,7 @@ Public Sub main()
     Dim mystart As Float = Timer()
 
     Print "Begin to  write and clear the array 10000 times "
-    For loopcount As Integer = 0 To 10
+    For loopcount As Integer = 0 To 10000
         For i As Integer = 0 To b.SubMax[0]
             For j As Integer = 0 To b.SubMax[1]
                 For k As Integer = 0 To b.SubMax[2]

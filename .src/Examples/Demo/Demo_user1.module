@@ -71,6 +71,7 @@ Public Sub main()
         PrintStuff(MyShare)
     End With
     Print "User 1 Completed and exits"
+    Quit 0
 
 End
 
