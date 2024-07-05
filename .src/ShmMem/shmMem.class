@@ -124,14 +124,20 @@ Public Sub _property(...) As Boolean
 
 End
 
-'' alway create a new symbol when when not know, save value otherwise
+'' alway create a new symbol when  not know, save value otherwise
 Public Sub _unknown(...) As Variant
 
-    If Param.count = 0 Then
+    If Param.count = 0 Then                        ' if there are no parameters then assume it is a read value
         Return _get(Param.name)
     Endif
-
-    _put(Param[0], Param.name)
+    ' otherwise we have to create the value entry
+    If Param[0] Is Array Then
+        Dim value As ShmArray
+        Value = ShmArray._convert(Me, Param[0])
+        _put(Value, Param.name)
+    Else
+        _put(Param[0], Param.name)
+    Endif
 
 End
 
@@ -155,19 +161,17 @@ Public Sub _put(value As Variant, SymName As String, ...)
         params.Insert(value)
         params.Insert(Param.all)
         Object.Call(tmpvar, "_put", Params)
-        ' Select Case Param.count
-        '     Case 1
-        '         tmpvar[Param[0]] = value
-        '     Case 2
-        '         tmpvar[Param[0], Param[1]] = value
-        '     Case 3
-        '         tmpvar[Param[0], Param[1], Param[2]] = value
-        '     Case 4
-        '         tmpvar[Param[0], Param[1], Param[2], Param[3]] = value
-        ' End Select
         vars[SymName] = tmpvar
     Else
-        vars[SymName] = value
+        ' otherwise we have to create the value entry
+        Print Object.Class(value).name
+        If Value Is Array Then
+            Dim nvalue As ShmArray
+            nValue = ShmArray._convert(Me, Value)
+            vars[SymName] = nValue
+        Else
+            vars[SymName] = value
+        Endif
     Endif
 
 End
