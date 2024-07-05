@@ -58,7 +58,13 @@ Public Sub main()
             Else
                 Print "You may only assign : varname=value or varname="
             Endif
-            MyShare[element[0]] = element[1]
+            If element.count > 1 Then
+                MyShare[element[0]] = element[1]
+            Else If element.count = 1 Then
+                MyShare[element[0]] = "unassigned"
+            Else
+                Print "What the heck, thats not right"
+            End If
             PrintStuff(MyShare)
             Wait 0.001
         Wend
