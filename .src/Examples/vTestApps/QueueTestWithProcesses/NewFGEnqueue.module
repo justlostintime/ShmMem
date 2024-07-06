@@ -4,10 +4,14 @@ Public Sub Main()
 
     ShmMem.ForceDelete("Work")
     Dim work As New ShmMem(4200000, "Work")
+    Dim tag As String
+    Dim theQ As SHmQueue
+    Dim keytag As String
 
     With work
         !TheQ = New ShmQueue(work, 0, True, "Queue Test one")
-
+        TheQ = !TheQ
+        keytag = TheQ.key_tag
         !Testy1 = "hello world"
         !Testy2 = 1
         !Testy3 = 2.6
@@ -19,7 +23,12 @@ Public Sub Main()
         !TheQ.enqueue("5-100", 100, "Tag this 100")
 
         For Each qe As Variant In !TheQ
-            Dim tag As String = !TheQ.key_tag
+            tag = !TheQ.key_tag
+            Print qe, !TheQ.key, !TheQ.key_tag
+        Next
+
+        For Each qe As Variant In TheQ
+            tag = !TheQ.key_tag
             Print qe, !TheQ.key, !TheQ.key_tag
         Next
 
@@ -42,19 +51,26 @@ Public Sub Main()
         !TheQ.EnQueue("32-8", 8)
         !TheQ.enqueue("s12-3", 3)
         !TheQ.enqueue("5-100", 100)
+        !TheQ.enqueue("1-0", 0, "Tag this 0")
+        !TheQ.enqueue("23-6", 6, "Tag this 6")
+        !TheQ.enqueue("S2-5", 5, "Tag this 5")
+        !TheQ.EnQueue("3-4", 4, "Tag this 4")
+        !TheQ.enqueue("S4-3", 3, "Tag this 3")
+        !TheQ.enqueue("5-100", 100, "Tag this 100")
 
-        .PrintAllInfo()
+        ' .PrintAllInfo()
 
         Print "Queue contains:"
         For Each g As Variant In !TheQ
-            Print g
+            Print g, !TheQ.key, !TheQ.key_tag
         Next
 
-        Dim mytask As New NewBGDequeue
-        mytask.work = work
-        Wait 0.001
+        '  Dim mytask As New NewBGDequeue
+        '  mytask.work = work
+        '  Wait 0.001
 
-        mytask.Wait()
+        ' mytask.Wait()
+        Stop
 
         .PrintAllInfo()
 

@@ -1,14 +1,14 @@
 # Gambas Project File 3.0
 Title=ShmMem
-Startup=BasicValues
-Version=2.1.14
+Startup=NewFGEnqueue
+Version=2.1.16
 Component=gb.eval
 Description="This provides an interface to the Linux Shared memory functions. Allowing the creation and sharing of shared memory segments across any number of local applications or tasks. Added A gambas script to graphically monitor the Shared Memory.\n\nMore bug fixes, updateded web address to go to wiki, online information for shmmem\nAdded class ShmValue to create a single value in shared memory\nUpdated Automatically convert Gambas Native arrays to ShmArrays in shared memory. Performace...\nExtended Array, with toCvs FromCvs, import, export, redim, and copy\n\nUpdated Buf fixes, lists and Arrays\n\nUpdated to add static arrays of variant values max 10 dimensions.\n\nUpdated such that array,list ans queues can be access by tag name.\n\nUpdated to by default use locks for all lists/queues. Lock are localized to the specific list or queue being changed.\n\nTo do this it implements  an interface which allows any valid gambas object or variable to be directly stored or accessed via the interface\n\nexample::\nPublic Sub Main()\nMyShm = new ShmMem\n\nWith MyShm\n\n !a = \"this\"\n !b = 1\n\nprint !a, !b\n\nend with\nend"
 Authors="JustLostInTime, Westwood"
 TabSize=4
 Translate=1
 Language=en_US
-Type=Library
+Type=Component
 ForceBytecodeVersion=3.18
 Maintainer=brian
 Vendor=Westwood
@@ -16,15 +16,15 @@ Address=justlostintime@gmail.com
 Url=https://github.com/justlostintime
 License=General Public License
 Prefix=1
-PackageName=westwood-shmmem-2.1.14
-PackageVersion=2
+PackageName=gambas3-gb-shmmem-2.1.16
+PackageVersion=5
 CreateEachDirectory=1
 RuntimeVersion="3.18"
 Packager=1
 Systems=archlinux,autotools,debian,fedora,mageia,slackware,suse,ubuntu
 SameDependencies=1
 SameFiles=1
-Groups=archlinux:"libdevel"
+Groups=archlinux:"libs"
 Groups=debian:"libs"
 Groups=fedora:"Development/Libraries"
 Groups=mageia:"System/Libraries"

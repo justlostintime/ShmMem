@@ -23,15 +23,13 @@ Public Struct dList                         '' A defined entry in list of object
     Tag[64] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                      '' Number of refrences to this element
     Priority As Long                           '' Priority/Extended ID of a list element
-    UsePriority As Boolean            '' Enable the use of priority ordering in the queue
-    enum_counter As Long              '' Used when enumerating a list structure
-    enum_listitem As Dlist               '' pointer to dlist
-    Value As Pointer                         '' Value of entry or count if pool
+    UsePriority As Boolean             '' Enable the use of priority ordering in the queue
+    foreach As Pointer                       '' virtual address of the entry being processed by the foreach
+    Value As Pointer                          '' Value of entry or count if pool
 End Struct
 
 Static Public cShmQueue As Integer = 26                                          ''  Static type value Assigned to this Shm class - 26
 Static Public cShmQueueEntry As Integer = 27                                ''  Static type value Assigned to each entry in this queue - 27
-Private listhead As Dlist                                                                           '' Internal pointer to the actual shared memory
 
 Property Read key As Long                                                                   ''  This returns the priority
 Property Read Key_Tag As String                                                       '' The content of the entry tag field
@@ -50,13 +48,11 @@ Static Public Sub _init()
 
 End
 
-Public Sub _new(Optional usePriority As Boolean = True)
+Public Sub _new()
 
     Super.SetHeadType = cShmQueue                                 '' The list header Class
     Super.SetEntryType = cShmQueueEntry                        '' The List Entry Class
-    ListHead = Super.Listhead                                                  '' speed up for not seeking the super value
-    listhead.Type = cShmQueue                                              '' This structure is a Queue
-    listhead.UsePriority = UsePriority                                    '' Sets if we are to sort by priority
+    Super.listhead.Type = cShmQueue                                   '' This structure is a Queu
 
 End
 
@@ -79,7 +75,7 @@ Private LastIndex As Integer = 0
 '' add entry onto the queue, sort by priority
 Public Sub EnQueue(Value As Variant, Optional Priority As Integer = 0, TagValue As String = "")
 
-    If priority = 0 Or If listhead.UsePriority = False Then
+    If priority = 0 Or If Super.listhead.UsePriority = False Then
         Me.add(value, Priority, TagValue)
         Return
     Endif
@@ -97,7 +93,7 @@ Public Sub DeQueue(Optional Priority As Integer = -1) As Variant
     Dim value As Variant
 
     Super.VarMem.Lock()
-    If Priority = -1 Or If listhead.UsePriority = False Then
+    If Priority = -1 Or If Super.listhead.UsePriority = False Then
         Value = Me.remove(0)
         Super.VarMem.Unlock()
         Return value
@@ -118,7 +114,7 @@ End
 Private Sub SeekPriority(Priority As Integer, Optional bMatch As Boolean = False) As DList
 
     Dim Index As Long = 0
-    Dim current As Dlist = Super.EntryPtr(listhead.Next)
+    Dim current As Dlist = Super.EntryPtr(Super.listhead.Next)
 
     While current
         If bMatch Then
@@ -133,7 +129,7 @@ Private Sub SeekPriority(Priority As Integer, Optional bMatch As Boolean = False
         Inc Index
     Wend
 
-    If Index >= listhead.Value Then
+    If Index >= Super.listhead.Value Then
         Index = -1
     Endif
 
@@ -156,54 +152,65 @@ Public Sub Exist(Priority As Integer) As Boolean
 
 End
 
+Public Struct foreachinfo
+    Priority As Integer                     '' the priority of the last entry
+    entry As Pointer                         '' virtual address of the last entry
+End Struct
+
 '' iterate over the queue according to the priority
 Public Sub _next() As Variant
 
     Dim ListItem As DList
+
     '    Dim Listof As DList = listhead
 
     If IsNull(Enum.Index) Then
 
-        If listhead <> Null And If listhead.next <> Null And If listhead.Value > 0 Then
-            Enum.index = listhead
-            ListItem = Super.EntryPtr(listhead.next)
-            Enum.index.enum_listitem = listitem
-            Enum.Index.enum_counter = Listitem.Priority                                            ' sets the key to be the items priority in the queue
+        If Super.listhead <> Null And If Super.listhead.next <> Null And If Super.listhead.Value > 0 Then
+            Enum.index = New Foreachinfo
+            ListItem = Super.EntryPtr(Super.listhead.next)
+            Enum.index = listitem.Address
         Else
+            Super.ListHead.foreach = Null
             Enum.Stop()
             Return
         Endif
     Else
-        listitem = Enum.index.enum_listitem
+        listitem = Super.EntryPtr(Enum.index)                                      ' now we keep the virtual address
         If ListItem.next = 0 Then
+            Super.ListHead.foreach = Null
             Enum.Stop()
             Return
         Else
-            listitem = Enum.index.enum_listitem
             ListItem = Super.EntryPtr(ListItem.next)
-            Enum.Index.enum_Counter = ListItem.Priority                                 ' in this case this is the priority
-            Enum.Index.enum_listitem = listitem
+            Enum.Index = listitem.address                                                '  store the virtual address
         Endif
     Endif
 
+    Super.ListHead.foreach = Enum.index
     Return Super.VarMem[ListItem.value]
 
 Catch
     Print "ShmQueue Next error ";; Error.text;; Error.where
     Print Hex(listitem.Address)
+    Super.ListHead.foreach = Null
 
 End
 
 '' returns the index of the current entry in the queue during for each loop
 Private Function key_Read() As Long
 
-    Return ListHead.enum_counter
+    If Super.listhead = Null Or If Super.ListHead.foreach = Null Then Return 0
+    Dim entry As Dlist = Super.EntryPtr(Super.ListHead.foreach)
+    Return entry.priority
 
 End
-'' returns the tag of the current entry during for each loop
 
+'' returns the tag of the current entry during for each loop
 Private Function Key_Tag_Read() As String
 
-    Return ListHead.enum_listitem.Tag.ToString()
+    If Super.listhead = Null Or If Super.ListHead.foreach = Null Then Return ""
+    Dim entry As Dlist = Super.EntryPtr(Super.ListHead.foreach)
+    Return entry.Tag.ToString()
 
 End

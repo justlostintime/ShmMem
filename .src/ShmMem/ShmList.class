@@ -41,8 +41,7 @@ Public Struct dList                             '' A defined entry in list of ob
     RefCount As Long                          '' Number of refrences to this element
     Priority As Long                              '' in a queue this is the priority of this element
     UsePriority As Boolean                '' Enable the use of priority ordering in the list
-    enum_counter As Long               '' Used when enumerating a list structure
-    enum_listitem As Dlist                 '' pointer to dlist
+    foreach As Pointer                         '' virtual address of the entry being processed by the foreach
     Value As Pointer                            '' Value of entry or count if pool
 End Struct
 
@@ -110,7 +109,7 @@ End
 ''                                                                VirtAddressOrTag = "tagname" then lookfor and return list with this tag
 ''                                                                VirtAddressOrTag > 0 then return list at this virtual address
 
-Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "")
+Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "", UsePriority As Boolean = True)
 
     Dim Result As Integer = 0
     Dim VirtAddress As Pointer = 0
@@ -137,16 +136,17 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = CP
         ListHead.type = SetHeadType
         ListHead.Global = GlobalValue
         ListHead.sema = VarMem.Alloc(64)
-        ListHead.UsePriority = False
+        ListHead.UsePriority = UsePriority
         ListHead.Value = 0
         ListHead.tag = Byte[].FromString(tag)
         SemAddress = varmem.RealDataAddress(ListHead.sema)
         result = sem_init(SemAddress, 1, 0)
     Else
-        VirtualAddress = VirtAddress
         RealPtr = VarMem.RealAddress(VirtAddress)
         ListHead = RealPtr
+        VirtualAddress = ListHead.address
         SemAddress = varmem.RealDataAddress(ListHead.sema)
+
         Me.lock()
         Inc ListHead.RefCount
     Endif
@@ -352,10 +352,11 @@ Public Sub add(Value As Variant, Optional ExtendedId As Long = 0, TagInfo As Str
     NewElement.Priority = ExtendedId
 
     If TagInfo <> "" Then
-        If TagInfo.len < NewElement.Tag.Length Then TagInfo = Left(TagInfo & Space(NewElement.Tag.Length), NewElement.Tag.Length)
-        For i As Integer = 0 To NewElement.tag.length - 1
-            NewElement.Tag[i] = Asc(Taginfo[i])
-        Next
+        ' If TagInfo.len < NewElement.Tag.Length Then TagInfo = Left(TagInfo & Space(NewElement.Tag.Length), NewElement.Tag.Length)
+        ' For i As Integer = 0 To NewElement.tag.length - 1
+        '     NewElement.Tag[i] = Asc(Taginfo[i])
+        ' Next
+        NewElement.Tag = Byte[].FromString(Taginfo)
     Endif
 
     If ListHead.Next = 0 Then
@@ -556,10 +557,11 @@ Public Sub insert(Index As Long, value As Variant, Optional ExtendedId As Intege
     Me.lock()
 
     If TagInfo <> "" Then
-        If TagInfo.len < NewItem.Tag.Length Then TagInfo = Left(TagInfo & Space(NewItem.Tag.Length), NewItem.Tag.Length)
-        For i As Integer = 0 To NewItem.tag.length - 1
-            NewItem.Tag[i] = Asc(Taginfo[i])
-        Next
+        ' If TagInfo.len < NewItem.Tag.Length Then TagInfo = Left(TagInfo & Space(NewItem.Tag.Length), NewItem.Tag.Length)
+        ' For i As Integer = 0 To NewItem.tag.length - 1
+        '     NewItem.Tag[i] = Asc(Taginfo[i])
+        ' Next
+        NewItem.tag = Byte[].FromString(TagInfo)
     Endif
 
     NewItem.Priority = ExtendedId
@@ -1394,7 +1396,7 @@ End
 Private Function Tag_Read() As String
 
     If ListHead = Null Then Return ""
-    Return Trim(ListHead.Tag.ToString())
+    Return ListHead.Tag.ToString()
 
 End
 

@@ -69,7 +69,7 @@ Geometry=[848,302,415,130]
 Geometry=[834,512,252,56]
 
 [DebugWindow/ListHead]
-Geometry=[834,512,252,56]
+Geometry=[834,512,444,379]
 
 [DebugWindow/ListHead.Tag]
 Geometry=[848,520,252,504]
@@ -404,6 +404,9 @@ Geometry=[355,298,392,276]
 [DebugWindow/element.dList]
 Geometry=[369,312,442,385]
 
+[DebugWindow/enum.index]
+Geometry=[834,505,252,70]
+
 [DebugWindow/factor]
 Geometry=[834,402,252,276]
 
@@ -423,7 +426,10 @@ Geometry=[834,388,447,276]
 Geometry=[848,402,252,310]
 
 [DebugWindow/listhead]
-Geometry=[834,512,252,58]
+Geometry=[834,512,690,330]
+
+[DebugWindow/listhead.Tag]
+Geometry=[848,520,252,504]
 
 [DebugWindow/listhead.enum_listitem]
 Geometry=[2310,518,474,330]
@@ -469,6 +475,9 @@ Geometry=[834,512,252,56]
 
 [DebugWindow/newlist.ListHead]
 Geometry=[834,512,252,56]
+
+[DebugWindow/next_info]
+Geometry=[834,505,252,70]
 
 [DebugWindow/nvalue]
 Geometry=[834,292,252,504]
@@ -536,6 +545,27 @@ Geometry=[834,415,516,364]
 [DebugWindow/theList]
 Geometry=[834,512,252,56]
 
+[DebugWindow/theQ]
+Geometry=[1011,246,640,508]
+
+[DebugWindow/theQ.AllEntries]
+Geometry=[848,288,544,284]
+
+[DebugWindow/theQ.AllEntries[0]]
+Geometry=[862,302,252,230]
+
+[DebugWindow/theQ.AllEntries[0].dList]
+Geometry=[876,316,252,330]
+
+[DebugWindow/theQ.AllEntries[0].dList.Tag]
+Geometry=[890,330,252,504]
+
+[DebugWindow/theQ.ListHead]
+Geometry=[1025,260,540,423]
+
+[DebugWindow/theQ.ListHead.Tag]
+Geometry=[1039,274,252,504]
+
 [DebugWindow/tmpptr]
 Geometry=[2754,498,252,56]
 
@@ -581,6 +611,18 @@ Geometry=[834,512,252,110]
 [DebugWindow/where]
 Geometry=[834,388,252,276]
 
+[DebugWindow/work]
+Geometry=[834,368,539,316]
+
+[DebugWindow/work["theq"]]
+Geometry=[503,145,644,602]
+
+[DebugWindow/work["theq"].AllEntries]
+Geometry=[492,226,448,282]
+
+[DebugWindow/work["theq"].AllLists]
+Geometry=[492,226,252,276]
+
 [DebugWindow/working]
 Geometry=[834,498,252,56]
 
@@ -606,20 +648,27 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Tested all scripts, fixed bugsFix more bugs in array and value\n\n* Bug: Queue had incorrect access to values in keys during iteration"
+LastCommit="Updated the embedded Help information inside the class files\n\n* Opt: Update the Help information embedded in the class files"
 
 [OpenFile]
-Count=3
-File[1]=".src/Examples/vTestApps/Values/BasicValues.module:0.0"
+Count=10
+File[1]=".src/Examples/vTestApps/QueueTestWithProcesses/NewBGDequeue.class:3.39"
 Active=2
-File[2]=".src/ShmMem/ShmQueue.class:69.31"
-File[3]=".src/ShmMem/ShmList.class:93.49"
+File[2]=".src/Examples/vTestApps/QueueTestWithProcesses/NewFGEnqueue.module:20.12"
+File[3]=".src/ShmMem/ShmQueue.class:30.212"
+File[4]=".src/ShmMem/ShmQueueEntry.class:35.11"
+File[5]=".src/ShmMem/ShmListEntry.class:74.40"
+File[6]=".src/ShmMem/ShmList.class:10.175"
+File[7]=".src/ShmMem/ShmVarStorage.class:0.45"
+File[8]=".src/ShmMem/NextInfo.class:0.0"
+File[9]=".src/ShmMem/EntryInfo.class:0.0"
+File[10]=".src/ShmMem/ShmArray.class:0.240"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"
 
 [Watches]
-Count=10
+Count=13
 Watch[1]="param"
 Watch[2]="me"
 Watch[3]="notifyqueue[0]"
@@ -630,4 +679,7 @@ Watch[7]="param.all"
 Watch[8]="MyMem!a"
 Watch[9]="mymem!a[1,1,1]"
 Watch[10]="a[1,1,1]"
+Watch[11]="Super.listhead"
+Watch[12]="listhead"
+Watch[13]="enum.index"
 

@@ -39,10 +39,9 @@ Public Struct dList                           '' A defined entry in list of obje
     Tag[64] As Byte                            '' a user text tag for this list, can be used to identify nameless queues
     RefCount As Long                       '' Number of refrences to this element
     Priority As Long                           '' in a queue this is the priority of this element or the Extended Id of a list
-    UsePriority As Boolean            '' Enable the use of priority ordering in the queue
-    enum_counter As Long              '' Used when enumerating a list structure
-    enum_listitem As Dlist               '' pointer to dlist
-    Value As Pointer                          '' Value of entry or count if pool
+    UsePriority As Boolean              '' Enable the use of priority ordering in the queue
+    foreach As Pointer                       '' virtual address of the entry being processed by the foreach
+    Value As Pointer                           '' Value of entry or count if pool
 End Struct
 
 '' Array Header structure for all types

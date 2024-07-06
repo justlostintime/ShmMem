@@ -1,20 +1,20 @@
 ' Gambas class file
 
 Inherits Task
-Public work As Shmmem
+Public work As Shmmem                              ' this is set by the App starting the task
 
 Public Sub main() As Integer
 
-    'Dim work As New ShmMem(4200000, "Work")
+    Dim s As String
 
     With work
         '!TheQ.Debug = True
         Dim theq As Variant = !TheQ
         Print "BG starts, Q length = ";; TheQ.count
         Print "BG Queue contains:"
-        For Each g As Variant In TheQ
-            Dim s As String = theq.key_tag
-            Print g, "Priorty ="; TheQ.key;; ", Tag="; Quote(TheQ.key_tag)
+        For Each g As Variant In !TheQ
+            s = theq.key_tag
+            Print g, "Priorty ="; TheQ.key;; ", Tag="; Quote(s)
             Flush
         Next
         Print "BG End Queue"
