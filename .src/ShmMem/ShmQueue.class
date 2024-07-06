@@ -24,7 +24,6 @@ Public Struct dList                         '' A defined entry in list of object
     RefCount As Long                      '' Number of refrences to this element
     Priority As Long                           '' Priority/Extended ID of a list element
     UsePriority As Boolean             '' Enable the use of priority ordering in the queue
-    foreach As Pointer                       '' virtual address of the entry being processed by the foreach
     Value As Pointer                          '' Value of entry or count if pool
 End Struct
 
@@ -152,11 +151,6 @@ Public Sub Exist(Priority As Integer) As Boolean
 
 End
 
-Public Struct foreachinfo
-    Priority As Integer                     '' the priority of the last entry
-    entry As Pointer                         '' virtual address of the last entry
-End Struct
-
 '' iterate over the queue according to the priority
 Public Sub _next() As Variant
 
@@ -167,41 +161,42 @@ Public Sub _next() As Variant
     If IsNull(Enum.Index) Then
 
         If Super.listhead <> Null And If Super.listhead.next <> Null And If Super.listhead.Value > 0 Then
-            Enum.index = New Foreachinfo
+            Enum.index = New ShmValue(Super.VarMem, 0, "foreach_" & Str(Application.id))
             ListItem = Super.EntryPtr(Super.listhead.next)
-            Enum.index = listitem.Address
+            Enum.index.value = listitem.Address
         Else
-            Super.ListHead.foreach = Null
             Enum.Stop()
             Return
         Endif
     Else
-        listitem = Super.EntryPtr(Enum.index)                                      ' now we keep the virtual address
+        listitem = Super.EntryPtr(Enum.index.value)                                      ' now we keep the virtual address
         If ListItem.next = 0 Then
-            Super.ListHead.foreach = Null
             Enum.Stop()
             Return
         Else
             ListItem = Super.EntryPtr(ListItem.next)
-            Enum.Index = listitem.address                                                '  store the virtual address
+            Enum.Index.value = listitem.address                                                '  store the virtual address
         Endif
     Endif
 
-    Super.ListHead.foreach = Enum.index
     Return Super.VarMem[ListItem.value]
 
 Catch
     Print "ShmQueue Next error ";; Error.text;; Error.where
     Print Hex(listitem.Address)
-    Super.ListHead.foreach = Null
 
 End
 
 '' returns the index of the current entry in the queue during for each loop
 Private Function key_Read() As Long
 
-    If Super.listhead = Null Or If Super.ListHead.foreach = Null Then Return 0
-    Dim entry As Dlist = Super.EntryPtr(Super.ListHead.foreach)
+    Dim foreach As ShmValue
+
+    If Super.listhead = Null Then Return 0
+    Try foreach = New ShmValue(Super.VarMem, "foreach_" & Str(Application.id))
+    If foreach = Null Then Return -1
+
+    Dim entry As Dlist = Super.EntryPtr(foreach.value)
     Return entry.priority
 
 End
@@ -209,8 +204,13 @@ End
 '' returns the tag of the current entry during for each loop
 Private Function Key_Tag_Read() As String
 
-    If Super.listhead = Null Or If Super.ListHead.foreach = Null Then Return ""
-    Dim entry As Dlist = Super.EntryPtr(Super.ListHead.foreach)
+    Dim foreach As ShmValue
+
+    If Super.listhead = Null Then Return ""
+    Try foreach = New ShmValue(Super.VarMem, "foreach_" & Str(Application.id))
+    If foreach = Null Then Return ""
+
+    Dim entry As Dlist = Super.EntryPtr(foreach.value)
     Return entry.Tag.ToString()
 
 End

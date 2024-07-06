@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={}
+Breakpoints={"TestcreateandlocatebyTag":[21],"NewFGEnqueue":[62,23,28,33]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -299,6 +299,12 @@ Geometry=[834,512,252,56]
 [DebugWindow/Value]
 Geometry=[2224,387,316,504]
 
+[DebugWindow/ValueDef]
+Geometry=[834,445,252,190]
+
+[DebugWindow/ValueDef.Tag]
+Geometry=[848,459,252,504]
+
 [DebugWindow/VarExtended]
 Geometry=[834,388,252,276]
 
@@ -354,7 +360,19 @@ Geometry=[2796,350,252,276]
 Geometry=[2782,336,488,456]
 
 [DebugWindow/c]
-Geometry=[2734,458,252,508]
+Geometry=[1405,292,252,508]
+
+[DebugWindow/c[0]]
+Geometry=[848,526,252,150]
+
+[DebugWindow/c[101]]
+Geometry=[848,526,252,150]
+
+[DebugWindow/c[1]]
+Geometry=[2436,460,252,150]
+
+[DebugWindow/c[20]]
+Geometry=[2748,472,252,150]
 
 [DebugWindow/cc]
 Geometry=[2754,355,667,466]
@@ -386,6 +404,9 @@ Geometry=[848,385,252,90]
 [DebugWindow/dimset]
 Geometry=[834,498,252,56]
 
+[DebugWindow/e]
+Geometry=[2433,675,252,150]
+
 [DebugWindow/eList]
 Geometry=[2186,559,252,100]
 
@@ -405,7 +426,7 @@ Geometry=[355,298,392,276]
 Geometry=[369,312,442,385]
 
 [DebugWindow/enum.index]
-Geometry=[834,505,252,70]
+Geometry=[834,512,252,56]
 
 [DebugWindow/factor]
 Geometry=[834,402,252,276]
@@ -438,7 +459,7 @@ Geometry=[2310,518,474,330]
 Geometry=[2324,532,252,504]
 
 [DebugWindow/mBlock]
-Geometry=[834,372,252,336]
+Geometry=[834,512,252,56]
 
 [DebugWindow/mclass]
 Geometry=[834,445,504,297]
@@ -605,6 +626,12 @@ Geometry=[2196,554,252,56]
 [DebugWindow/virt]
 Geometry=[2115,742,252,110]
 
+[DebugWindow/vlist]
+Geometry=[834,512,252,56]
+
+[DebugWindow/vlist[0]]
+Geometry=[834,512,252,56]
+
 [DebugWindow/vptr]
 Geometry=[834,512,252,110]
 
@@ -648,21 +675,15 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Updated the embedded Help information inside the class files\n\n* Opt: Update the Help information embedded in the class files"
+LastCommit="Updated queue iteration, had a bad address in foreach loop sometimes\n\n* Bug: When a second app did iteration thru queue, the loop keys disapeared or pointed to bad memory\n*      only happened when using a symbol entry as the object in a for each loop."
 
 [OpenFile]
-Count=10
-File[1]=".src/Examples/vTestApps/QueueTestWithProcesses/NewBGDequeue.class:3.39"
-Active=2
-File[2]=".src/Examples/vTestApps/QueueTestWithProcesses/NewFGEnqueue.module:20.12"
-File[3]=".src/ShmMem/ShmQueue.class:30.212"
-File[4]=".src/ShmMem/ShmQueueEntry.class:35.11"
-File[5]=".src/ShmMem/ShmListEntry.class:74.40"
-File[6]=".src/ShmMem/ShmList.class:10.175"
-File[7]=".src/ShmMem/ShmVarStorage.class:0.45"
-File[8]=".src/ShmMem/NextInfo.class:0.0"
-File[9]=".src/ShmMem/EntryInfo.class:0.0"
-File[10]=".src/ShmMem/ShmArray.class:0.240"
+Count=4
+File[1]=".src/Examples/vTestApps/QueueTestWithProcesses/NewFGEnqueue.module:12.33"
+Active=4
+File[2]=".src/ShmMem/ShmQueue.class:27.206"
+File[3]=".src/ShmMem/shmMem.class:41.53"
+File[4]=".src/ShmMem/ShmValue.class:0.166"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

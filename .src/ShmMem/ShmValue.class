@@ -78,6 +78,7 @@ Public Sub _Assign(VEntry As DPointer)
         vEntry.value = Null                                    ' if the listhead is valid then continue
     Else
         vEntry.Value = ValueDef.Address        '  Assign this to the variable
+        Inc ValueDef.RefCount
     Endif
 
 End
@@ -117,6 +118,8 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = 0,
         ValueDef = VarMem.RealAddress(VirtAddress)
     Endif
 
+    Inc ValueDef.RefCount
+
 End
 
 Public Sub _get() As Variant
@@ -137,39 +140,54 @@ Public Sub _put(value As Variant)
 
 End
 
+'' system free
+Public Sub _free()
+
+    If ValueDef = Null Then Return
+    Me.free()
+
+End
+
 '' Free the value
 Public Sub {free}()
 
+    If valueDef = Null Then Return
+    Dec ValueDef.Refcount
+    ' Error "Value Test for delete @"; ValueDef.Address;; " RefCount="; ValueDef.RefCount
+    If ValueDef.RefCount > 0 Then Return
     varmem.Free(ValueDef.DataAddress)
+    ' Error " Value Deleting @"; ValueDef.address
     VarMem.Free(ValueDef.address)
     ValueDef = Null
 
 End
 
-'' Locate an array by tag name in the shared memory soace
+'' Locate an array by tag name in the shared memory space
 Private Sub locateByTag(tag As String) As Pointer
 
-    Dim vlist As ShmValue[] = ShmMem.GetListType(varmem, cShmValue)
+    Dim result As Pointer = Null
 
-    If vlist.count = 0 Then Return Null
-
-    For Each s As ShmArray In vlist
-        If s.tag == tag Then
-            Return s.VirtAddress
+    For Each mBlock As Variant In VarMem
+        If mBlock.type = CshmValue
+            If mBlock.tag == tag Then
+                result = mBlock.VirtAddress
+                Break
+            Endif
         Endif
     Next
-    Return Null
+
+    Return result
 
 End
 
-' Locate an array by tag name in the shared memory soace
+''  Locate an array by tag name in the shared memory space
 Private Sub locateByAddress(Virt As Pointer) As Pointer
 
     Dim vlist As ShmValue[] = ShmMem.GetListType(varmem, cShmValue)
 
     If vlist.count = 0 Then Return Null
 
-    For Each s As ShmArray In vlist
+    For Each s As ShmValue In vlist
         If s.VirtAddress = virt Then
             Return s.VirtAddress
         Endif

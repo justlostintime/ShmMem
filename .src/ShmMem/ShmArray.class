@@ -225,15 +225,18 @@ End
 '' Locate an array by tag name in the shared memory soace
 Private Sub locateByTag(tag As String) As Pointer
 
-    Dim vlist As ShmArray[] = ShmMem.GetListType(varmem, cShmArray)
+    Dim result As Pointer = Null
 
-    If vlist.count = 0 Then Return Null
-    For Each s As ShmArray In vlist
-        If s.tag == tag Then
-            Return s.VirtAddress
+    For Each mBlock As Variant In VarMem
+        If mBlock.type = CshmArray
+            If mBlock.tag == tag Then
+                result = mBlock.VirtAddress
+                Break
+            Endif
         Endif
     Next
-    Return Null
+
+    Return result
 
 End
 

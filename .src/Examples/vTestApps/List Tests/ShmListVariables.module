@@ -6,12 +6,14 @@ Public Sub main()
 
     Dim element As ShmListEntry
     Dim Elements As ShmList
+    Dim otherElements As Shmlist
     Dim eList As ShmListEntry[]
 
     vars.PrintAllInfo()
 
     element = New ShmListEntry(vars, 0, 100, "test element entry  to go")
     elements = New ShmList(vars, 0, 0, "Test Element List")
+    otherElements = New ShmList(vars, "Test Element List")
     elements.Debug = True
     elements.add("Entry 1")
     elements.add("entry 2")

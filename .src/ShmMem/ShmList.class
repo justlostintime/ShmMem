@@ -41,7 +41,6 @@ Public Struct dList                             '' A defined entry in list of ob
     RefCount As Long                          '' Number of refrences to this element
     Priority As Long                              '' in a queue this is the priority of this element
     UsePriority As Boolean                '' Enable the use of priority ordering in the list
-    foreach As Pointer                         '' virtual address of the entry being processed by the foreach
     Value As Pointer                            '' Value of entry or count if pool
 End Struct
 
@@ -158,14 +157,19 @@ End
 '' Returns  the virtual address of the List having the specified tag
 Private Sub locateByTag(tag As String) As Pointer
 
-    Dim list As Variant[] = ShmMem.GetListType(varmem, SetHeadType)
+    Dim result As Pointer = Null
 
-    If list.count = 0 Then Return Null
-    For Each s As Variant In list
-        If s.tag == tag Then
-            Return s.Address
+    For Each mBlock As Variant In VarMem
+        If mBlock.type = SetHeadType
+            If mBlock.tag == tag Then
+                result = mBlock.Address
+                Break
+            Endif
         Endif
     Next
+
+    Return result
+
     Return Null
 
 End

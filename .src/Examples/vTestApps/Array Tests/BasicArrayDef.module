@@ -29,10 +29,10 @@ Public Sub main()
     Print "A - Array element count =";; a.count
     Print "A...";; a[1, 2];; a[0, 1]
 
+    Print "Reaccess an array by tag info"
     Dim d As New ShmArray(MyMem, "randomTag")                    '' access the array using the tag assigned to it
-    Print "B - Array element count=";; d.count
+    Print "D - Array element count=";; d.count
     Print "D...";; d[1, 2];; d[0, 1]
-    mymem.PrintAllInfo()
 
     a.clear()
 

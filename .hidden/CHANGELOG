@@ -1,18 +1,7 @@
 * Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.16
-
-* Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.14
-
-* Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.14
-
-* Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.16
-
-* Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.16
-
-* Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.14
-
-* Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.16
-
-* Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.16
+- Updated queue iteration, had a bad address in foreach loop sometimes
+- * Bug: When a second app did iteration thru queue, the loop keys disapeared or pointed to bad memory
+- *      only happened when using a symbol entry as the object in a for each loop.
 
 * Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.15
 - Updated Help information embedded in the source code
@@ -38,8 +27,6 @@
 
 * Sun Jun 16 2024 brian <justlostintime@gmail.com> 2.1.9
 - Cleaned up the debug messages, added script to monitor the Shared memory
-
-
 
 * Fri May 31 2024 brian <justlostintime@gmail.com> 2.0.8
 - Initial release

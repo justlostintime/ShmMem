@@ -178,6 +178,8 @@ Private Sub AddFree(VirtAddr As Pointer)
     Dim virt As Allocheader
     Dim ClearLength As Long
 
+    If virtaddr = Null Then Return
+
     If virtaddr >= ManagedInfo.EndOfMem Or Virtaddr < ManagedInfo.StartOfMem Then
         Error.Raise("Out Of Bounds : " & VirtAddr)
     Endif

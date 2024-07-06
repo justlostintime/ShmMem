@@ -38,7 +38,6 @@ Public Struct dList                         '' A defined entry in list of object
     RefCount As Long                      '' Number of refrences to this element
     Priority As Long                           '' in a queue this is the priority of this element or the Extended Id of a list
     UsePriority As Boolean             '' Enable the use of priority ordering in the list
-    foreach As Pointer                      '' virtual address of the entry being processed by the foreach
     Value As Pointer                         '' Value of entry or count if pool
 End Struct
 

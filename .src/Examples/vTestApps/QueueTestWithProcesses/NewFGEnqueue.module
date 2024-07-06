@@ -11,7 +11,6 @@ Public Sub Main()
     With work
         !TheQ = New ShmQueue(work, 0, True, "Queue Test one")
         TheQ = !TheQ
-        keytag = TheQ.key_tag
         !Testy1 = "hello world"
         !Testy2 = 1
         !Testy3 = 2.6
@@ -24,12 +23,12 @@ Public Sub Main()
 
         For Each qe As Variant In !TheQ
             tag = !TheQ.key_tag
-            Print qe, !TheQ.key, !TheQ.key_tag
+            Print qe, !TheQ.key, Quote(!TheQ.key_tag)
         Next
 
         For Each qe As Variant In TheQ
-            tag = !TheQ.key_tag
-            Print qe, !TheQ.key, !TheQ.key_tag
+            tag = TheQ.key_tag
+            Print qe, TheQ.key, Quote(TheQ.key_tag)
         Next
 
         .PrintTree()
