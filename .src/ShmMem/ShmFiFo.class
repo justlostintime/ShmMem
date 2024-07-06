@@ -9,10 +9,12 @@
 Export
 'Fast Unsafe
 
+''' Implements a first in first out Queue in shared memory
+
 Inherits ShmList
 
-Static Public cShmFiFo As Integer = 22
-Static Public cShmFiFoEntry As Integer = 23
+Static Public cShmFiFo As Integer = 22                                   ''  Static type value Assigned to this Shm class - 22
+Static Public cShmFiFoEntry As Integer = 23                         '' The entry in a ShmList object type - 23
 
 Static Public Sub _init()
 

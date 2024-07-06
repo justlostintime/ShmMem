@@ -35,22 +35,22 @@ Public Struct Symbol
     Type As Integer                                '' data type of the data stored into the memory, -1 if gambas data type
 End Struct
 
-Public NotifyObject As Object
-Public NotifyFunc As String
-Public NotifyTimeout As Integer
-Public NotifyVar As Symbol
-Public VarName As String
-Public VarMemory As ShmVarStorage
-Public SymTable As ShmSymbolTable
-Public Tag As String
-Public StartTime As Float
-Private VarClock As Timer
-Private OneShot As Boolean = False
+Public NotifyObject As Object                               '' The Object to raise the notify event with
+Public NotifyFunc As String                                    '' Name of the function to call when being notifies
+Public NotifyTimeout As Integer                          '' Number of  ticks when waiting for a notification
+Public NotifyVar As Symbol                                   '' The variable symbol table entry  we are waiting for a change
+Public VarName As String                                      '' text name of the variable we are waiting to change
+Public VarMemory As ShmVarStorage              '' The memory that containg the variable values
+Public SymTable As ShmSymbolTable               '' the symbol table associated with the entry we are waiting for
+Public Tag As String                                                 '' a tag for uniqueue identification of an entry
+Public StartTime As Float                                       '' time swe started waiting
+Private VarClock As Timer                                    '' the timer associated with this variable
+Private OneShot As Boolean = False                 '' Wait just once for a change, then delete the notify rerquest
 ' Private OneShot As Boolean
 
-Event VarSpecial(VarDef As ShmNotifyEntry, Info As Variant[])
-Event VarChanged(VarDef As ShmNotifyEntry)
-Event VarTimedOut(VarDef As ShmNotifyEntry)
+Event VarSpecial(VarDef As ShmNotifyEntry, Info As Variant[])                     '' sent when a new variable is created
+Event VarChanged(VarDef As ShmNotifyEntry)                                                    '' sent when a variable value changes
+Event VarTimedOut(VarDef As ShmNotifyEntry)                                                 '' Sent when a variable times out
 
 Extern sched_yield() As Integer In "libpthread:0"
 
@@ -90,6 +90,7 @@ Public Sub _free()
 
 End
 
+'' the timer management
 Public Sub VarTimeOut_Timer()
 
     Dim Result As Boolean
@@ -99,6 +100,7 @@ Public Sub VarTimeOut_Timer()
 
 End
 
+'' Called when a new variable is created, raises the event
 Public Sub NewVal(Optional extendedInfo As Variant[] = Null)
 
     If extendedInfo.count > 1 Then
@@ -110,6 +112,7 @@ Public Sub NewVal(Optional extendedInfo As Variant[] = Null)
 
 End
 
+'' Called when a signal arrives from another task, and an event is generated
 Public Sub Dispatch(Failed As Boolean, Optional NameOverride As String = "")
 
     Dim onnew As Boolean = (NameOverRide <> "")

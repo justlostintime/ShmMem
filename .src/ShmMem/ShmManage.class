@@ -9,7 +9,7 @@
 Export
 'Fast Unsafe
 
-Public Storage As ShmMemBlock
+Public Storage As ShmMemBlock                      '' The object that manages  the actual shared memory linux interface
 
 Public Struct AllocHeader
     Length As Long                          '' Length including header
@@ -19,12 +19,12 @@ Public Struct AllocHeader
 End Struct
 
 Public Struct InfoHeader
-    Length As Long                          '' Length of this data
+    Length As Long                                   '' Length of this data
     StartOfMem As Pointer                   '' Start of first block of memory
     EndOfMem As Pointer                     '' End of memory so we dont have to keep calculating it
-    BlockCount As Long                      '' Number of actual blocks allocated, including free blocks, never less than one
-    LastChanged As Float                    '' When the collection last changed
-    FreeList As Pointer                     '' First element in the free list chain
+    BlockCount As Long                         '' Number of actual blocks allocated, including free blocks, never less than one
+    LastChanged As Float                      '' When the collection last changed
+    FreeList As Pointer                           '' First element in the free list chain
 End Struct
 
 Extern memset(Dest As Pointer, value As Integer, length As Integer) As Pointer In "libc:6"
@@ -34,17 +34,17 @@ Extern rWrite(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "
 ' Extern rRead(handel As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
 ' Extern rClose(Handle As Integer) As Integer In "libc:6" Exec "close"
 
-Enum memfree = -1, membinary = 0
+Enum memfree = -1, membinary = 0                               '' type of free, or binary memory
 
-Public ManagedInfo As InfoHeader
-Private LastChanged As Float = 0
+Public ManagedInfo As InfoHeader                               '' Head of list managed by this module
+Private LastChanged As Float = 0                                  '' the last time the block info changed
 
-Property Read Count As Long
-Property Read Length As Long
-Property Read MAX As Long
+Property Read Count As Long                                        '' Number of blocks free/allocated being managed
+Property Read Length As Long                                      '' Number of blocks free/allocated being managed
+Property Read MAX As Long                                          '' Highest valid index
 Private $lKey As String
-Property Read Key As String
-Property Debug As Boolean Use $bDebug
+Property Read Key As String                                         '' The index of the current iten in for each loop
+Property Debug As Boolean Use $bDebug               '' Turn on or off debugging messages
 
 Public Sub _new(MemBlock As ShmMemBlock, Optional CreateManagement As Boolean = True)
 
@@ -81,6 +81,7 @@ Public Sub _new(MemBlock As ShmMemBlock, Optional CreateManagement As Boolean = 
 
 End
 
+'' free this upon last reference
 Public Sub _free()
 
     ManagedInfo = Null
@@ -88,14 +89,12 @@ Public Sub _free()
 
 End
 
+'' Returns a pointer to the real memory with correct structure type
 Public Sub AllocPtr(VirtAddress As Pointer) As AllocHeader
 
     If VirtAddress = 0 Then
         Return Null
     Endif
-
-    ' Dim pRealAddr As Pointer = Storage.DataAddress + VirtAddress
-    ' Return AllocInfo(RealAddr, RealAddr, 0)
     Return Storage.DataAddress + VirtAddress
 
 End
@@ -109,6 +108,7 @@ Public Sub RealAddress(VirtAddress As Pointer) As Pointer
 
 End
 
+'' Translates and returns a real pointer from a virtual pointer
 Public Sub RealDataAddress(VirtAddress As Pointer) As Pointer
 
     ' Dim p As Pointer = Storage.DataAddress + VirtAddress + SizeOf(AllocHeader)
@@ -117,6 +117,7 @@ Public Sub RealDataAddress(VirtAddress As Pointer) As Pointer
 
 End
 
+'' set up the initial free block list
 Private Sub InitFreeList()
 
     Dim FirstBlock As Allocheader
@@ -129,6 +130,7 @@ Private Sub InitFreeList()
 
 End
 
+'' Remove a block from the free list
 Private Sub RemoveFree(VirtAddr As Pointer)
 
     'If $bDebug Then Print Application.id, "RemoveFree ShmManage.exclusive " & VirtAddr
@@ -170,6 +172,7 @@ Private Sub RemoveFree(VirtAddr As Pointer)
 
 End
 
+'' Add/Merge a block from the free list
 Private Sub AddFree(VirtAddr As Pointer)
 
     Dim virt As Allocheader
@@ -288,6 +291,7 @@ Private Sub AddFree(VirtAddr As Pointer)
 
 End
 
+'' find a block in the free list which is best fit, allow give or take some bytes
 Private Sub BestFit(DataLen As Long) As AllocHeader
 
     Dim CloseFit As AllocHeader = Null
@@ -311,6 +315,7 @@ Private Sub BestFit(DataLen As Long) As AllocHeader
 
 End
 
+'' allocate a block of memory from the free list
 Public Sub Alloc(dataLen As Long) As Pointer                       '' returns a virtual memory address
 
     Dim MyBlock As Pointer
@@ -371,6 +376,7 @@ Public Sub Alloc(dataLen As Long) As Pointer                       '' returns a 
 
 End
 
+'' Retrun / merge a block Of Memory into the free list
 Public Sub free(VirtAddress As Pointer)
 
     If $bDebug Then Print Application.id, "Free ShmManage.exclusive " & VirtAddress
@@ -383,6 +389,7 @@ Public Sub free(VirtAddress As Pointer)
 
 End
 
+'' print the content of the free list
 Public Sub _PrintFreeList()
 
     Dim vptr As AllocHeader = AllocPtr(ManagedInfo.freelist)
@@ -400,6 +407,7 @@ Public Sub _PrintFreeList()
 
 End
 
+'' print info about all managed memory blocks
 Public Sub _PrintBlocks(Optional vVarStorage As ShmVarStorage = Null)
 
     Dim vptr As AllocHeader = AllocPtr(ManagedInfo.StartOfMem)
@@ -449,12 +457,14 @@ Public Sub _PrintBlocks(Optional vVarStorage As ShmVarStorage = Null)
 
 End
 
+'' print summary of block usage
 Public Sub _PrintInfo()
 
     Print Subst("Start of mem &1, End of mem &2, Length &3\nFreeList Head &4", Format(CLong(ManagedInfo.StartOfMem), "########0"), Format(CLong(ManagedInfo.EndOfMem), "########0"), ManagedInfo.Length, CLong(ManagedInfo.FreeList))
 
 End
 
+'' print as much info as possible about the memory blocks
 Public Sub _Print(Optional vVarStorage As ShmVarStorage = Null)
 
     Storage._Print()
@@ -498,12 +508,15 @@ End
 
 Static Private oList As String[]
 
+'' find and return a pointer to a specific block of memory
 Public Sub _get(Block As String) As Variant
 
     If LastChanged <> ManagedInfo.LastChanged Then
         oList = BlockCollection()
     Endif
+
     Dim index As Long = oList.Find(Block)
+
     If index < 0 Then
         Error.Raise("Invalid block address")
     Endif
@@ -512,6 +525,7 @@ Public Sub _get(Block As String) As Variant
 
 End
 
+'' for each with key = to the index of the block
 Public Sub _next() As Variant
 
     If Enum.index = Null Then
@@ -530,6 +544,7 @@ Public Sub _next() As Variant
 
 End
 
+'' returns an array of block addresses as text strings
 Private Sub BlockCollection() As String[]
 
     Dim Blocks As New String[]
@@ -548,24 +563,28 @@ Private Sub BlockCollection() As String[]
 
 End
 
+'' Returns the number of used + free blocks in the system
 Private Function Count_Read() As Long
 
     Return ManagedInfo.BlockCount
 
 End
 
+'' Returns the number of used + free blocks in the system
 Private Function Length_Read() As Long
 
     Return ManagedInfo.BlockCount
 
 End
 
+'' Returns the highest valid index into the block array
 Private Function MAX_Read() As Long
 
     Return ManagedInfo.BlockCount - 1
 
 End
 
+'' returns the current index during iteration for each
 Private Function Key_Read() As String
 
     Return $lKey

@@ -9,10 +9,11 @@
 Export
 'Fast Unsafe
 
+''' Implements a first in last out queue in shared memory
 Inherits ShmList
 
-Static Public cShmFiLo As Integer = 24
-Static Public cShmFiLoEntry As Integer = 25
+Static Public cShmFiLo As Integer = 24                                      ''  Static type value Assigned to this Shm class - 24
+Static Public cShmFiLoEntry As Integer = 25                            ''  Static type Entry value  in a ShmFilo  object type - 25
 
 '' Convert the Virtual address to an actual list object
 Static Public Sub AsObject(vvarmem As ShmVarStorage, VirtAddr As Pointer) As ShmList

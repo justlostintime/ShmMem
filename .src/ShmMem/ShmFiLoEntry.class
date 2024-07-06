@@ -8,6 +8,9 @@
 
 Export
 'Fast Unsafe
+
+''' Implements a first in last out queue entry in shared memory
+
 Inherits ShmListEntry
 
 '' Convert the Virtual address to an actual list object

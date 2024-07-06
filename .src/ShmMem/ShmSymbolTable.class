@@ -50,11 +50,11 @@ End Struct
 '' The value returned When there are no valid entries in table, not found, end of table, etc
 Static Private NoEntry As Pointer = CPointer(-1)        '' &hffffffffff
 
-Public SymTblMem As ShmMemBlock
-Public VarMem As ShmVarStorage
-Public NotifyVars As ShmNotify
-Public SymMem As TableLayout
-Public SymInfo As TableInfo
+Public SymTblMem As ShmMemBlock                        '' The Memory block manager
+Public VarMem As ShmVarStorage                             '' the variable allocation and deletion manager
+Public NotifyVars As ShmNotify                                   '' change/new notification manager
+Public SymMem As TableLayout                                  '' The symbol table layout structure
+Public SymInfo As TableInfo                                         '' The actual symbol table object
 
 '' cache the symbol names in a hash table for quick access
 '' Does mean that we have to update this every time a symbol is added or removed .. lol
@@ -317,9 +317,9 @@ Public Sub Clear()
 
 End
 
-LastHash As Long
-'' Hash table uses  pointers as index value  as they are unsigned
+LastHash As Long                                      '' the last hash value created by the hash function
 
+'' Hash table uses  pointers as index value  as they are unsigned
 Private Sub Hash(Symbol As String) As Pointer
 
     Dim SymName As String = Lower(Symbol)
@@ -369,6 +369,7 @@ Private Sub FindHash(HashValue As Pointer, SymName As String) As Pointer
 
 End
 
+'' locates and returns the next empty slot
 Private Sub FindEmpty(HashValue As Pointer) As Pointer       '' Returns the next available entry in the symbol table
 
     Dim index As Pointer = HashValue
@@ -387,6 +388,7 @@ Private Sub FindEmpty(HashValue As Pointer) As Pointer       '' Returns the next
 
 End
 
+'' insert the hased symbol into a hash bucket
 Private Sub InsertHash(rootHash As Long, newElement As Long)
 
     Dim index As Long = rootHash
@@ -402,6 +404,7 @@ Private Sub InsertHash(rootHash As Long, newElement As Long)
 
 End
 
+'' Returns a Real pointer to the symbol entry in the table
 Public Sub GetSymbol(Symbol As String) As Pointer
 
     Dim MyHash As Pointer = Hash(symbol)
@@ -485,6 +488,7 @@ Public Sub Add(symName As String, value As Variant, Optional HashValue As Long =
 
 End
 
+'' Deletes a Symbol and its value, marks entry as free
 Public Sub Remove(SymName As String)
 
     Dim index As Long
@@ -630,6 +634,7 @@ Public Sub _put(value As Variant, SymName As String)
 
 End
 
+'' Creates a notification queue for this symbol
 Public Sub NotifyQ(symname As String) As ShmList
 
     Dim sym As Symbol
@@ -660,6 +665,7 @@ Public Sub GetObjectClass(BasicObject As Object) As Class
 
 End
 
+'' Create enqueue a request for an app/task to be notified when a new symbol is created
 Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional FuncName As String = "") As Boolean
 
     If FuncName = "" Then funcName = "OnNew_Created"
@@ -686,6 +692,7 @@ Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional Func
 
 End
 
+'' create a notification request for the specified sysmbol
 Public Sub Notify(SymName As String, CallBack As Object, Optional FuncName As String = "", Timeout As Long = 0, Tag As String = "")
 
     Dim ObjClass As Class = Null
@@ -715,6 +722,7 @@ Public Sub Notify(SymName As String, CallBack As Object, Optional FuncName As St
 
 End
 
+'' Stop notifications for the specified symbol
 Public Sub NotifyStop(SymName As String, CallObject As Object, Optional CallFunc As String = "", tag As String = "")
 
     Dim SymbolIndex As Variant
@@ -762,7 +770,7 @@ Public Sub {VarPtr}(SymName As String) As Variant
 
 End
 
-''Returns a Virtual object pointing to the table entry
+'' Returns a Virtual object pointing to the table entry
 Public Sub Entry(SymName As String) As Variant
 
     Dim index As Long
@@ -788,6 +796,9 @@ Public Sub Entry(SymName As String) As Variant
 
 End
 
+'' Returns a text block containing a report on the symbol table stats
+'' length, free slots, used slots, Collisions, retry after collisions, Last Updated
+'' Pysical address of the table
 Private Sub TextSummary_Read() As String
 
     Dim Result As String = ""
@@ -800,6 +811,7 @@ Private Sub TextSummary_Read() As String
 
 End
 
+'' Returns a text blob with symbol table entry list and details
 Private Sub Text_Read() As String
 
     Dim Result As String = ""
@@ -815,6 +827,7 @@ Private Sub Text_Read() As String
 
 End
 
+'' returns true if a symbol exists
 Public Sub {Exist}(SymName As String) As Boolean
 
     Dim index As Long
@@ -968,30 +981,35 @@ Private Function Length_Read() As Integer
 
 End
 
+'' the name of the symbol durling for each loop
 Private Function Key_Read() As String
 
     Return $sKey
 
 End
 
+'' The index of the symbol in the symbol table during for ech loop
 Private Function KeyIndex_read() As Long
 
     Return $iKeyIndex
 
 End
 
+'' Reads the default value for a new symbol
 Private Function Default_Read() As Variant
 
     Return $vDefault
 
 End
 
+'' Writes the default value for a new symbol
 Private Sub Default_Write(Value As Variant)
 
     $vDefault = Value
 
 End
 
+'' returns the maximum number of symbols the table holds
 Private Function MaxSymbols_Read() As Integer
 
     Return SymInfo.Count

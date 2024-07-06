@@ -1,10 +1,9 @@
 [Bookmarks]
 shmMem=[234]
 ShmNotifyEntry=[54]
-ShmArray=[]
 
 [Debug]
-Breakpoints={"ShmListVariables":[18],"NativeArrays":[10],"Conversion":[9],"shmMem":[135,129],"BasicValues":[29]}
+Breakpoints={}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -115,7 +114,10 @@ Geometry=[834,382,252,320]
 Geometry=[2203,217,252,56]
 
 [DebugWindow/NewItem]
-Geometry=[2754,498,252,56]
+Geometry=[834,512,252,56]
+
+[DebugWindow/NewItem.Tag]
+Geometry=[2768,512,252,508]
 
 [DebugWindow/NotifyObject]
 Geometry=[834,445,471,258]
@@ -397,7 +399,7 @@ Geometry=[848,416,252,230]
 Geometry=[862,430,252,330]
 
 [DebugWindow/element]
-Geometry=[355,298,392,230]
+Geometry=[355,298,392,276]
 
 [DebugWindow/element.dList]
 Geometry=[369,312,442,385]
@@ -421,7 +423,13 @@ Geometry=[834,388,447,276]
 Geometry=[848,402,252,310]
 
 [DebugWindow/listhead]
-Geometry=[2684,948,252,56]
+Geometry=[834,512,252,58]
+
+[DebugWindow/listhead.enum_listitem]
+Geometry=[2310,518,474,330]
+
+[DebugWindow/listhead.enum_listitem.Tag]
+Geometry=[2324,532,252,504]
 
 [DebugWindow/mBlock]
 Geometry=[834,372,252,336]
@@ -598,15 +606,14 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Complete Auto conversion of Gambas array to ShmArray.\n\n* opt: modify Array to correctly display debuger interface\n* New: Add conversion from Gambas Array to ShmArray"
+LastCommit="Tested all scripts, fixed bugsFix more bugs in array and value\n\n* Bug: Queue had incorrect access to values in keys during iteration"
 
 [OpenFile]
-Count=4
-File[1]=".src/ShmMem/shmMem.class:30.163"
-File[2]=".src/Examples/Demo/Demo_user1.module:31.69"
-File[3]=".src/Examples/Demo/Demo_ArrayFunctions.module:0.64"
-Active=4
-File[4]=".src/ShmMem/ShmList.class:44.1119"
+Count=3
+File[1]=".src/Examples/vTestApps/Values/BasicValues.module:0.0"
+Active=2
+File[2]=".src/ShmMem/ShmQueue.class:69.31"
+File[3]=".src/ShmMem/ShmList.class:93.49"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

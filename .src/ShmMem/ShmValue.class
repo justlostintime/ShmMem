@@ -1,8 +1,8 @@
 ' Gambas class file
 
-'' This class represents a single Shared memory value
-'' It can be created and destroyed, the value is stored in
-'' Shared memory
+''' This class represents a single Shared memory value
+''' It can be created and destroyed, the value is stored in
+''' Shared memory
 
 Export
 
@@ -53,6 +53,7 @@ Static Public Sub _init()
 
 End
 
+'' Static method returning a list of all Shm Values in the shared memory space
 Static Public Sub list(VarStorage As Variant) As ShmValue[]
 
     Dim vvarmem As ShmVarStorage

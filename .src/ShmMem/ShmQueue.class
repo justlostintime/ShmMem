@@ -29,12 +29,12 @@ Public Struct dList                         '' A defined entry in list of object
     Value As Pointer                         '' Value of entry or count if pool
 End Struct
 
-Static Public cShmQueue As Integer = 26
-Static Public cShmQueueEntry As Integer = 27
-Private listhead As Dlist
+Static Public cShmQueue As Integer = 26                                          ''  Static type value Assigned to this Shm class - 26
+Static Public cShmQueueEntry As Integer = 27                                ''  Static type value Assigned to each entry in this queue - 27
+Private listhead As Dlist                                                                           '' Internal pointer to the actual shared memory
 
-Property Read key As Long                                    ''  This returns the priority
-Property Read Key_Tag As String                       '' The content of the entry tag field
+Property Read key As Long                                                                   ''  This returns the priority
+Property Read Key_Tag As String                                                       '' The content of the entry tag field
 
 '' Convert the Virtual address to an actual list object
 Static Public Sub AsObject(vvarmem As ShmVarStorage, VirtAddr As Pointer) As ShmList
@@ -60,12 +60,14 @@ Public Sub _new(Optional usePriority As Boolean = True)
 
 End
 
+'' Push an entry onto the queue sort priorities
 Public Sub Push(Value As Variant, Optional Priority As Long = 0, TagInfo As String = "QPush")
 
     enqueue(Value, Priority, TagInfo)
 
 End
 
+'' remove the highest prority element from the queue
 Public Sub Pop() As Variant
 
     Return DeQueue()                    ' if no priority then take from top of the queue
@@ -74,6 +76,7 @@ End
 
 Private LastIndex As Integer = 0
 
+'' add entry onto the queue, sort by priority
 Public Sub EnQueue(Value As Variant, Optional Priority As Integer = 0, TagValue As String = "")
 
     If priority = 0 Or If listhead.UsePriority = False Then
@@ -88,6 +91,7 @@ Public Sub EnQueue(Value As Variant, Optional Priority As Integer = 0, TagValue 
 
 End
 
+'' remove entry from queue by specific priority , or highest by default
 Public Sub DeQueue(Optional Priority As Integer = -1) As Variant
 
     Dim value As Variant
@@ -110,6 +114,7 @@ Public Sub DeQueue(Optional Priority As Integer = -1) As Variant
 
 End
 
+'' Find and return, the entry matching the requested priority
 Private Sub SeekPriority(Priority As Integer, Optional bMatch As Boolean = False) As DList
 
     Dim Index As Long = 0
@@ -139,6 +144,7 @@ Private Sub SeekPriority(Priority As Integer, Optional bMatch As Boolean = False
 
 End
 
+'' Return true  if a specific priority exists on the queue
 Public Sub Exist(Priority As Integer) As Boolean
 
     SeekPriority(Priority, True)
@@ -150,6 +156,7 @@ Public Sub Exist(Priority As Integer) As Boolean
 
 End
 
+'' iterate over the queue according to the priority
 Public Sub _next() As Variant
 
     Dim ListItem As DList
@@ -187,11 +194,13 @@ Catch
 
 End
 
+'' returns the index of the current entry in the queue during for each loop
 Private Function key_Read() As Long
 
     Return ListHead.enum_counter
 
 End
+'' returns the tag of the current entry during for each loop
 
 Private Function Key_Tag_Read() As String
 

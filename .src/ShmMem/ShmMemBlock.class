@@ -44,6 +44,7 @@ Static Private Const EEXIST As Integer = 11
 
 Static DefaultPermissions As Integer = &O660
 
+'' The managed header for the block of real shared memory
 Public Struct MemBlockHeader                            '' Memory block header
     SemLock[64] As Byte                                            '' Semaphor used to lock this memory when sharing
     InUseCounter As Integer                                     '' the number of applications using this Memory
@@ -76,8 +77,9 @@ Private MyAppId As Long = 0                                              '' The 
 
 Property Read length As Long                                            '' Length of user space
 Property Read address As Pointer                                   '' address of user space
-Property Debug As Boolean Use $bDebug
+Property Debug As Boolean Use $bDebug                    '' turn on or off debug messages
 
+'' P print all information regarding the shared memory segment
 Public Sub _print()
 
     Print "Memory Address : "; Hex(MemoryAddress, 9)
@@ -94,6 +96,7 @@ Public Sub _print()
 
 End
 
+'' Force delete a named memory segment, Be carefull with this
 Static Public Sub ForceDelete(SharedName As String)
 
     Try shm_unlink(SharedName)
@@ -195,6 +198,7 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
 
 End
 
+'' free when refrence counter is 0
 Public Sub _free()
 
     If blockInfo <> Null Then
@@ -297,6 +301,7 @@ End
 
 Private InLock As Integer = 0
 
+'' Take exclusive control of the shared block of memory
 Public Sub Exclusive()
 
     If InLock Then
@@ -311,6 +316,7 @@ Public Sub Exclusive()
 
 End
 
+'' Take exclisive control of the shared memory block, but timeout if not able
 Public Sub ExclusiveTimeout()
 
     If InLock Then
@@ -331,6 +337,7 @@ Public Sub ExclusiveTimeout()
 
 End
 
+'' Release the lock on the shared memory
 Public Sub Release()
 
     If inlock > 1 Then
@@ -346,6 +353,7 @@ Public Sub Release()
 
 End
 
+'' Add another chunk to the shared memory - not implemented completely
 Public Sub AllocChunk()
 
     Dim p As Pointer
@@ -379,12 +387,14 @@ Catch
 
 End
 
+'' return the total length of the shared memory segment
 Private Function length_Read() As Long
 
     Return Blockinfo.DataLength
 
 End
 
+'' Retrun the physical address of the shared memory segment
 Private Function address_Read() As Pointer
 
     Return BlockInfo.DataAddress

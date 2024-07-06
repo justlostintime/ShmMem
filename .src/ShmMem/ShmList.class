@@ -46,8 +46,8 @@ Public Struct dList                             '' A defined entry in list of ob
     Value As Pointer                            '' Value of entry or count if pool
 End Struct
 
-Static Public cShmList As Integer = 20                  '' The Constant identifying this class name must not be a valid datatype integer
-Static Public cShmListEntry As Integer = 21        '' The entry in a ShmList object type
+Static Public cShmList As Integer = 20                  '' The Constant identifying this class name must not be a valid datatype integer - 20
+Static Public cShmListEntry As Integer = 21        '' The entry in a ShmList object type - 21
 
 ' Extern DListPtr(dest As Pointer, src As Pointer, Len As Integer) As DList In "libc:6" Exec "memcpy"
 ' Extern memcpy(dest As Dlist, src As Dlist, Len As Integer) As Integer In "libc:6"

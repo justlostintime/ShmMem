@@ -9,6 +9,8 @@
 Export
 'Fast Unsafe
 
+''' Implenets the entry for A queue
+
 Inherits ShmListEntry
 
 '' Convert the Virtual address to an actual list object

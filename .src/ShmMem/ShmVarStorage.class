@@ -8,6 +8,11 @@
 
 Export
 
+''' This class is responible for managing the storage and retrieval of vales to and from the Shared memory\
+''' Using  the ShmManage class  interface to get and free the memory it uses to create and release values from memory\
+''' This is called by the Symbol table manager or directly by the user to store a value into the shared memory\
+''' Returns a virtual  pointer to the stored value.
+
 'Fast Unsafe
 
 Private varmem As ShmManage
@@ -151,19 +156,20 @@ Const StrData As Integer = 18
 Const ObjData As Integer = 19
 Const FreeBlock As Integer = -1
 
-Static Public UserClasses As New Collection(gb.ignoreCase)
-Static Public UserClassByName As New Collection(gb.ignorecase)
+Static Public UserClasses As New Collection(gb.ignoreCase)                   '' The User defined data types by numeric value
+Static Public UserClassByName As New Collection(gb.ignorecase)        '' The user types class name by name
 
+'' This contains the text name of internal gambas data types mapped to the correct value
 Static Public DataTypes As String[] = ["*Free", "*Binary", "*Boolean", "*Byte", "*Short", "*Integer", "*Long", "*Single", "*Float", "*Date", "*String",
     "", "*Pointer", "*Variant", "*Function", "*Class", "NULL", "*Object", "NotArray",
     "StringData", "ObjectData", "", "", "", ""]
 
 Private $pKey As Pointer
-Property Read Key As String
-Property Read Count As Integer
-Property Read Length As Integer
-Property Read Max As Integer
-Property Debug As Boolean Use $bDebug
+Property Read Key As String                                                              '' contains the key virt address during for each
+Property Read Count As Integer                                                       '' the number of variables being managed
+Property Read Length As Integer                                                      '' the same as count
+Property Read Max As Integer                                                           '' Highest valid Value list index
+Property Debug As Boolean Use $bDebug                                    '' controls if the debug messages are printed
 
 '' Define a new user class for shared objects
 '' Defines the text class name and the internal  class index value
@@ -188,7 +194,7 @@ Public Sub AsObject(ctype As Integer, virtaddress As Pointer) As Variant
 
 End
 
-''Return the data Type structure contained in the user defined types
+'' Return the data Type structure contained in the user defined types
 Public Sub UserType(cType As Integer, virtaddress As Pointer) As Variant
 
     If Not UserClasses.Exist(Str(cType)) Then Return Null
@@ -253,8 +259,8 @@ Public Sub {Alloc}(Length As Long) As Pointer
 
 End
 
-'' return an allocated block of memory and return
-'' the virtual address within the block
+'' Return an allocated block of memory and return
+'' the virtual address within the block.
 Public Sub AllocVirt(Length As Long) As Pointer
 
     Return Me.Alloc(Length) + SizeOf(AllocHeader)
@@ -286,6 +292,7 @@ Public Sub set(value As Variant, Optional VirtAddress As Pointer = 0) As Pointer
 
 End
 
+'' Return the type of the stored value
 Public Sub _getType(virtAddress As Pointer, type As Integer) As Variant
 
     Dim svptr As Variant
@@ -312,6 +319,7 @@ Public Sub _getType(virtAddress As Pointer, type As Integer) As Variant
 
 End
 
+'' Return the Value stored at the provided virtual address
 Public Sub _get(virtAddress As Pointer) As Variant
 
     Dim vptr As AllocHeader = varmem.AllocPtr(VirtAddress)
@@ -320,6 +328,7 @@ Public Sub _get(virtAddress As Pointer) As Variant
 
 End
 
+'' Store a value as the specified virtual address, of the specified type
 Public Sub _puttype(value As Variant, VirtAddress As Pointer, mytype As Integer)
 
     Dim tmpptr As Variant
@@ -355,12 +364,15 @@ Public Sub _puttype(value As Variant, VirtAddress As Pointer, mytype As Integer)
 
 End
 
+'' Put a vlaue at the specivied virtual address type determined by the
+'' typeof the value
 Public Sub _put(value As Variant, VirtAddress As Pointer)
 
     _puttype(value, VirtAddress, TypeOf(value))
 
 End
 
+'' Put a string into memory.
 Private Sub putstring(value As String, vptr As DPointer)
 
     Dim length As Long = (((value.Len + 1 + DefaultAlloc) / DefaultAlloc) * DefaultAlloc)
@@ -399,6 +411,7 @@ Private Sub putstring(value As String, vptr As DPointer)
 
 End
 
+'' Get a string from the memory
 Private Sub getstring(vptr As DPointer) As String
 
     Dim tmpptr As Dstrobj = GetPointer(StrData, vptr.value)
@@ -411,6 +424,7 @@ Private Sub getstring(vptr As DPointer) As String
 
 End
 
+'' Store an object into the memory.
 Private Sub PutObject(value As Variant, vptr As DPointer)
 
     Dim length, ObjLen As Long
@@ -445,6 +459,7 @@ Private Sub PutObject(value As Variant, vptr As DPointer)
 
 End
 
+'' get an object From the Memory
 Private Sub getObject(vptr As DPointer) As Object
 
     Dim tmpptr As DStrObj = GetPointer(ObjData, vptr.Value)
@@ -465,6 +480,8 @@ Private Sub getObject(vptr As DPointer) As Object
 
 End
 
+'' free the value stored at the virtual address but not the
+'' Value structure
 Public Sub {Free}(Virtaddress As Pointer)
 
     Dim vptr As DPointer = GetPointer(gb.pointer, VirtAddress)
@@ -478,24 +495,29 @@ Public Sub {Free}(Virtaddress As Pointer)
 
 End
 
+'' Free the complete memory used bu a stored value including the
+'' header block
 Public Sub FreeVirt(Virtaddress As Pointer)
 
     Me.Free(VirtAddress - SizeOf(AllocHeader))
 
 End
 
+'' Returns the real address of the Value header
 Public Sub RealAddress(VirtAddress As Pointer) As Pointer
 
     Return varmem.RealAddress(VirtAddress)
 
 End
 
+'' Converts the Virtual address to a real address of the Data For the value.
 Public Sub RealDataAddress(VirtAddress As Pointer) As Pointer
 
     Return varmem.RealDataAddress(VirtAddress)
 
 End
 
+'' Instanciate an object representing the value stored in memory
 Public Sub Getpointer(Type As Integer, VirtAddress As Pointer) As Variant
 
     Dim realaddr As Pointer = varmem.RealAddress(VirtAddress)
@@ -561,6 +583,7 @@ Public Sub Getpointer(Type As Integer, VirtAddress As Pointer) As Variant
 
 End
 
+'' Lock the value storage
 Public Sub {Lock}()
 
     If $bDebug Then Print Application.id, "Lock ShmVarStorage.exclusive "
@@ -568,6 +591,7 @@ Public Sub {Lock}()
 
 End
 
+'' Unlock the Value storage
 Public Sub {Unlock}()
 
     varmem.Storage.Release()
@@ -575,6 +599,7 @@ Public Sub {Unlock}()
 
 End
 
+'' Creates a virtual pointer to a memory block header
 Public Sub {VarPtr}(VirtAddress As Pointer) As Variant
 
     Dim svptr As Variant
@@ -585,8 +610,8 @@ Public Sub {VarPtr}(VirtAddress As Pointer) As Variant
 
 End
 
-'' return the actual storage required for any data type
-'' objects must have a _write public function
+'' Return the actual storage required for any data type
+'' objects must have a _write public function.
 Static Public Sub {SizeOf}(data As Variant) As Integer
 
     Dim rdType As Integer = TypeOf(Data)
@@ -631,6 +656,8 @@ Static Private Sub ObjectSizeOf(data As Variant) As Integer
 
 End
 
+'' Iterate thru the values stored in memory.\
+'' Sets the key to the virtual address of the value.
 Public Sub _next() As Variant
 
     Static aPtr As AllocHeader
@@ -658,6 +685,7 @@ End
 
 Private AlreadyUsed As Collection
 
+'' Creates a text blob Summary of the values stored in memory.
 Public Sub text(VirtAddress As Pointer, Optional Indent As String = "", SetTree As Boolean = False) As String
     'ObjLen As Long                       '' length of the actual string/Object
     'WriteLen As Long                     '' The length of the actually written data
@@ -722,6 +750,7 @@ Public Sub text(VirtAddress As Pointer, Optional Indent As String = "", SetTree 
 
 End
 
+'' Returns a pointer to a list value entry
 Public Sub EntryPtr(VirtAddress As Pointer) As DList
 
     If VirtAddress <= 0 Then Return Null
@@ -731,6 +760,7 @@ Public Sub EntryPtr(VirtAddress As Pointer) As DList
 
 End
 
+'' Returns a text blob for a structure with sub structures
 Public Sub TextTree(Optional VirtAddress As Pointer = 0, Indent As Integer = 0) As String
 
     Dim vptr As AllocHeader
@@ -775,23 +805,28 @@ Public Sub TextTree(Optional VirtAddress As Pointer = 0, Indent As Integer = 0) 
 
 End
 
+'' Gets the key for the current For each, virtual address of the value
 Private Function key_Read() As String
 
     Return Str(CLong($pKey))
 
 End
 
+'' Gets the number of values stored in memory
 Private Function Count_Read() As Integer
 
     Return varmem.ManagedInfo.BlockCount
 
 End
 
+'' Gets the number of values stored in memory
 Private Function Length_Read() As Integer
 
     Return varmem.ManagedInfo.BlockCount
 
 End
+
+'' Gets the highest valid index into the Value array
 
 Private Function Max_Read() As Integer
 

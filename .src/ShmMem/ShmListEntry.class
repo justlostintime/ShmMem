@@ -6,6 +6,8 @@
 '  Version 3, 29 June 2007
 '  See project license file.
 
+''' Implements a list entry, this in inherited by all other list type entries
+
 Export
 'Fast Unsafe
 
@@ -102,7 +104,6 @@ End
 '' free an entry - this must be called by the list head to delete the entry
 '' after it is removed from the actual list. calling this before can cause
 '' very bad things to happen
-
 Public Sub FreeEntry()
 
     VarMem.Free(entry.value)
@@ -112,6 +113,8 @@ Public Sub FreeEntry()
 
 End
 
+'' Creates a new list/queue entry element
+'' populates the information needed
 Public Sub NewEntry(Optional Value As Pointer = 0) As DList
 
     Dim NewVar As Pointer
@@ -138,6 +141,7 @@ Public Sub _get(...) As Variant
 
 End
 
+'' Returns the value of this queue entry
 Private Function Value_Read() As Variant
 
     Dim result As Variant
@@ -160,6 +164,7 @@ Public Sub _put(value As Variant, ...)
 
 End
 
+'' Writes a value to this queue entry
 Private Sub Value_Write(Value As Variant)
 
     Dim newvar As Variant
@@ -181,6 +186,7 @@ Private Sub Value_Write(Value As Variant)
 
 End
 
+'' returns the list/queue entry type value, not the stored value type
 Private Function Type_Read() As Integer
 
     If entry = Null Then
@@ -190,6 +196,7 @@ Private Function Type_Read() As Integer
 
 End
 
+'' returns the virtual address of this entry structure
 Private Function Address_Read() As Pointer
 
     If entry = Null Then
@@ -199,6 +206,7 @@ Private Function Address_Read() As Pointer
 
 End
 
+'' returns the reference count
 Private Function RefCount_Read() As Long
 
     If entry = Null Then
@@ -208,12 +216,14 @@ Private Function RefCount_Read() As Long
 
 End
 
+'' returns the tag info
 Private Function Tag_Read() As String
 
     Return Trim(entry.Tag.ToString())
 
 End
 
+'' sets the tag info
 Private Sub Tag_Write(Value As String)
 
     If entry = Null Then
@@ -223,6 +233,7 @@ Private Sub Tag_Write(Value As String)
 
 End
 
+'' returns the extended id for lists and priority for queues
 Private Function Priority_Read() As Long
 
     If entry = Null Then
@@ -232,6 +243,7 @@ Private Function Priority_Read() As Long
 
 End
 
+'' updates the priority/Extended info for queue/list
 Private Sub Priority_Write(Value As Long)
 
     If entry = Null Then
@@ -241,6 +253,7 @@ Private Sub Priority_Write(Value As Long)
 
 End
 
+'' Retruns a pointer to the actual control sructure
 Private Function dlist_read() As DList
 
     If entry = Null Then
@@ -250,6 +263,7 @@ Private Function dlist_read() As DList
 
 End
 
+'' Returns the virtual address Of the Next entry In the queue / list
 Private Function next_Read() As Pointer
 
     If entry = Null Then
@@ -259,6 +273,7 @@ Private Function next_Read() As Pointer
 
 End
 
+'' Retruens the virtual address of the previous entry in the list/queue
 Private Function prev_Read() As Pointer
 
     If entry = Null Then
