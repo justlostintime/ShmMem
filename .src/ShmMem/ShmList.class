@@ -84,8 +84,8 @@ Property Read ClassMe As String                      '' the text class of the cu
 Property Read Next As Variant                           '' The actual list structure entry, not the value
 Property Read Prev As Variant                            '' The actual list structure entry, Not Value
 Property Read First As Variant                            '' first entry in the list
-Property Read Last As Variant                               '' Last entry in the list
-Property Read RefCount As Variant                      '' Get number of refrences
+Property Read Last As Variant                             '' Last entry in the list
+Property Read RefCount As Variant                   '' Get number of refrences
 
 Public SetHeadType As Integer = cShmList             '' The list header Class
 Public SetEntryType As Integer = cShmListEntry    '' The List Entry Class
@@ -107,8 +107,21 @@ End
 '' list may be accessed or created, VirtAddressOrTag = 0 then creat new list
 ''                                                                VirtAddressOrTag = "tagname" then lookfor and return list with this tag
 ''                                                                VirtAddressOrTag > 0 then return list at this virtual address
+''                                                                 VarStorage is type stream then initialize from a stream
 
-Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "", UsePriority As Boolean = True)
+Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "", UsePriority As Boolean = True)
+
+    If varstorage = Null Then
+        Return
+    Else If varstorage Is Stream Then
+        _read(varstorage)
+    Else
+        _Configure(VarStorage, VirtAddressOrTag, GlobalValue, Tag, UsePriority)
+    Endif
+
+End
+
+Public Sub _configure(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "", UsePriority As Boolean = True)
 
     Dim Result As Integer = 0
     Dim VirtAddress As Pointer = 0
@@ -153,7 +166,56 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = CP
 
 End
 
-'' Locate an entry by its Tag information
+Public Sub _write(Dest As Stream)
+
+    Dim entries As Variant[] = Me.Allentries
+
+    Write #Dest, VarMem.Signature As String                           '' The signature of the Shared memory we are from
+    Write #Dest, ListHead.tag.ToString() As String                  '' Save the Tag for this list
+    Write #Dest, ListHead.Global As Boolean
+    Write #Dest, ListHead.Value As Long                                     '' for a list this is the number of entries in the list
+
+    For Each value As ShmListEntry In entries
+        Write #Dest, value.Priority As Long
+        Write #Dest, Value.Tag As String
+        Write #Dest, Value.Value As Variant
+    Next
+
+End
+
+Public Sub _read(Source As Stream)
+
+    Dim Signature As String
+    Dim varinfo As ShmMem
+    Dim Count As Long
+    Dim sTag As String
+    Dim Global As Boolean
+    Dim priority As Long
+    Dim Value As Variant
+
+    Signature = Read #Source As String
+    varinfo = shmMem.GetMemSegment(Signature)
+
+    If varinfo = Null Then
+        Error.Raise("ShmList: Unable to find correct ShmMem to put value into, Needed:" & Signature)
+    Endif
+
+    sTag = Read #Source As String
+    global = Read #Source As Boolean
+    count = Read #Source As Long
+
+    _Configure(varinfo, 0, Global, sTag)
+
+    For i As Integer = 1 To count
+        priority = Read #Source As Long
+        sTag = Read #Source As String
+        Value = Read #Source As Variant
+        Add(Value, priority, sTag)
+    Next
+
+End
+
+'' Locate a list by its Tag information
 '' Returns  the virtual address of the List having the specified tag
 Private Sub locateByTag(tag As String) As Pointer
 
@@ -171,6 +233,25 @@ Private Sub locateByTag(tag As String) As Pointer
     Return result
 
     Return Null
+
+End
+' Locate an array by virtual address in the shared memory source
+'' used to veryify a valid address is passed
+
+Private Sub locateByAddress(Virt As Pointer) As Pointer
+
+    Dim result As Pointer = Null
+
+    For Each mBlock As Variant In VarMem
+        If mBlock.type = SetHeadType
+            If mBlock.Address = virt Then
+                result = mBlock.Address
+                Break
+            Endif
+        Endif
+    Next
+
+    Return result
 
 End
 

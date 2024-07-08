@@ -82,6 +82,7 @@ Property Read Collisions As Integer                                       '' The
 Property Read MaxUsedSymbols As Integer                       '' Highest Number Of Symbols ever used
 Property Debug As Boolean Use $bDebug                          '' Turn on off the debug messages for this object
 Property UseCache As Boolean Use $UseCache = True    '' Trun on or off the use of the Cache for variables in local app
+Property Signature As String Use $signature                        '' uniqueue id for this object
 
 '' Save the contents of the symbol table to a file, The actual value of the symbol is also saved
 '' Saves only the table entries that have an active symbol entry.

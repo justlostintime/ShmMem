@@ -1,0 +1,24 @@
+' Gambas module file
+
+Public Sub main()
+
+    Dim TestFile As String = User.home &/ "vars" &/ "testarray"
+    Dim mem As New ShmMem
+    Dim a As ShmArray = New ShmArray(mem, [3, 3, 3], "Test Message")
+    Dim varfile As File
+
+    For i As Integer = 0 To a.max
+        a[i] = "Test Value" & i
+    Next
+
+    varfile = Open testfile For Write Create
+    Write #varfile, a As Object
+    Close #varfile
+
+    varfile = Open testfile For Read
+    Dim b As ShmArray
+    b = Read #Varfile As Object
+    If Error Then Print Error.text
+    mem.LoadVar(testfile, "testarray")
+
+End

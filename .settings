@@ -3,7 +3,7 @@ shmMem=[234]
 ShmNotifyEntry=[54]
 
 [Debug]
-Breakpoints={"TestcreateandlocatebyTag":[21],"NewFGEnqueue":[62,23,28,33]}
+Breakpoints={"TestcreateandlocatebyTag":[23],"NewFGEnqueue":[61,22,27,32],"ShmListVariables":[16],"NewBSaveLoadImage":[27],"SaveAndLoadArray":[4,13,17],"ShmArray":[207,136]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -459,7 +459,7 @@ Geometry=[2310,518,474,330]
 Geometry=[2324,532,252,504]
 
 [DebugWindow/mBlock]
-Geometry=[834,512,252,56]
+Geometry=[834,512,252,58]
 
 [DebugWindow/mclass]
 Geometry=[834,445,504,297]
@@ -502,6 +502,9 @@ Geometry=[834,505,252,70]
 
 [DebugWindow/nvalue]
 Geometry=[834,292,252,504]
+
+[DebugWindow/otherElements]
+Geometry=[834,288,252,508]
 
 [DebugWindow/pEntry]
 Geometry=[2754,388,479,329]
@@ -675,15 +678,15 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Updated queue iteration, had a bad address in foreach loop sometimes\n\n* Bug: When a second app did iteration thru queue, the loop keys disapeared or pointed to bad memory\n*      only happened when using a symbol entry as the object in a for each loop."
+LastCommit="More bug fixes\n\n* Bug: When a second app did iteration thru queue, the loop keys disapeared or pointed to bad memory\n*      only happened when using a symbol entry as the object in a for each loop. Same issues"
 
 [OpenFile]
 Count=4
-File[1]=".src/Examples/vTestApps/QueueTestWithProcesses/NewFGEnqueue.module:12.33"
-Active=4
-File[2]=".src/ShmMem/ShmQueue.class:27.206"
-File[3]=".src/ShmMem/shmMem.class:41.53"
-File[4]=".src/ShmMem/ShmValue.class:0.166"
+File[1]=".src/ShmMem/ShmArray.class:36.122"
+Active=1
+File[2]=".src/Examples/vTestApps/Array Tests/SaveAndLoadArray.module:18.17"
+File[3]=".src/ShmMem/shmMem.class:33.256"
+File[4]=".src/ShmMem/ShmSymbolTable.class:4.117"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

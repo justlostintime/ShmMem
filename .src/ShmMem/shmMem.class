@@ -10,26 +10,28 @@ Export
 
 'Fast Unsafe
 
-Const VarMemDefault As Long = 2000000                              '' default memory size is 2 meg
-Const MaxSymbolsDefault As Integer = 8000                        '' default variable memory space 8000 entries
-Const TimeOutDefault As Float = 0.1                                       '' Default sem timeout
+Const VarMemDefault As Long = 2000000                                '' default memory size is 2 meg
+Const MaxSymbolsDefault As Integer = 8000                          '' default variable memory space 8000 entries
+Const TimeOutDefault As Float = 0.1                                          '' Default sem timeout
 
-Public varStore As ShmMemBlock                                            '' the pysical memory segment being shared
-Public varMnge As ShmManage                                                '' the Object resposible to managing the raw memory
-Public MyVarMem As ShmVarStorage                                   '' manages the actual values stored into the shared memory
-Public VarStoreName As String                                                '' The name for named memory
+Public varStore As ShmMemBlock                                               '' the pysical memory segment being shared
+Public varMnge As ShmManage                                                    '' the Object resposible to managing the raw memory
+Public MyVarMem As ShmVarStorage                                        '' manages the actual values stored into the shared memory
+Public VarStoreName As String                                                     '' The name for named memory
 
-Public symStore As ShmMemBlock                                           '' the Raw memory used to store the symbol table
-Public vars As ShmSymbolTable                                                '' the object which will manage symbol table
-Public SymStoreName As String                                                '' the name of the symbol table for the named memory
+Public symStore As ShmMemBlock                                               '' the Raw memory used to store the symbol table
+Public vars As ShmSymbolTable                                                    '' the object which will manage symbol table
+Public SymStoreName As String                                                    '' the name of the symbol table for the named memory
 
-Property Read Count As Integer                                                '' number of symbols
-Property Read Max As Integer                                                   '' Max index into the list
-Property Read Length As Integer                                             '' number of entries in the list
-Private $sKey As String                                                                '' text key
-Property Read Key As String                                                      '' returns the index of the current entry in for next
-Property Debug As Boolean Use $bDebug                            '' Turns on and off the Debug messages
+Property Read Count As Integer                                                     '' number of symbols
+Property Read Max As Integer                                                         '' Max index into the list
+Property Read Length As Integer                                                    '' number of entries in the list
+Private $sKey As String                                                                       '' text key
+Property Read Key As String                                                             '' returns the index of the current entry in for next
+Property Debug As Boolean Use $bDebug                                   '' Turns on and off the Debug messages
 Property DefaultDirectory As String Use $sDefaultDirectory '' the default directiry used to save and load Images and variables
+Property Signature As String Use $Signature                             '' Used to reconstitute co correct object shmmem in an application
+Static Public objects As New Collection(gb.ignorecase)          '' The list of instanciations of the class
 
 '' We need to determine if the object is a class=module or object=class instanciated object
 '' This function correctly retruns the class for both objects and modules
@@ -69,6 +71,26 @@ Static Public Sub ForceDelete(SharedName As String)
 
 End
 
+'' Look for the correct signature and return the appropriate match
+'' if not found then return the default memory object
+'' return null if not found
+'' Locate a shared memory block by signature as an object
+'' This will be used by the _read functions in the Shm Classes to locate
+'' the correct memory block in which to instanciate the shmclass
+Static Public Sub GetMemSegment(sSignature As String) As ShmMem
+
+    Dim seg As Shmmem = objects[sSignature]
+
+    If seg = Null Then
+        seg = objects["default"]
+        If seg <> Null Then
+            Error "Shmmem Warning :"; sSignature;; "not found using default";; seg.Signature
+        Endif
+    Endif
+    Return seg
+
+End
+
 '' Allocate the memory and symbol table. initialize structures
 Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault)
 
@@ -82,23 +104,37 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
     If MemName <> "" Then
         VarStoreName = Memname & "_Data"
         SymStoreName = Memname & "_Symbols"
+        $Signature = MemName & ":" & Application.version
+
         VarStore = New ShmMemBlock(VarMemLength, VarStoreName, LockTimeOut)
         SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), SymStoreName, LockTimeOut)
     Else
         VarStoreName = ""
         SymStoreName = ""
+        $Signature = Application.name & ":" & Application.version
         VarStore = New ShmMemBlock(VarMemLength, MemName, LockTimeOut)
+        VarStore.Signature = $Signature
         SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), MemName, LockTimeOut)
+        SymStore.Signature = $Signature
     Endif
 
     VarMnge = New ShmManage(varStore)
+    VarMnge.Signature = $Signature
     MyVarMem = New ShmVarStorage(varMnge)
+    MyVarMem.Signature = $Signature
     Vars = New ShmSymbolTable(symStore, MyVarMem)
+    Vars.Signature = $Signature
+    If Shmmem.Objects.count = 0 Then
+        shmMem.objects.Add(Me, "default")
+    Endif
+    shmMem.objects.Add(Me, $Signature)
 
 End
 
 '' Free the shared memory when the application closes
 Public Sub _free()
+
+    shmMem.objects.Remove(Me.Signature)
 
     Vars._free()
     Vars = Null
@@ -256,7 +292,7 @@ Public Sub LoadVar(FileName As String, Optional SymName As String = "")
 
     Try infile = Open infilename For Read
     If Error Then
-        Error.propegate()
+        Error.Propagate()
     Endif
     vars.LoadVar(infile, SymName)
     Close infile

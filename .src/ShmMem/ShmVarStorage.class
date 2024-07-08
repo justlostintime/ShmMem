@@ -168,6 +168,7 @@ Property Read Count As Integer                                                  
 Property Read Length As Integer                                                      '' the same as count
 Property Read Max As Integer                                                           '' Highest valid Value list index
 Property Debug As Boolean Use $bDebug                                    '' controls if the debug messages are printed
+Property Signature As String Use $Signature                                '' The uniqueue signature of the object
 
 '' Define a new user class for shared objects
 '' Defines the text class name and the internal  class index value

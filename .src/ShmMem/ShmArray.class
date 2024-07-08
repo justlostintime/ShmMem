@@ -118,7 +118,28 @@ Static Public Sub list(VarStorage As Variant) As ShmArray[]
 End
 
 '' Create a new Array or a new refrence to an exsisting array
-Public Sub _new(VarStorage As Variant, Optional SubscriptsOrVirtAddressOrTag As Variant, Tag As String = "")
+'' Array  may be accessed or created, VirtAddressOrTag = 0 then creat new list
+''                                                                      VirtAddressOrTag = "tagname" then lookfor and return list with this tag
+''                                                                      VirtAddressOrTag > 0 then return list at this virtual address
+''                                                                      VarStorage = type of stream  initialize from a file
+Public Sub _new(Optional VarStorage As Variant = Null, SubscriptsOrVirtAddressOrTag As Variant = 0, Tag As String = "")
+
+    If varstorage = Null Then
+        Return
+    Else If VarStorage Is Stream Then
+        _read(VarStorage)
+    Else
+        _Configure(VarStorage, SubscriptsOrVirtAddressOrTag, Tag)
+    Endif
+
+End
+
+Private Sub _Configure(Optional VarStorage As Variant = Null, SubscriptsOrVirtAddressOrTag As Variant = 0, Tag As String = "")
+
+    If SubscriptsOrVirtAddressOrTag Is Stream Then
+        _read(SubscriptsOrVirtAddressOrTag)
+        Return
+    Endif
 
     Dim Result As Integer = 0
     Dim total As Integer = 0
@@ -191,6 +212,61 @@ Public Sub _new(VarStorage As Variant, Optional SubscriptsOrVirtAddressOrTag As 
 
 End
 
+'' shmread is required for shared memory objects
+Public Sub _read(Source As Stream)
+
+    Dim ldim As New Long[10]
+    Dim Signature As String
+    Dim iDimCount As Integer
+    Dim VarInfo As Variant
+
+    Signature = Read #Source As String
+    varinfo = shmMem.GetMemSegment(Signature)
+
+    If varinfo = Null Then
+        Error.Raise("ShmArray: Unable to find correct ShmMem to put value into, Needed:" & Signature)
+    Endif
+
+    Dim lCount As Long = Read #Source As Long
+    iDimCount = Read #Source As Integer
+    For i As Integer = 0 To iDimCount - 1
+        ldim[i] = Read #Source As Long
+    Next
+
+    DefaultValue = Read #Source As Variant
+    Dim sTag As String = Read #Source As String
+    Dim vValue As Variant
+
+    _Configure(VarInfo, ldim.Copy(0, idimcount), stag)
+
+    For i As Integer = 0 To lCount - 1
+        vvalue = Read #Source As Variant
+        _put(vvalue, i)
+    Next
+
+End
+
+Public Sub _write(Dest As Stream)
+
+    Dim value As Variant
+    Dim i As Integer
+
+    Write #Dest, Varmem.Signature As String
+    Write #Dest, ArrayDef.Count As Long
+    Write #Dest, ArrayDef.DimCount As Integer
+    For i = 0 To ArrayDef.DimCount - 1
+        Write #Dest, ArrayDef.dimensions[i] As Long
+    Next
+    Write #Dest, DefaultValue As Variant
+    Write #Dest, ArrayDef.Tag.ToString() As String
+
+    For i As Integer = 0 To ArrayDef.Count - 1
+        value = _get(i)
+        Write #Dest, value As Variant
+    Next
+
+End
+
 '' Redimension an array, all data is lost
 Public Sub ReDim(dims As Long[])
 
@@ -240,18 +316,22 @@ Private Sub locateByTag(tag As String) As Pointer
 
 End
 
-'' Locate an array by virtual address in the shared memory soace
+'' Locate an array by virtual address in the shared memory source
+'' used to veryify a valid address is passed
 Private Sub locateByAddress(Virt As Pointer) As Pointer
 
-    Dim vlist As ShmArray[] = ShmMem.GetListType(varmem, cShmArray)
+    Dim result As Pointer = Null
 
-    If vlist.count = 0 Then Return Null
-    For Each s As ShmArray In vlist
-        If s.VirtAddress = Virt Then
-            Return s.VirtAddress
+    For Each mBlock As Variant In VarMem
+        If mBlock.type = CshmArray
+            If mBlock.VirtAddress = virt Then
+                result = mBlock.VirtAddress
+                Break
+            Endif
         Endif
     Next
-    Return Null
+
+    Return result
 
 End
 

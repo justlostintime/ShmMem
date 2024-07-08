@@ -1,0 +1,28 @@
+' Gambas module file
+
+Public Sub main()
+
+    Dim TestFile As String = User.home &/ "vars" &/ "testlist"
+    Dim mem As New ShmMem
+    Dim aValue As New ShmValue(mem, 0, "This is a Value tag")
+    Dim bValue As ShmValue
+    Dim cValue As ShmValue
+    Dim varfile As File
+
+    aValue.value = "a small message"
+
+    varfile = Open testfile For Write Create
+    Write #varfile, aValue As Object
+    Close varfile
+
+    varfile = Open testfile For Read
+    bValue = Read #varfile As Object
+    Close varfile
+
+    varfile = Open testfile For Read
+    cValue = New ShmValue(varfile)
+    Close varfile
+
+    Quit 0
+
+End

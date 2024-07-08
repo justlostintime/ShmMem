@@ -4,10 +4,13 @@ Public Sub main()
 
     Dim MyMem As New ShmMem
     Dim i As Integer
-    Dim a As New ShmValue(mymem, 0, "newval")
+    Dim a As ShmValue
+
+    a = New ShmValue(mymem, 0, "newval")
     Dim b As New ShmValue[100]
     Dim c As ShmValue[]
-    Dim d As Variant = New ShmValue(mymem, 0, "newval2")
+    Dim d As Variant
+    d = New ShmValue(mymem, 0, "newval2")
 
     ' init the array to 100 value
     For i = 0 To b.Max

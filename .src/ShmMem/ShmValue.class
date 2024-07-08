@@ -83,7 +83,23 @@ Public Sub _Assign(VEntry As DPointer)
 
 End
 
-Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = 0, Tag As String = "")
+'' Value may be accessed or created, VirtAddressOrTag = 0 then creat new list
+''                                                                      VirtAddressOrTag = "tagname" then lookfor and return list with this tag
+''                                                                       VirtAddressOrTag > 0 then return list at this virtual address
+''                                                                        VarStorage = type of stream  initialize from a file
+Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = 0, Tag As String = "")
+
+    If varstorage = Null Then
+        Return
+    Else If VarStorage Is Stream Then
+        _read(VarStorage)
+    Else
+        _Configure(VarStorage, VirtAddressOrTag, Tag)
+    Endif
+
+End
+
+Public Sub _configure(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = 0, Tag As String = "")
 
     Dim VirtAddress As Pointer = Null
     Dim pType As Integer = TypeOf(VirtAddressOrTag)
@@ -119,6 +135,37 @@ Public Sub _new(VarStorage As Variant, Optional VirtAddressOrTag As Variant = 0,
     Endif
 
     Inc ValueDef.RefCount
+
+End
+
+Public Sub _write(Dest As Stream)
+
+    Write #Dest, VarMem.Signature As String
+    Write #Dest, ValueDef.tag.Tostring() As String
+    Write #Dest, _get() As Variant
+
+End
+
+Public Sub _read(Source As Stream)
+
+    Dim sSignature As String
+    Dim sTag As String
+    Dim vValue As Variant
+    Dim VarInfo As Shmmem
+
+    sSignature = Read #Source As String
+    varinfo = shmMem.GetMemSegment(sSignature)
+
+    If varinfo = Null Then
+        Error.Raise("ShmValue: Unable to find correct ShmMem to put value into, Needed:" & sSignature)
+    Endif
+
+    sTag = Read #Source As String
+
+    _Configure(varinfo, 0, stag)
+
+    vValue = Read #Source As Variant
+    _put(vValue)
 
 End
 
@@ -180,19 +227,22 @@ Private Sub locateByTag(tag As String) As Pointer
 
 End
 
-''  Locate an array by tag name in the shared memory space
+''  Locate an array by virtual address  in the shared memory space
+'' used to verify that a virtual address is valid
 Private Sub locateByAddress(Virt As Pointer) As Pointer
 
-    Dim vlist As ShmValue[] = ShmMem.GetListType(varmem, cShmValue)
+    Dim result As Pointer = Null
 
-    If vlist.count = 0 Then Return Null
-
-    For Each s As ShmValue In vlist
-        If s.VirtAddress = virt Then
-            Return s.VirtAddress
+    For Each mBlock As Variant In VarMem
+        If mBlock.type = CshmValue
+            If mBlock.VirtAddress == virt Then
+                result = mBlock.VirtAddress
+                Break
+            Endif
         Endif
     Next
-    Return Null
+
+    Return result
 
 End
 

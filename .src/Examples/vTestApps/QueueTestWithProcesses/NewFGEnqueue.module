@@ -6,7 +6,6 @@ Public Sub Main()
     Dim work As New ShmMem(4200000, "Work")
     Dim tag As String
     Dim theQ As SHmQueue
-    Dim keytag As String
 
     With work
         !TheQ = New ShmQueue(work, 0, True, "Queue Test one")

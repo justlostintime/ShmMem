@@ -45,6 +45,7 @@ Property Read MAX As Long                                          '' Highest va
 Private $lKey As String
 Property Read Key As String                                         '' The index of the current iten in for each loop
 Property Debug As Boolean Use $bDebug               '' Turn on or off debugging messages
+Property Signature As String Use $Signature             '' Uniqueue signature for this object
 
 Public Sub _new(MemBlock As ShmMemBlock, Optional CreateManagement As Boolean = True)
 

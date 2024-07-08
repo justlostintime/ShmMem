@@ -77,7 +77,8 @@ Private MyAppId As Long = 0                                              '' The 
 
 Property Read length As Long                                            '' Length of user space
 Property Read address As Pointer                                   '' address of user space
-Property Debug As Boolean Use $bDebug                    '' turn on or off debug messages
+Property Debug As Boolean Use $bDebug = False      '' Turn on or off debug messages
+Property Signature As String Use $Signature               ''  the uniqueue signatire for this class
 
 '' P print all information regarding the shared memory segment
 Public Sub _print()
@@ -398,5 +399,13 @@ End
 Private Function address_Read() As Pointer
 
     Return BlockInfo.DataAddress
+
+End
+
+Private Function Debug_Read() As Boolean
+
+End
+
+Private Sub Debug_Write(Value As Boolean)
 
 End
