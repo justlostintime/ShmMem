@@ -6,6 +6,7 @@ Public Sub main()
     Dim mem As New ShmMem
     Dim AList As New ShmList(mem, 0, True, "This is a tag")
     Dim bList As ShmList
+    Dim cList As ShmList
     Dim varfile As File
 
     For i As Integer = 0 To 20
@@ -18,6 +19,10 @@ Public Sub main()
 
     varfile = Open testfile For Read
     bList = Read #varfile As Object
+    Close varfile
+
+    varfile = Open testfile For Read
+    cList = New ShmList(varfile)
     Close varfile
 
     Quit 0

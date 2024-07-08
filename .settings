@@ -2,11 +2,9 @@
 shmMem=[234]
 ShmNotifyEntry=[54]
 ShmValue=[88]
-ShmArray=[]
-ShmQueue=[]
 
 [Debug]
-Breakpoints={"StoreAndLoadQueue":[26],"SaveAndLoadFiFo":[26],"SaveAndLoadFiLo":[26],"shmMem":[86],"LoadAndSaveValue":[28]}
+Breakpoints={"StoreAndLoadQueue":[26],"SaveAndLoadFiFo":[26],"SaveAndLoadFiLo":[26],"shmMem":[86],"LoadAndSaveValue":[24]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -738,20 +736,12 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Fix Bug With ShmValue, forgot to implement UsrPtr static function\n\n* New: Added userPtr static function to ShmValue\n* New: When Reading a Shm class then look at signature and locate then memory, otherwise use default\n* New: generate error identifying the forgotten required functions"
+LastCommit="Bug fix when closing Shmmem, and values not checking closed\n\n* New: Added userPtr static function to ShmValue\n* New: When Reading a Shm class then look at signature and locate then memory, otherwise use default\n* New: generate error identifying the forgotten required functions"
 
 [OpenFile]
-Count=9
-File[1]=".src/ShmMem/ShmValue.class:46.165"
-Active=2
-File[2]=".src/Examples/vTestApps/Values/LoadAndSaveValue.module:0.30"
-File[3]=".src/ShmMem/shmMem.class:19.155"
-File[4]=".src/ShmMem/ShmMemBlock.class:4.204"
-File[5]=".src/ShmMem/ShmNotify.class:4.63"
-File[6]=".src/ShmMem/ShmNotifyEntry.class:4.84"
-File[7]=".src/ShmMem/ShmStorableClass.class:0.60"
-File[8]=".src/ShmMem/ShmManage.class:4.87"
-File[9]=".src/ShmMem/ShmSymbolTable.class:4.265"
+Count=1
+File[1]=".src/ShmMem/ShmValue.class:18.199"
+Active=1
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

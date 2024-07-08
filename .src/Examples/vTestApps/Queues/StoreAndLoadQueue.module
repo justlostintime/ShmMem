@@ -6,6 +6,7 @@ Public Sub main()
     Dim mem As New ShmMem
     Dim AQueue As New ShmQueue(mem, 0, True, "This is a tag", True)
     Dim bQueue As ShmQueue
+    Dim cQueue As ShmQueue
     Dim varfile As File
 
     For i As Integer = 0 To 20
@@ -18,6 +19,10 @@ Public Sub main()
 
     varfile = Open testfile For Read
     bQueue = Read #varfile As Object
+    Close varfile
+
+    varfile = Open testfile For Read
+    cQueue = New ShmQueue(varfile)
     Close varfile
 
     While bQueue.count > 0

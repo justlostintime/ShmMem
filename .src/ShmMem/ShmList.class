@@ -86,6 +86,9 @@ Property Read Prev As Variant                            '' The actual list stru
 Property Read First As Variant                            '' first entry in the list
 Property Read Last As Variant                             '' Last entry in the list
 Property Read RefCount As Variant                   '' Get number of refrences
+Property Read MemoryPool As ShmVarStorage      '' Get the Memory pool this list belongs to
+Property Read Global As Boolean                         '' is this list a global, ie never deleted
+Property Read UsePriority As Boolean                '' If queue use priority
 
 Public SetHeadType As Integer = cShmList             '' The list header Class
 Public SetEntryType As Integer = cShmListEntry    '' The List Entry Class
@@ -113,8 +116,10 @@ Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Varia
 
     If varstorage = Null Then
         Return
-    Else If varstorage Is Stream Then
-        _read(varstorage)
+    Else If VarStorage Is Stream Then
+        Dim MyValue As Variant
+        MyValue = Read #VarStorage As Object
+        _Configure(MyValue.MemoryPool, MyValue.Address, MyValue.Global, MyValue.tag, MyValue.UsePriority)
     Else
         _Configure(VarStorage, VirtAddressOrTag, GlobalValue, Tag, UsePriority)
     Endif
@@ -1595,5 +1600,23 @@ Private Function RefCount_Read() As Variant
 
     If varmem = Null Or If listhead = Null Then Return 0
     Return ListHead.RefCount
+
+End
+
+Private Function MemoryPool_Read() As ShmVarStorage
+
+    Return VarMem
+
+End
+
+Private Function Global_Read() As Boolean
+
+    Return ListHead.Global
+
+End
+
+Private Function UsePriority_Read() As Boolean
+
+    Return ListHead.UsePriority
 
 End

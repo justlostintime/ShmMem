@@ -45,6 +45,7 @@ Property Read type As Integer                                           '' the t
 Property tag As String                                                          '' tag value
 Property Read RealAddress As Pointer                           '' Return the real address of the ValueHeader
 Property Read RealDataAddress As Pointer                  '' Returns a pointer to the data header structure
+Property Read MemoryPool As ShmVarStorage          '' Get the memory pool this value is assigned to
 
 ' Initialize the new  class by adding it to the list of datatypes
 Static Public Sub _init()
@@ -101,7 +102,9 @@ Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Varia
     If varstorage = Null Then
         Return
     Else If VarStorage Is Stream Then
-        _read(VarStorage)
+        Dim MyValue As ShmValue
+        MyValue = Read #VarStorage As Object
+        _Configure(MyValue.MemoryPool, MyValue.VirtAddress, MyValue.tag)
     Else
         _Configure(VarStorage, VirtAddressOrTag, Tag)
     Endif
@@ -207,7 +210,7 @@ End
 Public Sub {free}()
 
     If shmMem.objects.count = 0 Or If valueDef = Null Then Return
-    
+
     Dec ValueDef.Refcount
     ' Error "Value Test for delete @"; ValueDef.Address;; " RefCount="; ValueDef.RefCount
     If ValueDef.RefCount > 0 Then Return
@@ -301,5 +304,11 @@ End
 Private Function RealDataAddress_Read() As Pointer
 
     Return varmem.RealAddress(ValueDef.DataAddress)
+
+End
+
+Private Function MemoryPool_Read() As ShmVarStorage
+
+    Return VarMem
 
 End

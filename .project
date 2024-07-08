@@ -1,6 +1,6 @@
 # Gambas Project File 3.0
 Title=ShmMem
-Startup=LoadAndSaveValue
+Startup=SaveAndLoadList
 Version=2.1.16
 Component=gb.eval
 Description="This provides an interface to the Linux Shared memory functions. Allowing the creation and sharing of shared memory segments across any number of local applications or tasks. Added A gambas script to graphically monitor the Shared Memory.\n\nAdded _read _write serialization for shm datatypes\nBug fix for each with symbols..\nMore bug fixes, updateded web address to go to wiki, online information for shmmem\nAdded class ShmValue to create a single value in shared memory\nUpdated Automatically convert Gambas Native arrays to ShmArrays in shared memory. Performace...\nExtended Array, with toCvs FromCvs, import, export, redim, and copy\n\nUpdated Buf fixes, lists and Arrays\n\nUpdated to add static arrays of variant values max 10 dimensions.\n\nUpdated such that array,list ans queues can be access by tag name.\n\nUpdated to by default use locks for all lists/queues. Lock are localized to the specific list or queue being changed.\n\nTo do this it implements  an interface which allows any valid gambas object or variable to be directly stored or accessed via the interface\n\nexample::\nPublic Sub Main()\nMyShm = new ShmMem\n\nWith MyShm\n\n !a = \"this\"\n !b = 1\n\nprint !a, !b\n\nend with\nend"

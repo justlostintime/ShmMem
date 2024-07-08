@@ -83,6 +83,7 @@ Property Read Length As Long                                '' Same as the Count
 Property Read First As Variant                                '' get the first element of the array
 Property Read Last As Variant                                 '' get the last element of the array
 Property Read Dim As Integer                                  '' the number of dimensions
+Property Read MemoryPool As ShmVarStorage '' get the pool this array belongs to
 
 '' Initialize the new  class by adding it to the list of datatypes
 Static Public Sub _init()
@@ -127,7 +128,9 @@ Public Sub _new(Optional VarStorage As Variant = Null, SubscriptsOrVirtAddressOr
     If varstorage = Null Then
         Return
     Else If VarStorage Is Stream Then
-        _read(VarStorage)
+        Dim MyValue As ShmArray
+        MyValue = Read #VarStorage As Object
+        _Configure(MyValue.MemoryPool, MyValue.VirtAddress, MyValue.tag)
     Else
         _Configure(VarStorage, SubscriptsOrVirtAddressOrTag, Tag)
     Endif
@@ -1075,5 +1078,11 @@ Public Sub _InitFrom(ary As Variant, SubIndex As Integer, ByRef dims As Long[])
             _InitFrom(ary, SubIndex + 1, Dims)
         Endif
     Next
+
+End
+
+Private Function MemoryPool_Read() As ShmVarStorage
+
+    Return VarMem
 
 End
