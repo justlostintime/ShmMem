@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={"StoreAndLoadQueue":[26],"SaveAndLoadFiFo":[26],"SaveAndLoadFiLo":[26],"shmMem":[86],"LoadAndSaveValue":[24]}
+Breakpoints={"StoreAndLoadQueue":[31],"SaveAndLoadFiFo":[26],"SaveAndLoadFiLo":[26],"shmMem":[86],"LoadAndSaveValue":[21],"SaveAndLoadList":[30],"BasicValues":[18]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -110,6 +110,9 @@ Geometry=[2449,543,480,508]
 
 [DebugWindow/MyShare]
 Geometry=[834,382,252,320]
+
+[DebugWindow/MyValue]
+Geometry=[834,455,537,231]
 
 [DebugWindow/NewElement]
 Geometry=[2203,217,252,56]
@@ -301,7 +304,7 @@ Geometry=[834,512,252,56]
 Geometry=[2224,387,316,504]
 
 [DebugWindow/ValueDef]
-Geometry=[834,445,252,190]
+Geometry=[834,445,503,231]
 
 [DebugWindow/ValueDef.Tag]
 Geometry=[848,459,252,504]
@@ -313,7 +316,10 @@ Geometry=[834,388,252,276]
 Geometry=[834,505,252,42]
 
 [DebugWindow/VarMem]
-Geometry=[834,498,252,130]
+Geometry=[834,498,252,150]
+
+[DebugWindow/VarStorage]
+Geometry=[834,465,252,150]
 
 [DebugWindow/Vars.SortedList()]
 Geometry=[834,402,252,276]
@@ -411,6 +417,18 @@ Geometry=[2782,336,488,456]
 [DebugWindow/c]
 Geometry=[1405,292,252,508]
 
+[DebugWindow/cList]
+Geometry=[834,288,252,504]
+
+[DebugWindow/cQueue]
+Geometry=[834,288,587,508]
+
+[DebugWindow/cValue]
+Geometry=[834,455,484,170]
+
+[DebugWindow/cValue.MemoryPool]
+Geometry=[848,469,252,150]
+
 [DebugWindow/c[0]]
 Geometry=[848,526,252,150]
 
@@ -454,7 +472,7 @@ Geometry=[848,385,252,90]
 Geometry=[834,498,252,56]
 
 [DebugWindow/e]
-Geometry=[2433,675,252,150]
+Geometry=[834,512,252,170]
 
 [DebugWindow/eList]
 Geometry=[2186,559,252,100]
@@ -736,11 +754,11 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Bug fix when closing Shmmem, and values not checking closed\n\n* New: Added userPtr static function to ShmValue\n* New: When Reading a Shm class then look at signature and locate then memory, otherwise use default\n* New: generate error identifying the forgotten required functions"
+LastCommit="Updated such that shm classes new from a file works correctly n = new shmxxx(source as stream)\n\n* New: Added ability to create a shm class directly from a file source"
 
 [OpenFile]
 Count=1
-File[1]=".src/ShmMem/ShmValue.class:18.199"
+File[1]=".src/ShmMem/ShmVarStorage.class:0.181"
 Active=1
 
 [Package]

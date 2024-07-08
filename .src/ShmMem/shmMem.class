@@ -232,9 +232,10 @@ Public Sub {Free}(SymName As Variant)
 
 End
 
-''-----------------------------------------------------------------------------------
-'' Read and write images and variables
-''-----------------------------------------------------------------------------------
+'' -----------------------------------------------------------------------------------
+''  Read and write images and variables
+'' -----------------------------------------------------------------------------------
+'' Defines the default Paths/names for images and varianbls
 Public Sub SetPath(filePath As String, Optional defaultBaseName As String = "", defaultExtension As String = "") As String
 
     Dim basename As String = File.BaseName(filePath)
