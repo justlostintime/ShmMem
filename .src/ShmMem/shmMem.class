@@ -134,19 +134,28 @@ End
 '' Free the shared memory when the application closes
 Public Sub _free()
 
-    shmMem.objects.Remove(Me.Signature)
+    If shmMem.objects.count > 0 Then
+        If shmMem.objects["default"].signature = $Signature Then
+            shmMem.objects.Remove("default")
+        Endif
+        shmMem.objects.Remove(Me.Signature)
+        If Not shmMem.objects.Exist("default") And If shmMem.objects.count > 0 Then
+            shmMem.objects["default"] = shmMem.objects.First   ' just assign the next one as the default
+        Endif
+    Endif
 
-    Vars._free()
+    If vars Then Vars._free()                                                 ' free the symbol table
     Vars = Null
 
-    MyVarMem._free()
+    If myvarmem Then MyVarMem._free()                       ' Value storage manger freed
     MyVarMem = Null
 
-    varMnge = Null
+    varMnge = Null                                                                   ' memory block manager freed
 
-    SymStore._free()
+    If symstore Then SymStore._free()                            ' free the shared symbol table, only for this task
     SymStore = Null
 
+    If VarStore Then VarStore._free()                            'free the shared value memory block, only for this task
     varstore = Null
 
 End

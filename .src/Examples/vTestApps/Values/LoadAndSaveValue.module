@@ -6,7 +6,6 @@ Public Sub main()
     Dim mem As New ShmMem
     Dim aValue As New ShmValue(mem, 0, "This is a Value tag")
     Dim bValue As ShmValue
-    Dim cValue As ShmValue
     Dim varfile As File
 
     aValue.value = "a small message"
@@ -17,6 +16,16 @@ Public Sub main()
 
     varfile = Open testfile For Read
     bValue = Read #varfile As Object
+    Close varfile
+
+    mem._free()
+    mem = Null                                                          ' generate an error while loading
+    Wait 0.1
+    varfile = Open testfile For Read
+    Try bValue = Read #varfile As Object
+    If Error Then
+        Print Error.text
+    Endif
     Close varfile
 
     Quit 0

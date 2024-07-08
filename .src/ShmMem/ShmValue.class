@@ -199,7 +199,6 @@ End
 '' system free
 Public Sub _free()
 
-    If ValueDef = Null Then Return
     Me.free()
 
 End
@@ -207,7 +206,8 @@ End
 '' Free the value
 Public Sub {free}()
 
-    If valueDef = Null Then Return
+    If shmMem.objects.count = 0 Or If valueDef = Null Then Return
+    
     Dec ValueDef.Refcount
     ' Error "Value Test for delete @"; ValueDef.Address;; " RefCount="; ValueDef.RefCount
     If ValueDef.RefCount > 0 Then Return

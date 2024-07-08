@@ -1,9 +1,12 @@
 [Bookmarks]
 shmMem=[234]
 ShmNotifyEntry=[54]
+ShmValue=[88]
+ShmArray=[]
+ShmQueue=[]
 
 [Debug]
-Breakpoints={"TestcreateandlocatebyTag":[23],"NewFGEnqueue":[61,22,27,32],"ShmListVariables":[16],"NewBSaveLoadImage":[27],"SaveAndLoadArray":[4,13,17],"ShmArray":[207,136]}
+Breakpoints={"StoreAndLoadQueue":[26],"SaveAndLoadFiFo":[26],"SaveAndLoadFiLo":[26],"shmMem":[86],"LoadAndSaveValue":[28]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -42,7 +45,7 @@ Geometry=[2331,570,544,386]
 Geometry=[2345,547,252,504]
 
 [DebugWindow/Dims]
-Geometry=[834,512,252,56]
+Geometry=[834,512,252,276]
 
 [DebugWindow/Elements]
 Geometry=[834,288,627,508]
@@ -231,7 +234,7 @@ Geometry=[848,512,252,276]
 Geometry=[834,512,252,58]
 
 [DebugWindow/Source]
-Geometry=[834,498,252,56]
+Geometry=[834,498,522,369]
 
 [DebugWindow/SubMax]
 Geometry=[834,388,252,276]
@@ -309,7 +312,7 @@ Geometry=[848,459,252,504]
 Geometry=[834,388,252,276]
 
 [DebugWindow/VarInfo]
-Geometry=[834,435,475,284]
+Geometry=[834,505,252,42]
 
 [DebugWindow/VarMem]
 Geometry=[834,498,252,130]
@@ -323,14 +326,62 @@ Geometry=[2617,372,252,504]
 [DebugWindow/a.Bounds]
 Geometry=[834,498,252,508]
 
+[DebugWindow/aValue]
+Geometry=[834,388,628,456]
+
+[DebugWindow/aValue[2]]
+Geometry=[848,402,252,150]
+
 [DebugWindow/allitems]
 Geometry=[834,402,639,327]
 
 [DebugWindow/b]
-Geometry=[834,498,252,508]
+Geometry=[834,498,592,504]
+
+[DebugWindow/b.ArrayData]
+Geometry=[848,512,252,110]
+
+[DebugWindow/b.ArrayDef]
+Geometry=[848,512,252,250]
 
 [DebugWindow/b.Bounds]
-Geometry=[2081,329,252,504]
+Geometry=[848,512,252,504]
+
+[DebugWindow/b.SemaData]
+Geometry=[848,512,252,110]
+
+[DebugWindow/bList]
+Geometry=[834,274,855,531]
+
+[DebugWindow/bList.AllEntries]
+Geometry=[848,288,516,476]
+
+[DebugWindow/bList.AllEntries[14]]
+Geometry=[862,302,252,230]
+
+[DebugWindow/bList.AllEntries[17]]
+Geometry=[862,302,252,230]
+
+[DebugWindow/bList.AllEntries[1]]
+Geometry=[862,302,252,230]
+
+[DebugWindow/bList.AllEntries[20]]
+Geometry=[862,302,252,230]
+
+[DebugWindow/bList.AllEntries[3]]
+Geometry=[862,302,252,230]
+
+[DebugWindow/bList.AllEntries[4]]
+Geometry=[862,302,252,230]
+
+[DebugWindow/bQueue]
+Geometry=[834,274,515,508]
+
+[DebugWindow/bValue]
+Geometry=[834,451,607,150]
+
+[DebugWindow/bValue[3]]
+Geometry=[848,465,252,150]
 
 [DebugWindow/b[15]]
 Geometry=[2300,278,252,150]
@@ -425,6 +476,12 @@ Geometry=[355,298,392,276]
 [DebugWindow/element.dList]
 Geometry=[369,312,442,385]
 
+[DebugWindow/entries]
+Geometry=[834,388,522,476]
+
+[DebugWindow/entries[2]]
+Geometry=[848,402,252,230]
+
 [DebugWindow/enum.index]
 Geometry=[834,512,252,56]
 
@@ -447,7 +504,7 @@ Geometry=[834,388,447,276]
 Geometry=[848,402,252,310]
 
 [DebugWindow/listhead]
-Geometry=[834,512,690,330]
+Geometry=[834,512,690,290]
 
 [DebugWindow/listhead.Tag]
 Geometry=[848,520,252,504]
@@ -548,6 +605,9 @@ Geometry=[848,402,252,276]
 [DebugWindow/s]
 Geometry=[834,274,534,625]
 
+[DebugWindow/shmMem.objects]
+Geometry=[834,498,252,100]
+
 [DebugWindow/srcstr]
 Geometry=[2664,390,339,339]
 
@@ -600,7 +660,7 @@ Geometry=[834,512,730,216]
 Geometry=[848,526,506,210]
 
 [DebugWindow/userclass]
-Geometry=[2754,498,252,56]
+Geometry=[834,498,252,56]
 
 [DebugWindow/userclass.Symbols]
 Geometry=[2754,498,252,56]
@@ -678,21 +738,26 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="More bug fixes\n\n* Bug: When a second app did iteration thru queue, the loop keys disapeared or pointed to bad memory\n*      only happened when using a symbol entry as the object in a for each loop. Same issues"
+LastCommit="Fix Bug With ShmValue, forgot to implement UsrPtr static function\n\n* New: Added userPtr static function to ShmValue\n* New: When Reading a Shm class then look at signature and locate then memory, otherwise use default\n* New: generate error identifying the forgotten required functions"
 
 [OpenFile]
-Count=4
-File[1]=".src/ShmMem/ShmArray.class:36.122"
-Active=1
-File[2]=".src/Examples/vTestApps/Array Tests/SaveAndLoadArray.module:18.17"
-File[3]=".src/ShmMem/shmMem.class:33.256"
-File[4]=".src/ShmMem/ShmSymbolTable.class:4.117"
+Count=9
+File[1]=".src/ShmMem/ShmValue.class:46.165"
+Active=2
+File[2]=".src/Examples/vTestApps/Values/LoadAndSaveValue.module:0.30"
+File[3]=".src/ShmMem/shmMem.class:19.155"
+File[4]=".src/ShmMem/ShmMemBlock.class:4.204"
+File[5]=".src/ShmMem/ShmNotify.class:4.63"
+File[6]=".src/ShmMem/ShmNotifyEntry.class:4.84"
+File[7]=".src/ShmMem/ShmStorableClass.class:0.60"
+File[8]=".src/ShmMem/ShmManage.class:4.87"
+File[9]=".src/ShmMem/ShmSymbolTable.class:4.265"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"
 
 [Watches]
-Count=13
+Count=14
 Watch[1]="param"
 Watch[2]="me"
 Watch[3]="notifyqueue[0]"
@@ -706,4 +771,5 @@ Watch[10]="a[1,1,1]"
 Watch[11]="Super.listhead"
 Watch[12]="listhead"
 Watch[13]="enum.index"
+Watch[14]="object.Type(Me)"
 
