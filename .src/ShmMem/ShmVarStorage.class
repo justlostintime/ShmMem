@@ -201,8 +201,8 @@ Public Sub UserType(cType As Integer, virtaddress As Pointer) As Variant
     Dim result As Variant
     Try result = Object.Call(userclass, "userPtr", [Me, virtaddress])
     If Error Then
-        Dim errormessage As String = Error.text
-        Stop
+        Dim errormessage As String = Error.text & ":" & Error.where
+        Error.Raise("UserType : Failed finding required class function 'userPtr' : " & errormessage)
     Endif
     Return result
 

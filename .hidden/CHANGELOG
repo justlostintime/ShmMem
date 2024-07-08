@@ -1,4 +1,7 @@
 * Mon Jul 08 2024 brian <justlostintime@gmail.com> 2.1.16
+- Fix a bug with ShmValue class forgotten userPtr static function
+
+* Mon Jul 08 2024 brian <justlostintime@gmail.com> 2.1.16
 - Added Serialization _read _write for Shm Data types
 
 * Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.16
