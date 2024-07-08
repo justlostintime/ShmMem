@@ -4,12 +4,14 @@ Public Sub main()
 
     Dim TestFile As String = User.home &/ "vars" &/ "testlist"
     Dim mem As New ShmMem
-    Dim aValue As New ShmValue(mem, 0, "This is a Value tag")
-    Dim bValue As ShmValue
-    Dim cValue As ShmValue
+    Dim aValue As New ShmValue[20]
+    Dim bValue As ShmValue[]
     Dim varfile As File
 
-    aValue.value = "a small message"
+    For i As Integer = 0 To aValue.Max
+        aValue[i] = New ShmValue(mem, 0, "Tag" & Str(i))
+        aValue[i].value = "Value" & Str(i)
+    Next
 
     varfile = Open testfile For Write Create
     Write #varfile, aValue As Object
@@ -18,6 +20,8 @@ Public Sub main()
     varfile = Open testfile For Read
     bValue = Read #varfile As Object
     Close varfile
+
+    mem.PrintAllInfo()
 
     Quit 0
 

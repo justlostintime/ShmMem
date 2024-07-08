@@ -201,6 +201,7 @@ Public Sub UserType(cType As Integer, virtaddress As Pointer) As Variant
     Dim result As Variant
     Try result = Object.Call(userclass, "userPtr", [Me, virtaddress])
     If Error Then
+        Dim errormessage As String = Error.text
         Stop
     Endif
     Return result

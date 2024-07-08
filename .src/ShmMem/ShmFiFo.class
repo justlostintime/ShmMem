@@ -30,14 +30,6 @@ Static Public Sub AsObject(vvarmem As ShmVarStorage, VirtAddr As Pointer) As Shm
 
 End
 
-Public Sub _new()
-
-    Super.SetHeadType = cShmFiFo                                    '' The list header Class
-    Super.SetEntryType = cShmFiFoEntry                           '' The List Entry Class
-    Super.ListHead.Type = cShmFiFo
-
-End
-
 Public Sub Pop() As Variant
 
     Return Me.remove(0)

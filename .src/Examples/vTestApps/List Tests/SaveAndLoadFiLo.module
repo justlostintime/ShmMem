@@ -1,0 +1,29 @@
+' Gambas module file
+
+Public Sub main()
+
+    Dim TestFile As String = User.home &/ "vars" &/ "testlist"
+    Dim mem As New ShmMem
+    Dim AList As New ShmFiLo(mem, 0, True, "This is a tag")
+    Dim bList As ShmFiLo
+    Dim varfile As File
+
+    For i As Integer = 0 To 20
+        AList.Push("Test Value" & Str(i), 200 + i, "entryTAg" & Str(i))
+    Next
+
+    varfile = Open testfile For Write Create
+    Write #varfile, aList As Object
+    Close varfile
+
+    varfile = Open testfile For Read
+    bList = Read #varfile As Object
+    Close varfile
+    
+    While bList.count > 0
+        Print bList.Pop();;
+    Wend
+
+    Quit 0
+
+End

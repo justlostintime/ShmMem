@@ -53,7 +53,16 @@ Static Public Sub _init()
 
 End
 
+'' Required for each user defined class, returns the pointer to the under laying data structure
+Static Public Sub UserPtr(vvarmem As ShmVarStorage, VirtAddr As Pointer) As DValue
+
+    If VirtAddr <= 0 Then Return Null
+    Dim RealPtr As Pointer = vVarMem.RealAddress(VirtAddr)
+    Return RealPtr
+
+End
 '' Static method returning a list of all Shm Values in the shared memory space
+
 Static Public Sub list(VarStorage As Variant) As ShmValue[]
 
     Dim vvarmem As ShmVarStorage

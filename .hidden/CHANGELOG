@@ -1,3 +1,6 @@
+* Mon Jul 08 2024 brian <justlostintime@gmail.com> 2.1.16
+- Added Serialization _read _write for Shm Data types
+
 * Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.16
 - Updated queue iteration, had a bad address in foreach loop sometimes
 - * Bug: When a second app did iteration thru queue, the loop keys disapeared or pointed to bad memory

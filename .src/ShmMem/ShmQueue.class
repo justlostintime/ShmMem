@@ -47,14 +47,6 @@ Static Public Sub _init()
 
 End
 
-Public Sub _new()
-
-    Super.SetHeadType = cShmQueue                                 '' The list header Class
-    Super.SetEntryType = cShmQueueEntry                        '' The List Entry Class
-    Super.listhead.Type = cShmQueue                                   '' This structure is a Queu
-
-End
-
 '' Push an entry onto the queue sort priorities
 Public Sub Push(Value As Variant, Optional Priority As Long = 0, TagInfo As String = "QPush")
 

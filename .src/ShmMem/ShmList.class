@@ -125,6 +125,7 @@ Public Sub _configure(Optional VarStorage As Variant = Null, VirtAddressOrTag As
 
     Dim Result As Integer = 0
     Dim VirtAddress As Pointer = 0
+    Dim RealPtr As Pointer
 
     If Object.Class(VarStorage).name == "ShmMem" Then
         VarMem = VarStorage.MyVarMem
@@ -132,7 +133,6 @@ Public Sub _configure(Optional VarStorage As Variant = Null, VirtAddressOrTag As
         VarMem = VarStorage
     Endif
 
-    Dim RealPtr As Pointer
     If TypeOf(VirtAddressOrTag) = gb.string Then
         VirtAddress = LocateByTag(VirtAddressOrTag)
         If VirtAddress = Null Then
@@ -141,6 +141,9 @@ Public Sub _configure(Optional VarStorage As Variant = Null, VirtAddressOrTag As
     Else
         VirtAddress = VirtAddressOrTag
     Endif
+
+    SetHeadType = ShmVarStorage.UserClassByName[Object.Type(Me)]
+    SetEntryType = SetHeadType + 1
 
     If VirtAddress = 0 Then
         ListHead = NewEntry()

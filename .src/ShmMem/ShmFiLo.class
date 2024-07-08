@@ -29,14 +29,6 @@ Static Public Sub _init()
 
 End
 
-Public Sub _new()
-
-    Super.SetHeadType = cShmFiLo                                 '' The list header Class
-    Super.SetEntryType = cShmFiLoEntry                       '' The List Entry Class
-    Super.ListHead.Type = cShmFiLo                                '' The actual type of this
-
-End
-
 Public Sub Pop() As Variant
 
     Return Me.remove(-1)
