@@ -27,13 +27,12 @@ End Struct
 Public Struct dValue
     Length As Long                                                                  '' Length including header
     Address As Pointer                                                          '' The virtual address of this block, speed pointer conversion
-    Type As Integer                                                                 '' Type of array
+    Type As Integer                                                                 '' Type of  ShmValue
     {Next} As Pointer                                                              '' never really used except if free block
     bDebug As Boolean                                                         '' debug flag for this datatype
     Tag[64] As Byte                                                                  '' Tag id of Value
     RefCount As Integer                                                         '' Refrence counter to this value
     DataAddress As Pointer                                                 '' Pointer to where the memory is located
-
 End Struct
 
 ValueDef As DValue = Null                                                 '' the actual memory info
@@ -41,7 +40,7 @@ Private VarMem As ShmVarStorage                              '' The storage pool
 
 Property Read VirtAddress As Pointer                          '' where the value header is stored
 Property Value As Variant                                                  ''  read or write the value
-Property Read type As Integer                                           '' the type of data
+Property Read type As Integer                                           '' Returns the type ShmValue, not the value being stored
 Property tag As String                                                          '' tag value
 Property Read RealAddress As Pointer                           '' Return the real address of the ValueHeader
 Property Read RealDataAddress As Pointer                  '' Returns a pointer to the data header structure
@@ -97,7 +96,7 @@ End
 ''                                                                      VirtAddressOrTag = "tagname" then lookfor and return list with this tag
 ''                                                                       VirtAddressOrTag > 0 then return list at this virtual address
 ''                                                                        VarStorage = type of stream  initialize from a file
-Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = 0, Tag As String = "")
+Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = 0, Tag As String = "", vValue As Variant = Null)
 
     Dim pType As Integer = TypeOf(VarStorage)
 
@@ -109,6 +108,10 @@ Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Varia
         _Configure(MyValue.MemoryPool, MyValue.VirtAddress, MyValue.tag)
     Else
         _Configure(VarStorage, VirtAddressOrTag, Tag)
+    Endif
+
+    If vValue <> Null Then
+        _put(vValue)
     Endif
 
 End
@@ -198,6 +201,25 @@ Public Sub _put(value As Variant)
     Else
         VarMem[ValueDef.DataAddress] = value
     Endif
+
+End
+
+'' compare to another ShmValue the test is done
+'' between the actual values being stored
+'' 0 = equal, -1 = less than, 1 = greater than
+Public Sub _compare(OtherValue As Shmvalue) As Integer
+
+    Dim VLeft As Variant = Me.value
+    Dim VRight As Variant = OtherValue.value
+
+    If TypeOf(vleft) <> TypeOf(vRight) Then
+        vleft = Str(vleft)
+        vright = Str(vright)
+    Endif
+
+    If vleft = vright Then Return 0
+    If vleft > vright Then Return 1
+    Return -1
 
 End
 

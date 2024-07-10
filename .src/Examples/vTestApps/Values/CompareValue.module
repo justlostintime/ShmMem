@@ -1,0 +1,40 @@
+' Gambas module file
+
+'' Note that ShmValue wil convert both to string when types do not match
+Public Sub main()
+
+    Dim MyMem As New ShmMem
+    Dim i As Integer
+    Dim a As New ShmValue(mymem, 0, "newval", "thismessage")
+    Dim b As New ShmValue[100]
+    Dim ba As New Variant[100]
+
+    Dim c As ShmValue = a
+
+    For i = 0 To b.Max
+        b[i] = New ShmValue(MyMem, 0, "Value " & Str(i), (i * 2))
+        Print b[i].value;;
+    Next
+
+    Print
+    Print a.value = "this message"
+    Print
+
+    For i = ba.Max DownTo 0
+        ba[i] = New ShmValue(MyMem, 0, "Value " & Str(i), (i * 2))
+        Print ba[i].value;;
+    Next
+
+    Print
+    Print
+
+    If a = c Then Print "Single value equal"
+    If a = b[0] Then Print "Arrays element  are equal" Else Print "Arrays element are not equal"
+
+    Dim bc As Variant[]
+    bc = Ba.sort()
+    Print "Sorted arrays are equal ?";; Str(ba = bc);; Str(b = ba)
+
+    Quit 0
+
+End

@@ -138,6 +138,39 @@ Public Sub _new(Optional VarStorage As Variant = Null, SubscriptsOrVirtAddressOr
     Endif
 
 End
+'' Compare value, convert to string if not same type
+
+Public Sub _compare(Value As Variant) As Integer
+
+    Dim i As Integer
+    Dim rvalue, lvalue As Variant
+
+    If value Is Array Then
+        Error.Raise("ShmArray Unable to compare shmArray to ShmArray[]")
+    Endif
+
+    If ArrayDef.Address = value.address Then Return 0
+    If ArrayDef.count > value.count Then Return 1
+    If ArrayDef.count < value.count Then Return -1
+
+    For i = 0 To ArrayDef.Count - 1
+
+        lvalue = _get(i)
+        rvalue = value[i]
+
+        If TypeOf(lvalue) <> TypeOf(rvalue) Then   ' convert to string if not same data type
+            lvalue = Str(lvalue)
+            rvalue = Str(rvalue)
+        Endif
+
+        If lvalue = rvalue Then Continue
+        If lvalue > rvalue Then Return 1
+        Return -1
+
+    Next
+    Return 0
+
+End
 
 Private Sub _Configure(Optional VarStorage As Variant = Null, SubscriptsOrVirtAddressOrTag As Variant = 0, Tag As String = "")
 
@@ -634,7 +667,7 @@ Public Sub {Copy}(Optional tag As String = "") As ShmArray
         vArgs.Clear()
         vArgs.Add(vval)
         vArgs.Insert($key, 1)
-        Object.Call(Me, "_put", vargs)
+        Object.Call(newShmArray, "_put", vargs)
     Next
     Return NewShmArray
 

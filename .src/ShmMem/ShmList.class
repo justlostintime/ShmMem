@@ -115,7 +115,7 @@ End
 Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "", UsePriority As Boolean = True)
 
     Dim pType As Integer = TypeOf(VarStorage)
-    
+
     If varstorage = Null Then
         Return
     Else If ptype = gb.object And If VarStorage Is Stream Then
@@ -222,6 +222,39 @@ Public Sub _read(Source As Stream)
         Value = Read #Source As Variant
         Add(Value, priority, sTag)
     Next
+
+End
+
+'' Compare value, convert to string if not same type
+Public Sub _compare(Value As Variant) As Integer
+
+    Dim i As Integer
+    Dim rvalue, lvalue As Variant
+
+    If value Is Array Then
+        Error.Raise("ShmList Unable to compare shmList to ShmList[]")
+    Endif
+
+    If ListHead.address = value.address Then Return 0
+    If Me.count > value.count Then Return 1
+    If Me.count < value.count Then Return -1
+
+    For i = 0 To Me.max
+
+        If TypeOf(Me[i]) <> TypeOf(value[i]) Then
+            lvalue = Str(Me[i])
+            rvalue = Str(value[i])
+        Else
+            lvalue = Me[i]
+            rvalue = value[i]
+        Endif
+
+        If lvalue = rvalue Then Continue
+        If lvalue > rvalue Then Return 1
+        Return -1
+
+    Next
+    Return 0
 
 End
 

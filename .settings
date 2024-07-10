@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={"StoreAndLoadQueue":[31],"SaveAndLoadFiFo":[26],"SaveAndLoadFiLo":[26],"shmMem":[86],"LoadAndSaveValue":[21],"SaveAndLoadList":[30],"BasicValues":[18]}
+Breakpoints={"CompareValue":[37,35]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -13,7 +13,10 @@ Profiling=False
 Environment=["GB_NO_JIT=1"]
 
 [DebugWindow]
-Count=0
+Count=3
+DebugWindow[1]="b"
+DebugWindow[2]="b[0]"
+DebugWindow[3]="bc"
 
 [DebugWindow/ArrayData]
 Geometry=[834,512,252,58]
@@ -162,6 +165,9 @@ Geometry=[2782,446,252,190]
 [DebugWindow/OnNew]
 Geometry=[745,561,252,304]
 
+[DebugWindow/OtherValue]
+Geometry=[834,512,252,58]
+
 [DebugWindow/PidQueue]
 Geometry=[885,244,612,678]
 
@@ -233,6 +239,9 @@ Geometry=[848,512,252,276]
 
 [DebugWindow/SemaData]
 Geometry=[834,512,252,58]
+
+[DebugWindow/ShmLoad]
+Geometry=[2254,415,252,356]
 
 [DebugWindow/Source]
 Geometry=[834,498,522,369]
@@ -313,7 +322,7 @@ Geometry=[848,459,252,504]
 Geometry=[834,388,252,276]
 
 [DebugWindow/VarInfo]
-Geometry=[834,505,252,42]
+Geometry=[834,498,252,56]
 
 [DebugWindow/VarMem]
 Geometry=[834,498,252,150]
@@ -340,7 +349,7 @@ Geometry=[848,402,252,150]
 Geometry=[834,402,639,327]
 
 [DebugWindow/b]
-Geometry=[834,498,592,504]
+Geometry=[2282,325,592,508]
 
 [DebugWindow/b.ArrayData]
 Geometry=[848,512,252,110]
@@ -387,14 +396,38 @@ Geometry=[834,451,607,150]
 [DebugWindow/bValue[3]]
 Geometry=[848,465,252,150]
 
+[DebugWindow/b[0]]
+Geometry=[2070,91,252,170]
+
 [DebugWindow/b[15]]
 Geometry=[2300,278,252,150]
 
 [DebugWindow/b[2]]
 Geometry=[2300,278,252,150]
 
+[DebugWindow/ba]
+Geometry=[2374,386,764,504]
+
+[DebugWindow/ba.Bounds]
+Geometry=[2228,557,252,84]
+
+[DebugWindow/ba[0]]
+Geometry=[2228,557,252,170]
+
+[DebugWindow/ba[16]]
+Geometry=[848,402,252,170]
+
 [DebugWindow/bb]
 Geometry=[2165,363,526,470]
+
+[DebugWindow/bc]
+Geometry=[2932,332,603,504]
+
+[DebugWindow/bc[0]]
+Geometry=[848,402,252,170]
+
+[DebugWindow/bc[3]]
+Geometry=[848,402,252,170]
 
 [DebugWindow/bork]
 Geometry=[2151,214,252,56]
@@ -415,7 +448,7 @@ Geometry=[2796,350,252,276]
 Geometry=[2782,336,488,456]
 
 [DebugWindow/c]
-Geometry=[1405,292,252,508]
+Geometry=[1405,292,252,504]
 
 [DebugWindow/cList]
 Geometry=[834,288,252,504]
@@ -541,7 +574,7 @@ Geometry=[834,445,504,297]
 Geometry=[848,459,523,412]
 
 [DebugWindow/me]
-Geometry=[2028,151,774,749]
+Geometry=[834,512,252,58]
 
 [DebugWindow/me.AllEntries]
 Geometry=[848,526,632,276]
@@ -554,6 +587,9 @@ Geometry=[848,526,549,405]
 
 [DebugWindow/me.Key_dlist]
 Geometry=[2158,799,252,56]
+
+[DebugWindow/me.ShmObjects]
+Geometry=[2597,306,621,279]
 
 [DebugWindow/mem]
 Geometry=[2163,252,707,412]
@@ -575,6 +611,12 @@ Geometry=[834,505,252,70]
 
 [DebugWindow/nvalue]
 Geometry=[834,292,252,504]
+
+[DebugWindow/objects]
+Geometry=[2338,429,665,295]
+
+[DebugWindow/objects["default"]]
+Geometry=[834,498,252,56]
 
 [DebugWindow/otherElements]
 Geometry=[834,288,252,508]
@@ -621,8 +663,20 @@ Geometry=[848,402,252,276]
 [DebugWindow/s]
 Geometry=[834,274,534,625]
 
+[DebugWindow/shm]
+Geometry=[834,498,252,56]
+
+[DebugWindow/shm.ShmObjects]
+Geometry=[2300,364,620,502]
+
 [DebugWindow/shmMem.objects]
-Geometry=[834,498,252,100]
+Geometry=[834,498,252,236]
+
+[DebugWindow/shm["c"]]
+Geometry=[2237,369,252,504]
+
+[DebugWindow/shm["d"]]
+Geometry=[2237,369,252,504]
 
 [DebugWindow/srcstr]
 Geometry=[2664,390,339,339]
@@ -668,6 +722,9 @@ Geometry=[1039,274,252,504]
 
 [DebugWindow/tmpptr]
 Geometry=[2754,498,252,56]
+
+[DebugWindow/tmpshm]
+Geometry=[834,498,252,56]
 
 [DebugWindow/todoList]
 Geometry=[834,512,730,216]
@@ -754,13 +811,13 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Updated such that shm classes new from a file works correctly n = new shmxxx(source as stream)\n\n* New: Added ability to create a shm class directly from a file source"
+LastCommit="Fix Bug for multi threaded SHMmem class - Dont release MEM from other PIDs\n\n* BUG: Shmmem is releasing memory blocks owned by other PIDs App's->task specific"
 
 [OpenFile]
 Count=2
-File[1]=".src/ShmMem/ShmVarStorage.class:0.181"
-Active=2
-File[2]=".src/ShmMem/shmMem.class:3.234"
+File[1]=".src/Examples/vTestApps/Values/CompareValue.module:10.37"
+Active=1
+File[2]=".src/ShmMem/ShmValue.class:20.113"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

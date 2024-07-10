@@ -1,0 +1,20 @@
+' Gambas module file
+
+Public Sub Main()
+
+    shmMem.ForceDelete("myseg")                                ' force remove the named segment in case crash leaves it over
+    Dim mem As New Shmmem("myseg")                     ' using named memory, other apps can access Space
+
+    Dim a As New Integer[10, 10, 10]
+    a.Fill(99)
+    Dim b As ShmArray = ShmArray._convert(mem, a)
+    Dim c As ShmArray = b.Copy("NewCopy")
+
+    Print Str(b = c)
+    b[9, 8, 7] = 300
+
+    Print Str(b = c), Str(a = a)
+
+    Quit 0
+
+End
