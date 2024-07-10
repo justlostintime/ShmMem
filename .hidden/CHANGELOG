@@ -15,10 +15,6 @@
 * Sat Jul 06 2024 brian <justlostintime@gmail.com> 2.1.15
 - Updated Help information embedded in the source code
 
-* Fri Jul 05 2024 brian <justlostintime@gmail.com> 2.1.14
-
-* Fri Jul 05 2024 brian <justlostintime@gmail.com> 2.1.12
-
 * Fri Jun 28 2024 brian <justlostintime@gmail.com> 2.1.11
 - Allow shmmem new to only provide named memory name
 
