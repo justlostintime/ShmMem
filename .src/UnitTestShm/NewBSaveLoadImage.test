@@ -2,6 +2,7 @@
 
 Public Sub aSaveImage()
 
+    shmMem.ForceDelete("mymem")
     Dim shm As New ShmMem(1000000, "mymem")
 
     With shm
@@ -22,10 +23,12 @@ End
 
 Public Sub bLoadImage()
 
+    shmMem.ForceDelete("mymem")
     Dim shm As New ShmMem(1000000, "mymem")
 
     With shm
-        .LoadImage()
+        Try .LoadImage()
+        Assert.NotError("Load Passed")
         Assert.Equals(!a, 400, "Integer Passed")
         Assert.Equals(!b, "this message", "String Passed")
         Assert.Equals(!c[2], 3, "Array Passes")

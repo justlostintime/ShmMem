@@ -4,23 +4,25 @@ Inherits Task
 
 Public Sub main()
 
+    Print "Bg Begins"
     Dim vmem As New ShmMem(1280000, "tags")
-
+    Print "Bg Allocated shared mem"
     With vmem
+
         !go = "yes"
-        Print "bg Start With "; !go;; "Wait for No"
+        Print "Gg  Start With go =  "; !go;; "Waiting  for go = Yes"
+        Flush
         .WaitValueChange("go", "yes")
 
-        Print "BG Got";; !go;; "Send done wait quit"
+        Print "BG Got go=";; !go;; "Setting go = 'done', and wait for it to change from 'done'"
         !go = "done"
         .WaitValueChange("go", "done")
 
-        Print "gb Got";; !go
-        Print "bg done"
-        Quit
-
+        Print "BG  Got go = ";; !go;; " Task completed "
     End With
+    Quit 0
+
 Catch
-    Print "bg ";; Error.text, Error.where
+    Print "BG ";; Error.text, Error.where
 
 End

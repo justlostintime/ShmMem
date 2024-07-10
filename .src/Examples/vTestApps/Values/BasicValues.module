@@ -27,15 +27,18 @@ Public Sub main()
         c.value = "UnAssigned " & Str(i)
     Next
 
-    ' return a list of all the values in shared memeory
+    ' return a list of all the values in shared memory
     d = ShmValue.list(MyMem)                      ' returns a list of all value stored in mymem, count 121
 
     With mymem
+        Print
+        Print "Begin loop of "; loops
         Dim mytime As Float = Timer
         For i = 0 To loops
             a.value = i
             ba = a.value
         Next
+        Print
         Print "Time to do "; loops; " get and put operations ";; Timer - mytime
     End With
 

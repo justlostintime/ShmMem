@@ -22,6 +22,8 @@ Public VarStoreName As String                                                   
 Public symStore As ShmMemBlock                                               '' the Raw memory used to store the symbol table
 Public vars As ShmSymbolTable                                                    '' the object which will manage symbol table
 Public SymStoreName As String                                                    '' the name of the symbol table for the named memory
+Static Public PID As Integer = 0                                                       '' The pid of the application using this class
+Private Local_PID As Integer = 0                                                     '' pid of the app/task class instaciating this as object
 
 Property Read Count As Integer                                                     '' number of symbols
 Property Read Max As Integer                                                         '' Max index into the list
@@ -32,6 +34,7 @@ Property Debug As Boolean Use $bDebug                                   '' Turns
 Property DefaultDirectory As String Use $sDefaultDirectory '' the default directiry used to save and load Images and variables
 Property Signature As String Use $Signature                             '' Used to reconstitute co correct object shmmem in an application
 Static Public objects As New Collection(gb.ignorecase)          '' The list of instanciations of the class
+Property Read ShmObjects As Collection                                     '' returns a list of allocated memory segments
 
 '' We need to determine if the object is a class=module or object=class instanciated object
 '' This function correctly retruns the class for both objects and modules
@@ -68,6 +71,16 @@ Static Public Sub ForceDelete(SharedName As String)
 
     Try shmMemBlock.ForceDelete(SharedName & "_Data")
     Try shmMemBlock.ForceDelete(SharedName & "_Symbols")
+    If objects.Exist(SharedName) Then
+        Dim tmpshm As Shmmem = objects[SharedName]
+        If tmpshm.signature = objects["default"].signature Then
+            objects.Remove("default")
+            Objects.Remove(tmpshm.signature)
+            If objects.count > 0 Then
+                objects["default"] = objects.first
+            Endif
+        Endif
+    Endif
 
 End
 
@@ -79,8 +92,14 @@ End
 '' the correct memory block in which to instanciate the shmclass
 Static Public Sub GetMemSegment(sSignature As String) As ShmMem
 
-    Dim seg As Shmmem = objects[sSignature]
+    Dim seg As Shmmem
 
+    seg = Objects["Override"]
+    If seg <> Null Then
+        Return seg
+    Endif
+
+    Seg = objects[sSignature]
     If seg = Null Then
         seg = objects["default"]
         If seg <> Null Then
@@ -94,51 +113,102 @@ End
 '' Allocate the memory and symbol table. initialize structures
 Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault)
 
+    '  Print "Define memory block"
     $sDefaultDirectory = User.home &/ "vars"
+    Local_PID = Application.Id
+
+    If shmmem.PID <> Application.id Then
+        ' Print "reseting Shmmem pid"
+        shmMem.Objects.Clear()
+        shmMem.PID = Application.id
+    Endif
 
     If TypeOf(VarMemLength) = gb.string Then
         MemName = VarMemLength
         VarMemLength = VarMemDefault
     Endif
 
+    'Print "Define memory block step 2"
     If MemName <> "" Then
+        ' Print "Define memory block step 3 Define segment names"
         VarStoreName = Memname & "_Data"
         SymStoreName = Memname & "_Symbols"
         $Signature = MemName & ":" & Application.version
 
+        'Print "Define memory block step 4 remove already defined by class"
+        'Flush
+        If Objects.Exist($Signature) Then
+            Dim OldShm As ShmMem = objects[$Signature]
+            Dim Default As ShmMem = objects[$Signature]
+
+            If default.Signature = OldShm.Signature Then
+                ' Print "Define memory block step 4 remove already defined by class removing"
+                'Flush
+                Objects.Remove("default")
+                Objects.Remove($Signature)
+                If Objects.count > 0 Then
+                    Objects.Add(Objects.last, "default")
+                Endif
+                'Print "Define memory block step 4 remove already defined by class removing  completed"
+                ' Flush
+            Else
+                'Print "Define memory block step 4 remove already defined by class removing sig only"
+                'Flush
+                Objects.Remove($Signature)
+            Endif
+            'Print "Define memory block step 5 Seg named defined"
+            'Flush
+        Endif
+
+        'Print "Create memory blocks"
+        'Flush
+
         VarStore = New ShmMemBlock(VarMemLength, VarStoreName, LockTimeOut)
         SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), SymStoreName, LockTimeOut)
+        'Print "Completed memory blocks"
+        'Flush
     Else
         VarStoreName = ""
         SymStoreName = ""
-        $Signature = Application.name & ":" & Application.version
+        $Signature = Str(Now) & ":" & Str(Timer) & ":" & Application.version
         VarStore = New ShmMemBlock(VarMemLength, MemName, LockTimeOut)
-        VarStore.Signature = $Signature
         SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), MemName, LockTimeOut)
-        SymStore.Signature = $Signature
     Endif
 
+    VarStore.Signature = $Signature
+    SymStore.Signature = $Signature
+
     VarMnge = New ShmManage(varStore)
-    VarMnge.Signature = $Signature
     MyVarMem = New ShmVarStorage(varMnge)
-    MyVarMem.Signature = $Signature
     Vars = New ShmSymbolTable(symStore, MyVarMem)
-    Vars.Signature = $Signature
+
     If Shmmem.Objects.count = 0 Then
-        shmMem.objects.Add(Me, "default")
+        shmMem.Objects.Add(Me, "default")
     Endif
-    shmMem.objects.Add(Me, $Signature)
+
+    shmMem.Objects.Add(Me, $Signature)
+    'Print "Completed memory block definition"
+
+Catch
+    Print "Shm : Error creating Mem Block";; Error.text, Error.where
+    Flush
 
 End
 
 '' Free the shared memory when the application closes
 Public Sub _free()
 
+    If vars = Null Or If Local_PID <> Application.id Then Return
+
     If shmMem.objects.count > 0 Then
-        If shmMem.objects["default"].signature = $Signature Then
-            shmMem.objects.Remove("default")
+        If shmMem.Objects.Exist("default")
+            If shmMem.objects["default"].signature = $Signature Then
+                shmMem.objects.Remove("default")
+            Endif
         Endif
-        shmMem.objects.Remove(Me.Signature)
+        If shmMem.Objects.Exist($Signature) Then
+            shmMem.objects.Remove(Me.Signature)
+        Endif
         If Not shmMem.objects.Exist("default") And If shmMem.objects.count > 0 Then
             shmMem.objects["default"] = shmMem.objects.First   ' just assign the next one as the default
         Endif
@@ -249,7 +319,9 @@ Public Sub SetPath(filePath As String, Optional defaultBaseName As String = "", 
 
 End
 
-'' Writes a copy of the shared memory storage and symbol table to a file
+'' Saves the symbols from the symbol table and it's value
+'' Each entry in the symbol table is written to an image file
+'' This does not save other values in the value storage memory
 Public Sub SaveImage(Optional FileName As String = Application.name & ".image")
 
     Dim outfileName As String = SetPath(FileName)
@@ -279,7 +351,9 @@ Public Sub SaveVar(VarName As String, Optional filename As String = "")
 
 End
 
-'' Load an image of the memory from disk and load it into the memory segment/Symbol table
+'' Re-loads the Variables saved from the symbol table and restores its value
+'' Also restore the date/time that the last change to this copy of the table
+'' occured
 Public Sub LoadImage(Optional FileName As String = Application.name & ".image")
 
     Dim infileName As String = SetPath(FileName)
@@ -294,7 +368,7 @@ Public Sub LoadImage(Optional FileName As String = Application.name & ".image")
 
 End
 
-'' Loads An individual Variable From a file
+'' Loads An individual Symbol and its value From a file
 Public Sub LoadVar(FileName As String, Optional SymName As String = "")
 
     Dim infileName As String = SetPath(FileName, "", "var")
@@ -309,14 +383,14 @@ Public Sub LoadVar(FileName As String, Optional SymName As String = "")
 
 End
 
-'' Returns a pointer to Symbols Value
+'' Returns a Virtual Address pointer to Symbols Value
 Public Sub {VarPtr}(SymName As String) As Variant
 
     Return vars.VarPtr(SymName)
 
 End
 
-'' returns the size of memory needed to store a value
+'' Returns the size of memory needed to store a value
 Public Sub {SizeOf}(Value As Variant) As Long
 
     Return MyVarMem.SizeOf(Value)
@@ -330,17 +404,6 @@ Public Sub {Print}()
 
 End
 
-'   Const VarMemDefault As Long = 2000000
-'   Const MaxSymbolsDefault As Integer = 8000
-'   Const TimeOutDefault As Float = 0.1
-'
-'   Public varStore As ShmMemBlock
-'   Public varMnge As ShmManage
-'   Public MyVarMem As ShmVarStorage
-'
-'   Public symStore As ShmMemBlock
-'   Public vars As ShmSymbolTable
-'   Public NotifyVars As ShmNotify
 '' print all posible information about the shared memory
 Public Sub PrintAllInfo(Optional Title As String = "")
 
@@ -384,6 +447,13 @@ End
 
 '' Get a notification whenever a new symbol is created
 Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "") As Boolean
+
+    Return vars.NotifyOnNew(enabled, NotifyObject, NotifyFunction)
+
+End
+
+'' Get a notification whenever a symbol is removed from the symbol table
+Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "") As Boolean
 
     Return vars.NotifyOnNew(enabled, NotifyObject, NotifyFunction)
 
@@ -490,5 +560,11 @@ Public Sub {alloc}(Length As Pointer) As Pointer
 
     TheMem = MyVarMem.AllocVirt(Length)
     Return TheMem
+
+End
+
+Private Function ShmObjects_Read() As Collection
+
+    Return shmMem.objects
 
 End

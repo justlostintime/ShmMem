@@ -99,9 +99,11 @@ End
 ''                                                                        VarStorage = type of stream  initialize from a file
 Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = 0, Tag As String = "")
 
+    Dim pType As Integer = TypeOf(VarStorage)
+
     If varstorage = Null Then
         Return
-    Else If VarStorage Is Stream Then
+    Else If ptype = gb.object And If VarStorage Is Stream Then
         Dim MyValue As ShmValue
         MyValue = Read #VarStorage As Object
         _Configure(MyValue.MemoryPool, MyValue.VirtAddress, MyValue.tag)

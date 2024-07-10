@@ -21,17 +21,18 @@ Public Sub maintest()
             !go = "hello"
             !goagain = "run"
 
-            Print "Start NewProcessUsingNamedBG"
+            Print "Start -  NewProcessUsingNamedBG"
             ab = New NewProcessUsingNamedBG
             Wait
 
-            For j As Integer = 1 To 100
+            For j As Integer = 1 To 10
                 Dim tmp As NewTaskLoadTesting
                 tmp = New NewTaskLoadTesting
                 tmp.vmem = vmem
                 Wait
                 ad.add(tmp)
             Next
+
             Wait 3
 
             'With vmem

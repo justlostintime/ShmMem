@@ -61,6 +61,7 @@ Public Sub _new(MemBlock As ShmMemBlock, Optional CreateManagement As Boolean = 
     Storage.Release()
 
     If $bDebug Then Print Application.id, "_new 1 ShmManage.Release "
+    $Signature = MemBlock.Signature
 
     If Not CreateManagement Then
         Return

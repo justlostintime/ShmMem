@@ -223,6 +223,7 @@ Public Sub _new(mem As ShmManage)
 
     varmem = mem
     Storage = mem.Storage
+    $Signature = mem.Signature
 
 End
 

@@ -31,7 +31,8 @@ Public Struct TableInfo
     UsedCount As Long                      '' Number of used Entries
     MaxCount As Long                        '' Max Number of entries ever used
     TotalRetryCount As Pointer       '' Max number of retries when looking for symols
-    NotifyOnNew As Integer             '' set this when someone is waiting to be notified of var creation
+    NotifyOnNew As Short                '' set this when someone is waiting to be notified of Activity
+    NotifyOnDelete As Short             '' Set when wanting to know if variable is removed
 End Struct
 
 '' The structure of the actual symbol table, Virtual definition see Max default entries in ShmMem
@@ -52,9 +53,9 @@ Static Private NoEntry As Pointer = CPointer(-1)        '' &hffffffffff
 
 Public SymTblMem As ShmMemBlock                        '' The Memory block manager
 Public VarMem As ShmVarStorage                             '' the variable allocation and deletion manager
-Public NotifyVars As ShmNotify                                   '' change/new notification manager
-Public SymMem As TableLayout                                  '' The symbol table layout structure
-Public SymInfo As TableInfo                                         '' The actual symbol table object
+Public NotifyVars As ShmNotify                                    '' change/new notification manager
+Public SymMem As TableLayout                                   '' The symbol table layout structure
+Public SymInfo As TableInfo                                           '' The actual symbol table object
 
 '' cache the symbol names in a hash table for quick access
 '' Does mean that we have to update this every time a symbol is added or removed .. lol
@@ -89,17 +90,17 @@ Property Signature As String Use $signature                        '' uniqueue i
 Public Sub Save(OutFile As File)
 
     If $bDebug Then Print Application.id, "Save SymTblmem.exclusive"
-    SymTblMem.Exclusive()                                                              '' Lock the symbol table memory
+    SymTblMem.Exclusive()                                                                        '' Lock the symbol table memory
     Write #outFile, SymInfo.UsedCount As Long
     Write #outFile, SymInfo.LastUpdate As Float
-    For i As Integer = 0 To SymInfo.count - 1                               '' for each slot save to the file with the value
-        If SymMem.Table[i].Used = False Then Continue             '' Skip unused entries
-        If SymMem.Table[i].address > 0 Then
-            Write #OutFile, True As Boolean                                      '' There is saved data
-            WriteVar(SymMem.Table[i].Address, OutFile, SymMem.Table[i].Name.ToString())          '' Write the variable to the file
-        Else
-            Write #OutFile, False As Boolean                                     '' There is no data saved
-        Endif
+    For i As Integer = 0 To SymInfo.count - 1                                        '' for each slot save to the file with the value
+        If SymMem.Table[i].Used = False Then Continue                      '' Skip unused entries
+        '        If SymMem.Table[i].address > 0 Then
+        '            Write #OutFile, True As Boolean                                      '' There is saved data
+        WriteVar(SymMem.Table[i].Address, OutFile, SymMem.Table[i].Name.ToString())          '' Write the variable to the file
+        '        Else
+        '            Write #OutFile, False As Boolean                                     '' There is no data saved
+        '        Endif
     Next
 
     SymTblMem.Release()                                                                 '' unlock the table access
@@ -144,9 +145,15 @@ Public Sub WriteVar(Address As Long, OutFile As File, SymName As String)
 
     If $bDebug Then Print Application.id, "Save ShmSymbolTable VarMem.Lock " & SymName
     VarMem.Lock()
-    value = VarMem[Address]
+    If address > 0 Then
+        value = VarMem[Address]
+    Else
+        value = "UnAssigned"
+    Endif
+
     Write #OutFile, SymName As String
     Write #OutFile, Value As Variant
+
     VarMem.Unlock()
     If $bDebug Then Print Application.id, "Save ShmSymbolTable Varmem.UnLock " & SymName
 Catch
@@ -162,13 +169,10 @@ Public Sub Load(InFile As File)
 
     Dim UsedCount As Long
     Dim lastUpdate As Float
-    Dim Assigned As Boolean
 
     UsedCount = Read #inFile As Long
     lastUpdate = Read #inFile As Float
-    For i As Integer = 1 To usedCount                           '' load all the variables
-        Assigned = Read #inFile As Boolean
-        If Not Assigned Then Continue
+    For i As Integer = 1 To usedCount - 1                         '' load all the variables
         LoadVar(inFile)
     Next
 
@@ -195,7 +199,12 @@ Public Sub ReadVar(infile As File, ReqSymname As String)
 
     Symname = Read #infile As String
     If reqSymname <> "" Then symname = ReqSymName
+    Dim tmpshm As Shmmem = shmMem.objects[Me.signature]
+    shmMem.objects.Add(tmpshm, "Override")
     value = Read #infile As Variant
+    shmMem.objects.Remove("Override")
+
+    If SymName[0] = "#" Then Return                                                     '' do not restore special use variables
     _put(value, symname)
 
 End
@@ -221,6 +230,7 @@ Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional Acti
     ' $bDebug = True
 
     $UseCache = ActivateCache
+    $Signature = DataMem.Signature
     VarMem = DataMem
     SymTblMem = MemBlock
 
@@ -250,10 +260,19 @@ Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional Acti
 
     If Not Me.Exist("#onnew") Then
         Me["#onnew"] = "Holding Queue for new symbol creation"
-        SymInfo.NotifyOnNew = 0
+        SymInfo.NotifyOnNew = 0                                                        '' no nitification requested on symbol table changes
         Dim index As Long = GetSymbol("#onnew")
         Dim sym As Symbol = SymMem.Table[index]
         Dim NotList As New ShmList(Varmem, 0, True, "On New Queue")
+        sym.NotifyBlock = NotList.Address
+    Endif
+
+    If Not Me.Exist("#ondelete") Then
+        Me["#ondelete"] = "Holding Queue for symbol deletion"
+        SymInfo.NotifyOnDelete = 0                                                        '' no nitification requested on symbol table changes
+        index = GetSymbol("#ondelete")
+        sym = SymMem.Table[index]
+        NotList = New ShmList(Varmem, 0, True, "On Delete Queue")
         sym.NotifyBlock = NotList.Address
     Endif
 
@@ -533,7 +552,17 @@ Public Sub Remove(SymName As String)
 
     SymTblMem.Release()
 
-    If $bDebug Then Print Application.id, "remove SymTblmem.release"
+    If SymInfo.NotifyOnDelete > 0 Then
+        Dim SymbolIndex As Integer = SymbolCache["#ondelete"]
+        Dim Sym As Symbol = SymMem.Table[SymbolIndex]
+        If Sym.NotifyBlock <> 0 Then
+            NotifyVars.SignalEach(Sym, SymName)
+        Endif
+    Endif
+
+    If $bDebug Then
+        Print Application.id, "remove SymTblmem.release"
+    Endif
     VarMem.Free(Freedata)
 
 End
@@ -604,7 +633,7 @@ Public Sub _put(value As Variant, SymName As String)
             Endif
             Return
         Else
-            SymbolIndex = SymbolCache[SymName] ' updated
+            SymbolIndex = SymbolCache[SymName]                               ' updated
         Endif
 
     Else
@@ -687,6 +716,33 @@ Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional Func
             Return False
         Else
             Dec SymInfo.NotifyOnNew
+        Endif
+    Endif
+    Return True
+
+End
+
+'' Create enqueue a request for an app/task to be notified when a symbol is deleted
+Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional FuncName As String = "") As Boolean
+
+    If FuncName = "" Then funcName = "OnDelete_Created"
+    Dim Tag As String = "OnDel_PID{" & Application.id & "}"
+
+    If Enabled Then
+
+        Try Notify("#ondelete", NotifyObject, FuncName, 0, Tag)
+        If Error Then
+            Return False
+        Else
+            Inc SymInfo.NotifyOnDelete
+        Endif
+
+    Else If SymInfo.NotifyOnDelete > 0 Then
+        Try NotifyStop("#ondelete", NotifyObject, FuncName, Tag)
+        If Error Then
+            Return False
+        Else
+            Dec SymInfo.NotifyOndelete
         Endif
     Endif
     Return True

@@ -125,9 +125,11 @@ End
 ''                                                                      VarStorage = type of stream  initialize from a file
 Public Sub _new(Optional VarStorage As Variant = Null, SubscriptsOrVirtAddressOrTag As Variant = 0, Tag As String = "")
 
+    Dim pType As Integer = TypeOf(VarStorage)
+
     If varstorage = Null Then
         Return
-    Else If VarStorage Is Stream Then
+    Else If ptype = gb.object And If VarStorage Is Stream Then
         Dim MyValue As ShmArray
         MyValue = Read #VarStorage As Object
         _Configure(MyValue.MemoryPool, MyValue.VirtAddress, MyValue.tag)
@@ -139,16 +141,13 @@ End
 
 Private Sub _Configure(Optional VarStorage As Variant = Null, SubscriptsOrVirtAddressOrTag As Variant = 0, Tag As String = "")
 
-    If SubscriptsOrVirtAddressOrTag Is Stream Then
-        _read(SubscriptsOrVirtAddressOrTag)
-        Return
-    Endif
-
+    Dim pType As Integer
     Dim Result As Integer = 0
     Dim total As Integer = 0
     Dim Virtaddress As Pointer = 0
     Dim Dims As New Long[]
-    Dim pType As Integer = TypeOf(SubscriptsOrVirtAddressOrTag)
+
+    pType = TypeOf(SubscriptsOrVirtAddressOrTag)
 
     If Object.Class(VarStorage).name == "ShmMem" Then
         VarMem = VarStorage.MyVarMem

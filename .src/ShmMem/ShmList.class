@@ -114,9 +114,11 @@ End
 
 Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "", UsePriority As Boolean = True)
 
+    Dim pType As Integer = TypeOf(VarStorage)
+    
     If varstorage = Null Then
         Return
-    Else If VarStorage Is Stream Then
+    Else If ptype = gb.object And If VarStorage Is Stream Then
         Dim MyValue As Variant
         MyValue = Read #VarStorage As Object
         _Configure(MyValue.MemoryPool, MyValue.Address, MyValue.Global, MyValue.tag, MyValue.UsePriority)

@@ -10,8 +10,10 @@ Public Sub main()
         .WaitForValue("goagain", "done")
         Print "Load Mapped All Done "; Application.id
         Flush
-        Quit
     End With
+
+    Quit 0
+
 Catch
     Print "Load Mapping error";; Error.text, error.where
 

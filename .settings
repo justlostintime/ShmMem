@@ -757,9 +757,10 @@ Lock=False
 LastCommit="Updated such that shm classes new from a file works correctly n = new shmxxx(source as stream)\n\n* New: Added ability to create a shm class directly from a file source"
 
 [OpenFile]
-Count=1
+Count=2
 File[1]=".src/ShmMem/ShmVarStorage.class:0.181"
-Active=1
+Active=2
+File[2]=".src/ShmMem/shmMem.class:3.234"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

@@ -1,0 +1,41 @@
+' Gambas module file
+
+Public Sub main()
+
+    Dim shm As New ShmMem
+    Dim ShmLoad As New Shmmem
+
+    With shm
+        !a = 400
+        !b = "this message"
+        !c = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        !d = ["this", "that", "other", "sprat", "spray", "pray"]
+        .Notify("a", Me)
+        Try .SaveImage()
+        If Error Then
+            Print "Save Failed ";; Error.text, Error.where
+        Endif
+
+    End With
+
+    With ShmLoad
+        Try .LoadImage()
+        If Error Then
+            Print Error.text, Error.where
+        Else
+            If !a = 400 Then Print "Integer Passed"
+            If !b = "this message" Then Print "String Passed"
+            If !c[2] = 3 Then Print "Array Passes"
+            If !d[2] = "other" Then Print "Array Strings passes"
+        Endif
+    End With
+
+    Quit 0
+
+End
+
+Public Sub a_changed(Varname As String, value As Variant, timedout As Boolean)
+
+    Print VarName;; "changed to";; value;; "Timed out =";; Str(timedout)
+
+End
