@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={"CompareValue":[37,35]}
+Breakpoints={}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -811,12 +811,10 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="fix _compare issues with value and array types\n\n* BUG: _compare of array and value class bug"
+LastCommit="Added Signal when variables are removed\n\n* New: Add new interface notifyOnRemove - notify app when a verable is removed"
 
 [OpenFile]
-Count=1
-Active=1
-File[1]=".src/Examples/Demo/Demo_user1.module:0.132"
+Count=0
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

@@ -89,6 +89,13 @@ Public Sub VariableList_Data(Row As Integer, Column As Integer)
 
 End
 
+Public Sub form_resize()
+    
+    VariableList.w = fmain.w-4
+    VariableList.h = Fmain.h-4
+
+End
+
 End class
 form FMain
 # Gambas Form File 3.0
