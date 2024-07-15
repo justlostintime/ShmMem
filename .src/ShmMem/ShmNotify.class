@@ -44,8 +44,8 @@ Extern signal(sig As Integer, sighandler As Pointer) As Pointer In "libc:6"
 Extern sKill(sigpid As Integer, Sig As Integer) As Integer In "libc:6" Exec "kill"
 Extern sched_yield() As Integer In "libpthread:0"
 
-Public VarMem As ShmVarStorage                    '' The memory block to be used for creating queues
-Public SymMem As ShmSymbolTable = Null    ''  The Symbol Table holding variable information
+Public VarMem As ShmVarStorage                     '' The memory block to be used for creating queues
+Public SymMem As ShmSymbolTable = Null     ''  The Symbol Table holding variable information
 Private NotifyQueue As ShmList = Null                '' the shared memory queue used to store requests
 Private NotifyVars As Collection = Null                '' The local copy of all variables to be notified of
 Private MyAppId As Long = 0                                 '' This variable defines the current tasks identity
@@ -132,9 +132,9 @@ Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String,
         todoList = NotifyVars[SymName]
     Endif
 
-    If todoList.Exist(tag) Then
-        Error.Raise("Notify  : Entry already defined for : Symbol=" & SymName & ", Class=" & ClassName & ",Function=" & CallFunc)
-    Endif
+    '    If todoList.Exist(tag) Then
+    '        Error.Raise("Notify  : Entry already defined for : Symbol=" & SymName & ", Class=" & ClassName & ",Function=" & CallFunc)
+    '    Endif
 
     NotifyVars[SymName].add(VarInfo, tag)                ' add the entry for this request
 
@@ -276,8 +276,8 @@ Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
     For Each Pid As Integer In PidQueue                                                                                            ' loop over each of the ids waiting a notification
         SymName = sym.name.tostring()
         userqueue = New ShmList(VarMem, PidQueue.Key_ExtendedId)                                  ' get the notifyqueue for each task waiting for notification
-        If symname = "#onnew" Then
-            symname = "#onnew;" & tag
+        If symname[0] = "#" Then
+            symname = symname & ";" & tag
         Else If tag = "" Then
             tag = SymName & ":" & Str(PID)
         Endif

@@ -1,0 +1,57 @@
+' Gambas module file
+
+Public MyMem As New ShmMem(1280000)
+Public MyQueue As ShmList
+
+Public Sub Main()
+
+    MyMem!a = 100
+    MyMem!b = 200
+
+    MyMem.Notify("a", Me)
+    MyMem.Notify("b", Me)
+    MyQueue = MyMem.notifyQ("a")                        ' get the notify q so we can look at it
+
+    MyMem.NotifyOnNew(True, Me, "WhenNew")
+    MyMem.NotifyOnRemove(True, Me, "WhenRemoved")
+
+    MyMem!a = 20
+    MyMem!b = 30
+
+    MyMem!NewVar = "this is a new var"
+
+    MyMem.Remove("NewVar")
+
+    Wait 1
+
+    MyMem.NotifyStop("a", Me)
+    MyMem.NotifyStop("b", Me)
+
+    Print shmMem.GetObjectClass(Me).name;; "Completed"
+    Quit
+
+End
+
+Public Sub WhenNew(SymNAme As String, value As Variant, timedout As Boolean)
+
+    Print " New Symbol ";; SymName;; "=";; Str(value)
+
+End
+
+Public Sub WhenRemoved(SymName As String, value As Variant, timedout As Boolean)
+
+    Print " Removed Symbol ";; SymName;; "was";; value
+
+End
+
+Public Sub a_changed(VarName As String, value As Variant, TimedOut As Boolean)
+
+    Print varname;; "changed to "; value;; Timedout
+
+End
+
+Public Sub b_changed(VarName As String, value As Variant, TimedOut As Boolean)
+
+    Print Varname;; "changed to "; value;; Timedout
+
+End

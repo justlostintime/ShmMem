@@ -15,7 +15,8 @@ Public variables As New String[]
 Public Sub Form_Open()
 
     MyMemory = New ShmMem(2000000, "MySharedMem", 8000)          '' Open the test database
-    MyMemory.NotifyOnNew(True, Me)                                                             '' get notified when new variables appear
+    MyMemory.NotifyOnNew(True, Me)                               '' get notified when new variables appear
+    MyMemory.NotifyOnRemove(True, Me, "WhenRemoved")               '' get notified when one is removed
     VariableList.Columns.count = 2
     VariableList.Columns[0].Title = "Variable Name"
     VariableList.Columns[1].Title = "Value"
@@ -29,17 +30,17 @@ Public Sub Form_Open()
 End
 
 Public Sub Form_Close()
-    
+
     For Each var As String In variables
-        if left(var,1) = "#" then
-           MyMemory.NotifyOnNew(False, Me)
-        else
-           MyMemory.NotifyStop(var, Me, "onanychange")
-        endif
+        If Left(var, 1) = "#" Then
+            MyMemory.NotifyOnNew(False, Me)
+        Else
+            MyMemory.NotifyStop(var, Me, "onanychange")
+        Endif
     Next
     MyMemory = Null
-    quit 0
-    
+    Quit 0
+
 End
 
 '' Get the notifications
@@ -52,13 +53,27 @@ Public Sub OnNew_Created(SymName As String, value As Variant, TimedOut As Boolea
 
 End
 
+'' Get the removed notification
+Public Sub WhenRemoved(SymName As String, value As Variant, TimedOut As Boolean)
+
+    Variables.Remove(variables.Find(SymName))
+    Print SymName;; "removed"
+    Variables.Sort()
+    'MyMemory.NotifyStop(SymName, Me, "onanychange") dont do this as variable is gone
+    VariableList.Refresh()
+
+End
+
 Public Sub OnAnyChange(varname As String, value As Variant, timedOut As Boolean)
 
     Dim index As Integer = Variables.Find(varname)
 
     If index = -1 Then
-   Error.Raise("Bad variable name returned index = " & Str(index) & " for " & Quote(varname)) 
+        Print "Deleted  variable name returned index = " & Str(index) & " for " & Quote(varname)
+    Else If varname == "done" And If value == "true" Then
+        Form_Close()
     Endif
+
     VariableList.Rows[index].text = value
 
 End
@@ -73,7 +88,6 @@ Public Sub VariableList_Data(Row As Integer, Column As Integer)
     Endif
 
 End
-
 
 End class
 form FMain

@@ -1,5 +1,6 @@
 #!/usr/bin/env gbs3
 Use "westwood.shmmem:2.1"
+Use "gb.eval"
 ''' Each of the User1-3 should be executed as seperate application
 ''' They give an example of sharing data between application.
 ''' Notifications are used to signal the apps as data changes
@@ -12,25 +13,37 @@ Public Sub main()
     Dim Buffer As String
     Dim element As String[]
 
-    ' ShmMem.ForceDelete("MySharedMem")                                          ' cleanup any old testing
+   ' ShmMem.ForceDelete("MySharedMem")                                          ' cleanup any old testing
     MyShare = New ShmMem(2000000, "MySharedMem", 8000)
     With MyShare
-        .Print()
+        PrintStuff(MyShare)
+
         !Cat = "Felix"
+        PrintStuff(MyShare)
         !Dog = "Rover"
+        PrintStuff(MyShare)
         !Rabbit = 1000
+        PrintStuff(MyShare)
         !Done = False
 
-        .Notify("Cat", Me)
-        .Notify("Dog", Me)
-        .Notify("rabbit", Me)
-        .Notify("Done", Me)
         PrintStuff(MyShare)
+
+        .Notify("Cat", Me)
+        PrintStuff(MyShare)
+        .Notify("Dog", Me)
+        PrintStuff(MyShare)
+        .Notify("rabbit", Me)
+        PrintStuff(MyShare)
+        .Notify("Done", Me)
+
+        PrintStuff(MyShare)
+
         .NotifyOnNew(True, Me)
+        PrintStuff(MyShare)
 
         Print " User 1 monitoring all variables"
         While Not completed
-            Print "Input Variable Name{cat,dog,rabbit,done} followed by an = and the new value\nExample: Cat=this"
+            Print "Input Variable Name followed by an = and the new value\nExample: Cat=this"
             Line Input Buffer
             element = Split(buffer, "=", "\"", True, False)
             If element.count = 2 Then
@@ -43,14 +56,29 @@ Public Sub main()
                 Endif
                 Print "Value="; element[1]
             Else
-                Print "You may only assign : varname=value or varname="
+                Print "You may only assign : varname=value or varname= ' to delete as variable"
             Endif
-            MyShare[element[0]] = element[1]
+            If element.count > 1 Then
+                MyShare[element[0]] = element[1]
+            Else If element.count = 1 Then
+               try .Remove(element[0])
+               print "Removed : ";element[0]
+            Else
+                Print "What the heck, thats not right"
+            End If
             PrintStuff(MyShare)
             Wait 0.001
         Wend
+
+        .Notifystop("Cat", Me)
+        .Notifystop("Dog", Me)
+        .Notifystop("rabbit", Me)
+        .Notifystop("Done", Me)
+        .NotifyOnNew(False, Me)
+        PrintStuff(MyShare)
     End With
     Print "User 1 Completed and exits"
+    Quit 0
 
 End
 
@@ -60,6 +88,11 @@ Public Sub PrintStuff(vMyShare As ShmMem)
 
     For Each Value In vMyShare
         Print vMyShare.key; "="; Quote(Str(Value))
+    Next
+
+    Dim lists As Variant[] = shmMem.GetListType(vMyShare.MyVarMem, ShmList.cShmList)
+    For Each item As Shmlist In lists
+        Print item.textTree()
     Next
 
 End

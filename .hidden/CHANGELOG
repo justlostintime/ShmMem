@@ -1,4 +1,9 @@
-* Wed Jul 10 2024 brian <justlostintime@gmail.com> 2.1.16
+* Mon Jul 15 2024 brian <justlostintime@gmail.com> 2.1.17
+- Updated to also signal when a variable is removed. updated demo scripts.
+
+* Mon Jul 15 2024 brian <justlostintime@gmail.com> 2.1.16
+
+* Fri Jul 12 2024 brian <justlostintime@gmail.com> 2.1.16
 
 * Wed Jul 10 2024 brian <justlostintime@gmail.com> 2.1.16
 - Fix bug with Task/App multi thread for SHmMem class

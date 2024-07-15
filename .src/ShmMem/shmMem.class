@@ -290,6 +290,12 @@ Public Sub _put(value As Variant, SymName As String, ...)
 
 End
 
+Public Sub Remove(SymName As String)
+
+    Me.Free(SymName)
+
+End
+
 '' remove a sysmbol from the symbol table and release all memory/values
 Public Sub {Free}(SymName As Variant)
 
@@ -297,7 +303,7 @@ Public Sub {Free}(SymName As Variant)
         Case gb.integer, gb.pointer, gb.long, gb.Short
             MyVarMem.FreeVirt(CPointer(SymName))
         Case gb.string
-            vars.Free(SymName)
+            vars.remove(SymName)
     End Select
 
 End
@@ -455,7 +461,7 @@ End
 '' Get a notification whenever a symbol is removed from the symbol table
 Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "") As Boolean
 
-    Return vars.NotifyOnNew(enabled, NotifyObject, NotifyFunction)
+    Return vars.NotifyOnRemove(enabled, NotifyObject, NotifyFunction)
 
 End
 

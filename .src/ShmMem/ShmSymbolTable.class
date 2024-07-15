@@ -267,12 +267,12 @@ Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional Acti
         sym.NotifyBlock = NotList.Address
     Endif
 
-    If Not Me.Exist("#ondelete") Then
-        Me["#ondelete"] = "Holding Queue for symbol deletion"
+    If Not Me.Exist("#onremove") Then
+        Me["#onremove"] = "Holding Queue for symbol removal"
         SymInfo.NotifyOnDelete = 0                                                        '' no nitification requested on symbol table changes
-        index = GetSymbol("#ondelete")
+        index = GetSymbol("#onremove")
         sym = SymMem.Table[index]
-        NotList = New ShmList(Varmem, 0, True, "On Delete Queue")
+        NotList = New ShmList(Varmem, 0, True, "On Remove Queue")
         sym.NotifyBlock = NotList.Address
     Endif
 
@@ -504,6 +504,15 @@ Public Sub Add(symName As String, value As Variant, Optional HashValue As Long =
     Endif
 
     SymTblMem.Release()
+
+    If SymInfo.NotifyOnNew > 0 Then
+        Dim SymbolIndex As Integer = GetSymbol("#onnew")
+        Dim Sym As Symbol = SymMem.Table[SymbolIndex]
+        If Sym.NotifyBlock <> 0 Then
+            NotifyVars.SignalEach(Sym, SymName)
+        Endif
+    Endif
+
     If $bDebug Then Print Application.id, "Add SymTblmem.release"
 
 End
@@ -553,7 +562,7 @@ Public Sub Remove(SymName As String)
     SymTblMem.Release()
 
     If SymInfo.NotifyOnDelete > 0 Then
-        Dim SymbolIndex As Integer = SymbolCache["#ondelete"]
+        Dim SymbolIndex As Integer = GetSymbol("#onremove")
         Dim Sym As Symbol = SymMem.Table[SymbolIndex]
         If Sym.NotifyBlock <> 0 Then
             NotifyVars.SignalEach(Sym, SymName)
@@ -563,6 +572,7 @@ Public Sub Remove(SymName As String)
     If $bDebug Then
         Print Application.id, "remove SymTblmem.release"
     Endif
+
     VarMem.Free(Freedata)
 
 End
@@ -624,13 +634,13 @@ Public Sub _put(value As Variant, SymName As String)
 
         If Not SymbolCache.Exist(SymName) Then 'updated
             Add(SymName, Value)
-            If SymInfo.NotifyOnNew > 0 Then
-                SymbolIndex = SymbolCache["#onnew"]
-                Sym = SymMem.Table[SymbolIndex]
-                If Sym.NotifyBlock <> 0 Then
-                    NotifyVars.SignalEach(Sym, SymName)
-                Endif
-            Endif
+            ' If SymInfo.NotifyOnNew > 0 Then
+            '     SymbolIndex = SymbolCache["#onnew"]
+            '     Sym = SymMem.Table[SymbolIndex]
+            '     If Sym.NotifyBlock <> 0 Then
+            '         NotifyVars.SignalEach(Sym, SymName)
+            '     Endif
+            ' Endif
             Return
         Else
             SymbolIndex = SymbolCache[SymName]                               ' updated
@@ -640,13 +650,13 @@ Public Sub _put(value As Variant, SymName As String)
         index = GetSymbol(SymName)
         If index = NoEntry Then
             Add(SymName, Value, lasthash)                 ' Opt the hash saves the last has it created, optimization
-            If SymInfo.NotifyOnNew > 0 Then
-                index = GetSymbol("#onnew")               ' we need to do this again as the original  hash may only be a bucket
-                Sym = SymMem.Table[Index]
-                If Sym.NotifyBlock <> 0 Then
-                    NotifyVars.SignalEach(Sym, SymName)
-                Endif
-            Endif
+            ' If SymInfo.NotifyOnNew > 0 Then
+            '     index = GetSymbol("#onnew")               ' we need to do this again as the original  hash may only be a bucket
+            '     Sym = SymMem.Table[Index]
+            '     If Sym.NotifyBlock <> 0 Then
+            '         NotifyVars.SignalEach(Sym, SymName)
+            '     Endif
+            ' Endif
             Return
         Else
             SymbolIndex = index
@@ -730,7 +740,7 @@ Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional F
 
     If Enabled Then
 
-        Try Notify("#ondelete", NotifyObject, FuncName, 0, Tag)
+        Try Notify("#onremove", NotifyObject, FuncName, 0, Tag)
         If Error Then
             Return False
         Else
@@ -738,7 +748,7 @@ Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional F
         Endif
 
     Else If SymInfo.NotifyOnDelete > 0 Then
-        Try NotifyStop("#ondelete", NotifyObject, FuncName, Tag)
+        Try NotifyStop("#onremove", NotifyObject, FuncName, Tag)
         If Error Then
             Return False
         Else
