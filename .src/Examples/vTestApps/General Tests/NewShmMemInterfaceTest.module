@@ -92,5 +92,6 @@ Public Sub main()
     smem.Print()
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    smem.Close()
 
 End

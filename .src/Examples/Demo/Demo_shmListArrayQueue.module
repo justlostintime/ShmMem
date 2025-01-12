@@ -98,6 +98,7 @@ Public Sub Main()
 
     End With
 
+    mem.close()
     Quit 0
 Catch
     Error "Script Error >";; error.text & "\n" & error.where

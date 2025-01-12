@@ -29,6 +29,7 @@ Public Sub main()
         Print bQueue.Pop();;
     Wend
 
+    mem.Close()
     Quit 0
 
 End

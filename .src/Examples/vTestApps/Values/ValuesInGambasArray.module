@@ -23,6 +23,7 @@ Public Sub main()
 
     mem.PrintAllInfo()
 
-    Quit 0
+    mem.close()
+    'Quit 0
 
 End

@@ -28,6 +28,7 @@ Public Sub Main()
     MyMem.NotifyStop("b", Me)
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    MyMem.Close()
     Quit
 
 End

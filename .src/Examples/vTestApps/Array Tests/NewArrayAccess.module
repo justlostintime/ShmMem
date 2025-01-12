@@ -29,5 +29,7 @@ Public Sub main()
     End With
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    MyMem.Close()
+    Quit 0
 
 End

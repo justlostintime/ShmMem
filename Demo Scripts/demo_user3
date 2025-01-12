@@ -34,6 +34,7 @@ Public Sub main()
   MyShare.NotifyStop("Done", Me, "It_Is_Done")
 
   Print "User 3 Completed and exits"
+  MyShare.close()
 
 End
 

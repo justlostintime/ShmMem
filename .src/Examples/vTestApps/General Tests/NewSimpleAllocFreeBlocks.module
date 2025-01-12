@@ -1,7 +1,7 @@
 ' Gambas module file
 
 'Fast Unsafe
-
+''' Test Basic block management
 Public Sub main()
 
     Dim MyBlock As New ShmMemBlock(1000000)

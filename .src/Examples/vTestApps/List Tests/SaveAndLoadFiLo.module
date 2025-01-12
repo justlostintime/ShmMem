@@ -19,11 +19,12 @@ Public Sub main()
     varfile = Open testfile For Read
     bList = Read #varfile As Object
     Close varfile
-    
+
     While bList.count > 0
         Print bList.Pop();;
     Wend
 
+    mem.Close()
     Quit 0
 
 End

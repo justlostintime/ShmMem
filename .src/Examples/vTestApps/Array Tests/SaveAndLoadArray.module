@@ -21,4 +21,7 @@ Public Sub main()
     If Error Then Print Error.text
     mem.LoadVar(testfile, "testarray")
 
+    mem.Close()
+    Quit 0
+
 End

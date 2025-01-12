@@ -127,6 +127,6 @@ Public Sub main()
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
 
-    Quit
+    Quit 0
 
 End

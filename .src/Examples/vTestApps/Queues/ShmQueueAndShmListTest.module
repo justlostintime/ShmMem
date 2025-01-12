@@ -136,6 +136,7 @@ Public Sub main()
 
         myMem.varMnge._Print()
         Print shmMem.GetObjectClass(Me).name;; "Completed"
+        mymem.Close()
         Quit 0
     End With
 

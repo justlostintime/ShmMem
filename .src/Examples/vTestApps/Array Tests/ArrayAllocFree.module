@@ -21,6 +21,7 @@ Public Sub Main()
         !a[0, 1, 1] = "this message"
         Print !a[0, 1, 1]
     End With
+    MyMem.Close()
     Quit 0
 
 End

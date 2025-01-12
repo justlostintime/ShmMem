@@ -41,5 +41,6 @@ Public Sub main()
     MyMem._Print()
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    Quit 0
 
 End

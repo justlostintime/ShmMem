@@ -28,6 +28,7 @@ Public Sub main()
     cList = New ShmList(varfile)
     Close varfile
 
+    mem.Close()
     Quit 0
 
 End

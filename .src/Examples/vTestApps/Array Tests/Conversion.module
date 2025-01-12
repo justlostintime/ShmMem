@@ -10,5 +10,6 @@ Public Sub Main()
     Dim b As ShmArray = ShmArray._convert(mem, a)
     b[9, 8, 7] = 300
     Stop
+    mem.Close()
 
 End

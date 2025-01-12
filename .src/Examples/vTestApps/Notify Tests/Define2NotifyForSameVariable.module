@@ -24,6 +24,7 @@ Public Sub main()
     again.DoAgain(vars)
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    vars.Close()
 
 End
 

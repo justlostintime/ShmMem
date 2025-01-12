@@ -1,7 +1,7 @@
 ' Gambas class file
 
 Inherits Task
-Public shm As ShmMem
+Public shm As ShmMem                        ' set by calling program
 
 Public Sub main() As String
 

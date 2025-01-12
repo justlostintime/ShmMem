@@ -29,6 +29,7 @@ Public Sub Main()
 
     mqa.PrintAllInfo()
     Print shmMem.GetObjectClass(Me).name;; "Completed"
-    Quit
+    mqa.Close()
+    Quit 0
 
 End

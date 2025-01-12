@@ -38,7 +38,7 @@ Public Sub main()
 
     Print "Cleared all entries in array"
     mymem.PrintAllInfo()
-
+    mymem.Close()
     Quit 0
 
 End

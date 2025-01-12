@@ -20,5 +20,6 @@ Public Sub main()
     Print "Ended test time "; Timer - mystart
     b.free()
     a.PrintAllInfo()
+    a.Close()
 
 End

@@ -23,9 +23,10 @@ Public Sub main()
     cValue = New ShmValue(varfile)
     Close varfile
 
-    mem._free()
+    mem.Close()
     mem = Null                                                          ' generate an error while loading
     Wait 0.1
+
     varfile = Open testfile For Read
     Try bValue = Read #varfile As Object
     If Error Then

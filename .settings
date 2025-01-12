@@ -811,10 +811,18 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Added Signal when variables are removed\n\n* New: Add new interface notifyOnRemove - notify app when a verable is removed"
+LastCommit="Made the demo ShmConsole correvctly resize\n\n* OPT: Made ShmConsole script correctly resize table"
 
 [OpenFile]
-Count=0
+Count=7
+Active=7
+File[1]="Demo Scripts/demo_monitornew:0.0"
+File[2]=".src/ShmMem/ShmArray.class:0.0"
+File[3]=".src/ShmMem/ShmFiFo.class:0.33"
+File[4]="Demo Scripts/shmconsole:49.20"
+File[5]=".src/Examples/vTestApps/Shared Memory Images/LoadAndSaveImage.module:0.0"
+File[6]=".src/Examples/vTestApps/StorableClasses/ShmClassesTest.module:0.0"
+File[7]=".src/ShmMem/SharedObjectExample.class:0.0"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

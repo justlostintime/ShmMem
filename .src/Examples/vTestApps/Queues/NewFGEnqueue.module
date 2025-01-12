@@ -72,11 +72,10 @@ Public Sub Main()
 
         .PrintAllInfo()
 
-        Work = Null
-
     End With
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    Work.Close()
     Quit
 
 Catch

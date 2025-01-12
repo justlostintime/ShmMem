@@ -127,6 +127,8 @@ Public Sub main()
         mem.PrintAllInfo()
 
     End With
+
+    mem.close()
     Quit 0
 
 End

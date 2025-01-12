@@ -18,7 +18,7 @@ Public Sub Main()
     End With
     vmem.PrintAllInfo()
 
-    vmem = Null
+    vmem.Close()
 
     shmMem.ForceDelete("mydata")
     vmem = New ShmMem(1128000, "mydata")
@@ -33,7 +33,7 @@ Public Sub Main()
     End With
 
     vmem.PrintAllInfo()
-
+    vmem.Close()
     Print shmMem.GetObjectClass(Me).name;; "Completed"
 
 End

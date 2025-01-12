@@ -90,8 +90,8 @@ Public Sub main()
 
     End With
 
-    Print shmMem.GetObjectClass(Me).name;; "Completed======================================================================="
-
     vars.PrintAllInfo()
+    Print shmMem.GetObjectClass(Me).name;; "Completed======================================================================="
+    vars.Close()
 
 End

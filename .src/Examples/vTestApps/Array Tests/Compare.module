@@ -15,6 +15,7 @@ Public Sub Main()
 
     Print Str(b = c), Str(a = a)
 
+    mem.Close()
     Quit 0
 
 End

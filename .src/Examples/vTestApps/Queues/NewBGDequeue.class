@@ -1,7 +1,7 @@
 ' Gambas class file
 
 Inherits Task
-Public work As Shmmem                              ' this is set by the App starting the task
+Public work As Shmmem                              ' this is set by the App starting the task 0
 
 Public Sub main() As Integer
 

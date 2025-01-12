@@ -31,7 +31,9 @@ Public Sub main() As String
         Wend
 
     End With
+
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    vmem.Close()
     Return Hex(Application.id) & " " & Str(MyIndex) & " Done Counter =" & Str(counter)
 
 Catch

@@ -22,6 +22,8 @@ Public Sub main()
     c = ShmValue.list(MyMem)
     Dim e As New ShmValue(mymem, "newval2")
     Print e.tag
+
+    MyMem.close()
     Print "done"
     Quit 0
 

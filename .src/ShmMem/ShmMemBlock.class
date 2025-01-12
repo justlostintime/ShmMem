@@ -204,14 +204,18 @@ Public Sub _free()
 
     If blockInfo <> Null Then
         If name <> "" Then
+            Debug "Del named block"
             Dec BlockInfo.InUseCounter
             Try rClose(MemoryHandle)
             If BlockInfo.InUseCounter = 0 Then
+                'Debug "remove unlink named memory block"
                 Try shm_unlink(Name)
                 Try sem_destroy(SemLock)
             Endif
+            ' Debug "Unmap named memory from application"
             Try munmap(MemoryAddress, MemoryLength)
         Else
+            ' Debug "Delete un- named memory blocks"
             Try sem_destroy(SemLock)
             Try munmap(MemoryAddress, MemoryLength)
         Endif

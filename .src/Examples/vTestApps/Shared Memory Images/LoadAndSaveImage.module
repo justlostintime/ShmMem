@@ -30,6 +30,8 @@ Public Sub main()
         Endif
     End With
 
+    shm.close()
+    ShmLoad.close()
     Quit 0
 
 End

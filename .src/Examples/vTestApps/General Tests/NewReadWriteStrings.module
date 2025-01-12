@@ -18,10 +18,7 @@ Public Sub main()
     Print "ReWrite string data";; loops;; "times, time="; Timer - starttime
     vmem.Print()
 
-    vmem = Null
-
-    Wait
-
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    vmem.Close()
 
 End

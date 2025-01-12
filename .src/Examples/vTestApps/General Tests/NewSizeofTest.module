@@ -66,5 +66,6 @@ Public Sub main()
     Print "End TestMemSizeof #########################################################################################"
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    vmem.Close()
 
 End

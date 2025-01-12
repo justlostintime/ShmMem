@@ -21,3 +21,7 @@ Run the demo by
 4) In your file manger open a terminal for each demo user
 5) run ./demo_user1, 2 and 3
 6) enter variable change to user1 screen, see all terminals change
+
+download installable pacjage from as an example
+
+curl -LJO "https://raw.githubusercontent.com/justlostintime/ppa/main/ubuntu/westwood-shmmem_2.1.17-7_all.deb"

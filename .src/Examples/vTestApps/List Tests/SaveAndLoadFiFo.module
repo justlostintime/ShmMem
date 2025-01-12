@@ -24,6 +24,7 @@ Public Sub main()
         Print bList.Pop();;
     Wend
 
+    mem.Close()
     Quit 0
 
 End

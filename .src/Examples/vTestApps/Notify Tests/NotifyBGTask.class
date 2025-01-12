@@ -43,7 +43,7 @@ Public Sub main() As String
     End With
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
-    Vars = Null
+    Vars.Close()
 
     Return "Done"
 

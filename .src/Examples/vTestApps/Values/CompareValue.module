@@ -35,6 +35,7 @@ Public Sub main()
     bc = Ba.sort()
     Print "Sorted arrays are equal ?";; Str(ba = bc);; Str(b = ba)
 
+    MyMem.close()
     Quit 0
 
 End

@@ -2,7 +2,7 @@
 
 ' Fast Unsafe
 'Extern strncpy(dest As Pointer, source As String, len As Long) In "libc:6"
-Private loopcount As Integer = 5000
+Private loopcount As Integer = 5000   ' set as needed
 Private Letters As String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 Public varStore As ShmMemBlock

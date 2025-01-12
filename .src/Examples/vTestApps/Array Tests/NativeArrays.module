@@ -16,6 +16,8 @@ Public Sub Main()
         Print !a[1, 1, 1]
     End With
     Print mymem!a[1, 1, 1]
+
+    MyMem.Close()
     Quit 0
 
 End

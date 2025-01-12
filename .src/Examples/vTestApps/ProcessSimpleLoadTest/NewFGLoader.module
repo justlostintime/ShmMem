@@ -51,6 +51,7 @@ Public Sub main()
         Wend
 
         Print shmMem.GetObjectClass(Me).name;; "Completed"
+        vmem.Close()
 
     End With
 

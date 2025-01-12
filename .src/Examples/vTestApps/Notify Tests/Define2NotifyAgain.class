@@ -1,5 +1,6 @@
 ' Gambas class file
 
+'' Repeat the outer module again
 Public Sub DoAgain(vars As ShmMem)
 
     With vars

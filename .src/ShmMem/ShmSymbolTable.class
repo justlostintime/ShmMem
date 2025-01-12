@@ -30,7 +30,7 @@ Public Struct TableInfo
     Collisions As Pointer                     '' Number of times hash was already used
     UsedCount As Long                      '' Number of used Entries
     MaxCount As Long                        '' Max Number of entries ever used
-    TotalRetryCount As Pointer       '' Max number of retries when looking for symols
+    TotalRetryCount As Pointer       '' Max number of retries when looking for symbols
     NotifyOnNew As Short                '' set this when someone is waiting to be notified of Activity
     NotifyOnDelete As Short             '' Set when wanting to know if variable is removed
 End Struct

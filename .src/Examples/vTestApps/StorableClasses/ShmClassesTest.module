@@ -14,7 +14,9 @@ Public Sub Main()
         Print !d.Tag, !e.Tag, !f.Tag, !g.Tag
 
     End With
+
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    vars.Close()
     Quit 0
 
 End

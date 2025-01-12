@@ -14,13 +14,13 @@ Const VarMemDefault As Long = 2000000                                '' default 
 Const MaxSymbolsDefault As Integer = 8000                          '' default variable memory space 8000 entries
 Const TimeOutDefault As Float = 0.1                                          '' Default sem timeout
 
-Public varStore As ShmMemBlock                                               '' the pysical memory segment being shared
-Public varMnge As ShmManage                                                    '' the Object resposible to managing the raw memory
+Public VarStore As ShmMemBlock                                               '' the pysical memory segment being shared
+Public VarMnge As ShmManage                                                    '' the Object resposible to managing the raw memory
 Public MyVarMem As ShmVarStorage                                        '' manages the actual values stored into the shared memory
 Public VarStoreName As String                                                     '' The name for named memory
 
-Public symStore As ShmMemBlock                                               '' the Raw memory used to store the symbol table
-Public vars As ShmSymbolTable                                                    '' the object which will manage symbol table
+Public SymStore As ShmMemBlock                                               '' the Raw memory used to store the symbol table
+Public Vars As ShmSymbolTable                                                    '' the object which will manage symbol table
 Public SymStoreName As String                                                    '' the name of the symbol table for the named memory
 Static Public PID As Integer = 0                                                       '' The pid of the application using this class
 Private Local_PID As Integer = 0                                                     '' pid of the app/task class instaciating this as object
@@ -33,7 +33,7 @@ Property Read Key As String                                                     
 Property Debug As Boolean Use $bDebug                                   '' Turns on and off the Debug messages
 Property DefaultDirectory As String Use $sDefaultDirectory '' the default directiry used to save and load Images and variables
 Property Signature As String Use $Signature                             '' Used to reconstitute co correct object shmmem in an application
-Static Public objects As New Collection(gb.ignorecase)          '' The list of instanciations of the class
+Static Public Objects As New Collection(gb.ignorecase)          '' The list of instanciations of the class
 Property Read ShmObjects As Collection                                     '' returns a list of allocated memory segments
 
 '' We need to determine if the object is a class=module or object=class instanciated object
@@ -89,7 +89,7 @@ End
 '' return null if not found
 '' Locate a shared memory block by signature as an object
 '' This will be used by the _read functions in the Shm Classes to locate
-'' the correct memory block in which to instanciate the shmclass
+'' the correct memory block in which to instantiate the shmclass
 Static Public Sub GetMemSegment(sSignature As String) As ShmMem
 
     Dim seg As Shmmem
@@ -195,12 +195,23 @@ Catch
 
 End
 
+'' Close the open shared memory cleanly as the gambas interpreter does not start at the highest level
+Public Sub {Close}()
+
+    _free()
+
+End
+
 '' Free the shared memory when the application closes
 Public Sub _free()
 
+    ' Check if this task owns the shared memory, the first in owns it
     If vars = Null Or If Local_PID <> Application.id Then Return
 
-    If shmMem.objects.count > 0 Then
+    ' the first shared memory segment can become the default memory segment
+    ' as the owner is deleted of each segment the default memory segment becomes the previous
+    ' block of memory
+    If shmmem <> Null And If shmMem.objects <> Null And If shmMem.objects.count > 0 Then
         If shmMem.Objects.Exist("default")
             If shmMem.objects["default"].signature = $Signature Then
                 shmMem.objects.Remove("default")
@@ -210,7 +221,7 @@ Public Sub _free()
             shmMem.objects.Remove(Me.Signature)
         Endif
         If Not shmMem.objects.Exist("default") And If shmMem.objects.count > 0 Then
-            shmMem.objects["default"] = shmMem.objects.First   ' just assign the next one as the default
+            shmMem.objects["default"] = shmMem.objects.First                                                         ' just assign the next one as the default
         Endif
     Endif
 
@@ -290,13 +301,16 @@ Public Sub _put(value As Variant, SymName As String, ...)
 
 End
 
+'' Remove Symbol from symbol table
+'' notify app/tasks  waiting for symbol removal notifications
 Public Sub Remove(SymName As String)
 
     Me.Free(SymName)
 
 End
 
-'' remove a sysmbol from the symbol table and release all memory/values
+'' String Name then Remove a symbol from the symbol table and release all memory/values
+''Virtual Address provided then free the virtual memory.
 Public Sub {Free}(SymName As Variant)
 
     Select Case TypeOf(SymName)
@@ -560,7 +574,7 @@ Public Sub RealAddress(VirtAddress As Pointer) As Pointer
 End
 
 '' Allocate a block of memory
-Public Sub {alloc}(Length As Pointer) As Pointer
+Public Sub {Alloc}(Length As Pointer) As Pointer
 
     Dim TheMem As Pointer
 

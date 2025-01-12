@@ -1,6 +1,6 @@
 #!/usr/bin/env gbs3
 Use "westwood.shmmem:2.1"
-use "gb.eval"
+Use "gb.eval"
 ''' Each of the User1-3 should be executed as seperate application
 ''' They give an example of sharing data between application.
 ''' Notifications are used to signal the apps as data changes
@@ -10,125 +10,126 @@ Public ValidVariables As String[] = ["cat", "dog", "rabbit", "done"]
 
 Public Sub main()
 
-    Dim Buffer As String
-    Dim element As String[]
+  Dim Buffer As String
+  Dim element As String[]
 
-    ShmMem.ForceDelete("MySharedMem")                                          ' cleanup any old testing
-    MyShare = New ShmMem(2000000, "MySharedMem", 8000)
-    With MyShare
-        PrintStuff(MyShare)
+  ShmMem.ForceDelete("MySharedMem")                                          ' cleanup any old testing
+  MyShare = New ShmMem(2000000, "MySharedMem", 8000)
+  With MyShare
+    PrintStuff(MyShare)
 
-        !Cat = "Felix"
-        PrintStuff(MyShare)
-        !Dog = "Rover"
-        PrintStuff(MyShare)
-        !Rabbit = 1000
-        PrintStuff(MyShare)
-        !Done = False
+    !Cat = "Felix"
+    PrintStuff(MyShare)
+    !Dog = "Rover"
+    PrintStuff(MyShare)
+    !Rabbit = 1000
+    PrintStuff(MyShare)
+    !Done = False
 
-        PrintStuff(MyShare)
+    PrintStuff(MyShare)
 
-        .Notify("Cat", Me)
-        PrintStuff(MyShare)
-        .Notify("Dog", Me)
-        PrintStuff(MyShare)
-        .Notify("rabbit", Me)
-        PrintStuff(MyShare)
-        .Notify("Done", Me)
+    .Notify("Cat", Me)
+    PrintStuff(MyShare)
+    .Notify("Dog", Me)
+    PrintStuff(MyShare)
+    .Notify("rabbit", Me)
+    PrintStuff(MyShare)
+    .Notify("Done", Me)
 
-        PrintStuff(MyShare)
+    PrintStuff(MyShare)
 
-        .NotifyOnNew(True, Me)
-        PrintStuff(MyShare)
+    .NotifyOnNew(True, Me)
+    PrintStuff(MyShare)
 
-        Print " User 1 monitoring all variables"
-        While Not completed
-            Print "Input Variable Name{cat,dog,rabbit,done} followed by an = and the new value\nExample: Cat=this"
-            Line Input Buffer
-            element = Split(buffer, "=", "\"", True, False)
-            If element.count = 2 Then
-                element[0] = Lower(Trim(element[0]))
-                element[1] = Trim(element[1])
-                If Not .Exist(element[0]) Then
-                    Print "Creating :"; element[0];;
-                Else
-                    Print "Assigning :"; element[0];;
-                Endif
-                Print "Value="; element[1]
-            Else
-                Print "You may only assign : varname=value or varname="
-            Endif
-            If element.count > 1 Then
-                MyShare[element[0]] = element[1]
-            Else If element.count = 1 Then
-                'MyShare[element[0]] = "unassigned"
-                Try MyShare.Remove(element[0])
-                If Error Then Print Error.text
-            Else
-                Print "What the heck, thats not right"
-            End If
-            'PrintStuff(MyShare)
-            Wait 0.001
-        Wend
+    Print " User 1 monitoring all variables"
+    While Not completed
+      Print "Input Variable Name{cat,dog,rabbit,done} followed by an = and the new value\nExample: Cat=this"
+      Line Input Buffer
+      element = Split(buffer, "=", "\"", True, False)
+      If element.count = 2 Then
+        element[0] = Lower(Trim(element[0]))
+        element[1] = Trim(element[1])
+        If Not .Exist(element[0]) Then
+          Print "Creating :"; element[0];;
+        Else
+          Print "Assigning :"; element[0];;
+        Endif
+        Print "Value="; element[1]
+      Else
+        Print "You may only assign : varname=value or varname="
+      Endif
+      If element.count > 1 Then
+        MyShare[element[0]] = element[1]
+      Else If element.count = 1 Then
+        'MyShare[element[0]] = "unassigned"
+        Try MyShare.Remove(element[0])
+        If Error Then Print Error.text
+      Else
+        Print "What the heck, thats not right"
+      End If
+      'PrintStuff(MyShare)
+      Wait 0.001
+    Wend
 
-        .Notifystop("Cat", Me)
-        .Notifystop("Dog", Me)
-        .Notifystop("rabbit", Me)
-        .Notifystop("Done", Me)
-        .NotifyOnNew(False, Me)
-        PrintStuff(MyShare)
-    End With
-    Print "User 1 Completed and exits"
-    Quit 0
+    .Notifystop("Cat", Me)
+    .Notifystop("Dog", Me)
+    .Notifystop("rabbit", Me)
+    .Notifystop("Done", Me)
+    .NotifyOnNew(False, Me)
+    PrintStuff(MyShare)
+  End With
+  Print "User 1 Completed and exits"
+  MyShare.close()
+  Quit 0
 
 End
 
 Public Sub PrintStuff(vMyShare As ShmMem)
 
-    Dim Value As Variant = ""
+  Dim Value As Variant = ""
 
-    For Each Value In vMyShare
-        Print vMyShare.key; "="; Quote(Str(Value))
-    Next
+  For Each Value In vMyShare
+    Print vMyShare.key; "="; Quote(Str(Value))
+  Next
 
-    Dim lists As Variant[] = shmMem.GetListType(vMyShare.MyVarMem, ShmList.cShmList)
-    For Each item As Shmlist In lists
-        Print item.textTree()
-    Next
+  Dim lists As Variant[] = shmMem.GetListType(vMyShare.MyVarMem, ShmList.cShmList)
+  For Each item As Shmlist In lists
+    Print item.textTree()
+  Next
 
 End
 
 Public Sub onnew_created(varname As String, value As Variant, timedOut As Boolean)
 
-    Print "Notified that";; varname;; "was created and set to";; value;; "Timeout is ignored";; Str(timedout)
+  Print "Notified that";; varname;; "was created and set to";; value;; "Timeout is ignored";; Str(timedout)
 
 End
 
 Public Sub cat_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print "Sent  ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
+  Print "Sent  ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
 
 End
 
 Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print "Sent ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
+  Print "Sent ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
 
 End
 
 Public Sub Rabbit_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print "Sent";; value;; "for";; VarName;; "Timed Out="; Str(timedout)
+  Print "Sent";; value;; "for";; VarName;; "Timed Out="; Str(timedout)
 
 End
 
 Public Sub done_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    If value == "True" Then
-        Completed = True
-        Print VarName;; "Is committed";; "Timed Out="; Str(timedout)
-    Else
-        Print varname;; " set to "; value;; "Timed Out="; Str(timedout)
-    Endif
+  If value == "True" Then
+    Completed = True
+    Print VarName;; "Is committed";; "Timed Out="; Str(timedout)
+  Else
+    Print varname;; " set to "; value;; "Timed Out="; Str(timedout)
+  Endif
 
 End

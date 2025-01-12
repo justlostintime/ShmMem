@@ -1,6 +1,7 @@
 ' Gambas module file
 
 'Fast Unsafe
+''' test the block class methods
 
 Public Struct LongStruct
     Value As Long
