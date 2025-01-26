@@ -358,6 +358,7 @@ Public Sub SaveImage(Optional FileName As String = Application.name & ".image")
 End
 
 '' Saves a copy of a symbol and its value to a file
+'' FileName sets the full path to locate the file, May only be the path
 Public Sub SaveVar(VarName As String, Optional filename As String = "")
 
     Dim outfileName As String = SetPath(FileName, VarName, "var")
@@ -375,6 +376,7 @@ End
 '' Saves a copy of a gambas variable as asvaed ShmMem variable
 '' VarName is the name to be used by ShmMem when the value is reloaded
 '' Value is the value to be converted to shmMem variable
+'' FileName sets the full path to locate the file, May only be the path
 Public Sub SaveNativeVar(VarName As String, value As Variant, Optional filename As String = "")
 
     Dim outfileName As String = SetPath(FileName, VarName, "var")
