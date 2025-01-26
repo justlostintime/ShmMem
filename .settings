@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={}
+Breakpoints={"LoadAndSaveValue":[25],"ShmManage":[440],"ShmQueueAndShmListTest":[147]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -70,7 +70,7 @@ Geometry=[848,302,415,130]
 Geometry=[834,512,252,56]
 
 [DebugWindow/ListHead]
-Geometry=[834,512,444,379]
+Geometry=[834,512,444,316]
 
 [DebugWindow/ListHead.Tag]
 Geometry=[848,520,252,504]
@@ -109,7 +109,7 @@ Geometry=[2716,479,252,504]
 Geometry=[2449,543,480,508]
 
 [DebugWindow/MyShare]
-Geometry=[834,382,252,320]
+Geometry=[834,512,252,56]
 
 [DebugWindow/MyValue]
 Geometry=[834,455,537,231]
@@ -158,6 +158,12 @@ Geometry=[2754,498,252,56]
 
 [DebugWindow/NotifyVars["dog"].NotifyObject]
 Geometry=[2782,446,252,190]
+
+[DebugWindow/Objects]
+Geometry=[834,512,252,91]
+
+[DebugWindow/Objects["01|24|2025 12:46:20:0.005701771937311:2.1.18"]]
+Geometry=[2425,235,556,283]
 
 [DebugWindow/OnNew]
 Geometry=[745,561,252,304]
@@ -325,7 +331,7 @@ Geometry=[834,388,252,276]
 Geometry=[834,498,252,56]
 
 [DebugWindow/VarMem]
-Geometry=[834,498,252,150]
+Geometry=[834,512,252,56]
 
 [DebugWindow/VarStorage]
 Geometry=[834,465,252,150]
@@ -520,7 +526,7 @@ Geometry=[848,416,252,230]
 Geometry=[862,430,252,330]
 
 [DebugWindow/element]
-Geometry=[355,298,392,276]
+Geometry=[834,512,252,56]
 
 [DebugWindow/element.dList]
 Geometry=[369,312,442,385]
@@ -594,6 +600,9 @@ Geometry=[2597,306,621,279]
 [DebugWindow/mem]
 Geometry=[2163,252,707,412]
 
+[DebugWindow/myMem]
+Geometry=[834,519,252,185]
+
 [DebugWindow/mylist]
 Geometry=[2143,386,252,56]
 
@@ -641,6 +650,9 @@ Geometry=[834,388,252,276]
 
 [DebugWindow/ptrPrev]
 Geometry=[834,512,252,56]
+
+[DebugWindow/qa]
+Geometry=[834,512,252,91]
 
 [DebugWindow/result]
 Geometry=[834,498,252,56]
@@ -811,18 +823,10 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Made the demo ShmConsole correvctly resize\n\n* OPT: Made ShmConsole script correctly resize table"
+LastCommit="Add new method close to fix Circular ref/Un released blockes on exit\n\n* NEW: Added Close method to shmmem that must be called when program exits\n* BUG: Circular ref and unreleased blocks, fixed by close call in shmmem"
 
 [OpenFile]
-Count=7
-Active=7
-File[1]="Demo Scripts/demo_monitornew:0.0"
-File[2]=".src/ShmMem/ShmArray.class:0.0"
-File[3]=".src/ShmMem/ShmFiFo.class:0.33"
-File[4]="Demo Scripts/shmconsole:49.20"
-File[5]=".src/Examples/vTestApps/Shared Memory Images/LoadAndSaveImage.module:0.0"
-File[6]=".src/Examples/vTestApps/StorableClasses/ShmClassesTest.module:0.0"
-File[7]=".src/ShmMem/SharedObjectExample.class:0.0"
+Count=0
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

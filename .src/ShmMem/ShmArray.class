@@ -393,14 +393,15 @@ End
 Public Sub free()
 
     If ArrayDef = Null Or If varmem = Null Then Return
-    clear()
-
-    sem_destroy(VarMem.RealDataAddress(ArrayDef.sema))                   '' destroy the semphore
-    VarMem.Free(ArrayDef.sema)                                                                       '' free its memory
-    varmem.Free(ArrayDef.DataAddress)                                                         '' free the array index memory
-    VarMem.Free(ArrayDef.Address)                                                                 '' free the array definition memory
-    ArrayDef = Null                                                                                                   '' mark this object as invalid
-    Varmem = Null                                                                                                     '' release the varmem
+    If varmem.IsValid Then
+        clear()
+        sem_destroy(VarMem.RealDataAddress(ArrayDef.sema))                '' destroy the semphore
+        VarMem.Free(ArrayDef.sema)                                                                       '' free its memory
+        varmem.Free(ArrayDef.DataAddress)                                                         '' free the array index memory
+        VarMem.Free(ArrayDef.Address)                                                                 '' free the array definition memory
+        ArrayDef = Null                                                                                                   '' mark this object as invalid
+        Varmem = Null                                                                                                     '' release the varmem
+    Endif
 
 End
 

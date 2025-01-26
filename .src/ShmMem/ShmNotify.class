@@ -61,13 +61,15 @@ End
 
 Public Sub _free()
 
-    If NotifyQueue <> Null Then
-        NotifyQueue.free()
-    Endif
+    If VarMem.IsValid Then
+        If NotifyQueue <> Null Then
+            NotifyQueue.free()
+        Endif
 
-    NotifyQueue = Null
-    VarMem = Null
-    SymMem = Null
+        NotifyQueue = Null
+        VarMem = Null
+        SymMem = Null
+    Endif
 
 End
 

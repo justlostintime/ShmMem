@@ -298,41 +298,60 @@ Private Sub locateByAddress(Virt As Pointer) As Pointer
 
 End
 
-'' free this list when the refcount = 0
+'' Free the entrie list, ignores refcount and global flags
+Public Sub {Free}(Optional OverRideGlobal As Boolean = False)           '' Free the entire list
+
+    If Varmem = Null Or If listhead = Null Then Return                                   ' if the listhead is valid then continue
+
+    If OverRideGlobal Then ListHead.Global = False                                      ' are we overriding the global param?
+    ListHead.RefCount = IIf(ListHead.Global, 1, 0)                                            ' if it is global set the count to 1, else 0
+    If ListHead.Global Then Return                                                                       ' if this is global then get out of here
+
+    Me.Clear()                                                                                                                 ' remove and delete all the elements in the list
+
+    If ListHead.sema <> Null Then                                                                          ' Delete the semaphore
+        sem_destroy(VarMem.RealDataAddress(ListHead.sema))
+        VarMem.Free(ListHead.sema)                                                                     ' Release the memory pointer
+        ListHead.sema = Null
+    Endif
+
+    varmem.Free(listhead.address)                                                                      ' free the actual list container
+    listhead = Null                                                                                                         ' mark it as destroyed
+
+End
+
+'' free this list when the refcount = 0 and not it is not a global value
 Public Sub _free()
 
-    Return
-
     'Print Application.id, "_free Begin for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address
-    If varmem <> Null And If Listhead <> Null Then
+    If varmem = Null Then Return
+    If ListHead = Null Then Return
+    If varmem.IsValid Then
         '   Print Application.id, "_free Doing for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address;; "RefCount =";; listhead.refcount
         Me.lock()
 
-        If ListHead.Refcount > IIf(ListHead.global, 1, 0) Then
+        If ListHead.Refcount > IIf(ListHead.Global, 1, 0) Then
             Dec ListHead.RefCount
         Endif
 
-        If Not ListHead.Global Then
-            If ListHead.RefCount = 0 Then
-                Keys = Null
-                '          Print Application.id, "_free finish  for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address
-                Me.Free()
-                listhead = Null
-            Else
-                Me.unlock()
-                '         Print Application.id, "_free Keeps for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address;; "Refcount =";; listhead.refcount
-            Endif
-        Else
+        If ListHead.Global Then
             Me.unlock()
-            '    Print Application.id, "_free Global for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address;; "Refcount =";; listhead.refcount
+            Return
         Endif
 
-        'Else
-        'Print Application.id, "_free  Failed for shmlist dlist is null error"
+        If ListHead.RefCount = 0 Then
+            Keys = Null
+            '          Print Application.id, "_free finish  for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address
+            Me.Free()
+            varmem = Null
+        Else
+            Me.unlock()
+            '         Print Application.id, "_free Keeps for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address;; "Refcount =";; listhead.refcount
+        Endif
     Endif
 
-    ListHead = Null
-    varmem = Null
+Catch
+    Return
 
 End
 
@@ -517,27 +536,6 @@ Public Sub _Assign(VEntry As DPointer)
         Inc ListHead.RefCount                                                         '  represents the number of refrences to this entry
         vEntry.Value = ListHead.Address                                     '  Assign this to the variable
     Endif
-
-End
-
-'' Free the entrie list, ignores refcount and global flags
-Public Sub {Free}(Optional OverRideGlobal As Boolean = False)           '' Free the entire list
-
-    If Varmem = Null Or If listhead = Null Then Return                                   ' if the listhead is valid then continue
-
-    If OverRideGlobal Then ListHead.Global = False                                      ' are we overriding the global param?
-    If ListHead.Global Then Return                                                                       ' if this is global then get out of here
-
-    If ListHead.sema <> Null Then                                                                          ' Delete the semaphore
-        sem_destroy(VarMem.RealDataAddress(ListHead.sema))
-        VarMem.Free(ListHead.sema)                                                                     ' Release the memory pointer
-        ListHead.sema = Null
-    Endif
-
-    Me.Clear()                                                                                                                 ' remove and delete all the elements in the list
-
-    varmem.Free(listhead.address)                                                                        ' free the actual list container
-    listhead = Null                                                                                                         ' mark it as destroyed
 
 End
 
@@ -1532,6 +1530,7 @@ End
 Private Sub Tag_Write(Value As String)
 
     If ListHead = Null Then Return
+    listhead.Tag.Fill(0)
     listhead.tag = Byte[].FromString(value)
 
 End

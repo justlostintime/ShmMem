@@ -169,6 +169,7 @@ Property Read Length As Integer                                                 
 Property Read Max As Integer                                                           '' Highest valid Value list index
 Property Debug As Boolean Use $bDebug                                    '' controls if the debug messages are printed
 Property Signature As String Use $Signature                                '' The uniqueue signature of the object
+Property Read IsValid As Boolean                                                       '' returns if this storage is still valid
 
 '' Define a new user class for shared objects
 '' Defines the text class name and the internal  class index value
@@ -231,8 +232,15 @@ End
 '' will force the cleanup of the memory
 Public Sub _free()
 
-    varmem = Null
-    storage = Null
+    If varmem Then
+        varmem._free()
+        varmem = Null
+    Endif
+
+    If storage Then
+        storage._free()
+        storage = Null
+    Endif
 
 End
 
@@ -832,5 +840,15 @@ End
 Private Function Max_Read() As Integer
 
     Return varmem.ManagedInfo.BlockCount - 1
+
+End
+
+Private Function IsValid_Read() As Boolean
+
+    If shmMem.GetMemSegment($Signature) = Null Then
+        Return False
+    Else
+        Return True
+    Endif
 
 End

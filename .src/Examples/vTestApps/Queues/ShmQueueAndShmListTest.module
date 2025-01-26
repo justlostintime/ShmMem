@@ -5,9 +5,11 @@ Public Sub main()
     Dim myMem As New ShmMem(1500000)
 
     With mymem
-        Print "Test Priority Queues ***************************************************************"
+
+        Print "Test Priority Queues Repeat test 1000 times ***************************************************************"
         For i As Integer = 0 To 1000
-            Dim qa As New ShmQueue(myMem)
+
+            Dim qa As New ShmQueue(myMem, CPointer(0), False, "Queue_" & Str(i))
             qa.enqueue("This is even higher 201", 201)
             qa.enqueue("This is higher 100", 100)
             qa.enqueue("This is higher 110", 110)
@@ -57,12 +59,13 @@ Public Sub main()
                 Print "Failed the 300 priority item was already dequeued ";; Val
             Endif
 
+            Print "Empty queue++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
             While qa.count
                 Print qa.dequeue()
             Wend
-
         Next
-
+        qa = Null
+        myMem.varMnge._Print(myMem.MyVarMem)
         Print "End of priority queue test **********************************\nStart List test *******************************************"
 
         Dim a As ShmList = New ShmList(myMem)
@@ -100,7 +103,7 @@ Public Sub main()
 
         Print "End of list test ********************************\nStart FiFo and FiLo  test ******************************************"
 
-        Dim c As New ShmFiFo(myMem)
+        Dim c As New ShmFiFo(myMem, 0, False, "FiFo-c")
         c.Push(1)
         c.Push(2)
         c.Push(3)
@@ -108,7 +111,7 @@ Public Sub main()
             Print c.Pop(),
             Print c.Pop()
 
-        Dim d As New ShmFiLo(myMem, 0, True, "test d")
+        Dim d As New ShmFiLo(myMem, 0, True, "FiLo-d")
         Dim e As ShmFiLo
         d.Push(1)
         d.Push(2)
@@ -116,6 +119,7 @@ Public Sub main()
 
         !Banana = d
         e = !Banana
+        e.Tag = "FiLo-e"
 
         Print d.Pop();;
         Print d.Pop();;
@@ -126,18 +130,21 @@ Public Sub main()
         Dim y As Variant = d.Copy()
         d.Pop()
         d.Pop()
+        y.Tag = "FiLo-y"
 
         !Banana = d
         For Each v As Variant In y
             Print v
         Next
 
-        Print "End of FiFo Test ******************************************************\nBegin FiLo test ************************************************************"
+        Print "End of FiFo/FiLo Test ******************************************************\n"
 
-        myMem.varMnge._Print()
+        Print "Cleared all queues and lists ++++++++++++++++++++++++++++++++++++++++++++++++\n"
+        myMem.varMnge._Print(myMem.MyVarMem)
         Print shmMem.GetObjectClass(Me).name;; "Completed"
-        mymem.Close()
-        Quit 0
+        .Close()
     End With
+
+    '  Quit 0
 
 End

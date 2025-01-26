@@ -233,15 +233,16 @@ End
 '' Free the value
 Public Sub {free}()
 
-    If shmMem.objects.count = 0 Or If valueDef = Null Then Return
-
-    Dec ValueDef.Refcount
-    ' Error "Value Test for delete @"; ValueDef.Address;; " RefCount="; ValueDef.RefCount
-    If ValueDef.RefCount > 0 Then Return
-    varmem.Free(ValueDef.DataAddress)
-    ' Error " Value Deleting @"; ValueDef.address
-    VarMem.Free(ValueDef.address)
-    ValueDef = Null
+    If varmem.IsValid Then
+        If valueDef = Null Then Return
+        Dec ValueDef.Refcount
+        ' Error "Value Test for delete @"; ValueDef.Address;; " RefCount="; ValueDef.RefCount
+        If ValueDef.RefCount > 0 Then Return
+        varmem.Free(ValueDef.DataAddress)
+        ' Error " Value Deleting @"; ValueDef.address
+        VarMem.Free(ValueDef.address)
+        ValueDef = Null
+    Endif
 
 End
 

@@ -94,6 +94,7 @@ Static Public Sub GetMemSegment(sSignature As String) As ShmMem
 
     Dim seg As Shmmem
 
+    If IsNull(Objects) Then Return Null
     seg = Objects["Override"]
     If seg <> Null Then
         Return seg
@@ -221,7 +222,7 @@ Public Sub _free()
             shmMem.objects.Remove(Me.Signature)
         Endif
         If Not shmMem.objects.Exist("default") And If shmMem.objects.count > 0 Then
-            shmMem.objects["default"] = shmMem.objects.First                                                         ' just assign the next one as the default
+            shmMem.objects["default"] = shmMem.Objects[shmMem.objects.First]                                                       ' just assign the next one as the default
         Endif
     Endif
 
@@ -529,6 +530,7 @@ End
 '' Return the number of entries in the symbol table
 Private Function Count_Read() As Integer
 
+    If IsNull(vars) Then Return 0
     Return Vars.count
 
 End
