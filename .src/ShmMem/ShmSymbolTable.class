@@ -128,7 +128,7 @@ Public Sub SaveVar(SymName As String, OutFile As File)
     Else
         index = GetSymbol(SymName)
         If index = noentry Then
-            Error.Raise("SaveVar Error:" & Error.text & "," & Error.where)
+            Error.Raise("SaveVar Error: Symbol Not Found, Variable name = " & SymName)
         Endif
     Endif
     WriteVar(SymMem.Table[index].Address, OutFile, SymName)

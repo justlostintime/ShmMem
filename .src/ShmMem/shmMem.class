@@ -372,6 +372,26 @@ Public Sub SaveVar(VarName As String, Optional filename As String = "")
 
 End
 
+'' Saves a copy of a gambas variable as asvaed ShmMem variable
+'' VarName is the name to be used by ShmMem when the value is reloaded
+'' Value is the value to be converted to shmMem variable
+Public Sub SaveNativeVar(VarName As String, value As Variant, Optional filename As String = "")
+
+    Dim outfileName As String = SetPath(FileName, VarName, "var")
+    Dim outfile As File
+
+    Try outfile = Open outfilename For Write Create
+    If Error Then
+        Error.propegate()
+    Endif
+
+    Write #OutFile, VarName As String
+    Write #OutFile, Value As Variant
+
+    Close outfile
+
+End
+
 '' Re-loads the Variables saved from the symbol table and restores its value
 '' Also restore the date/time that the last change to this copy of the table
 '' occured

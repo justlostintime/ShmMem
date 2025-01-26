@@ -1,5 +1,6 @@
 ' Gambas class file
 
+'Fast Unsafe
 ''' Shm Array is implemented as linear array of pointers each pointer pointing to the assigned value
 '''    Each assigned value used as standard dPointer header to store the data, arrays are variant
 '''   any type of data may be stored in them

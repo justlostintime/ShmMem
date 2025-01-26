@@ -9,7 +9,12 @@ Public Sub Main()
     a.Fill(99)
     Dim b As ShmArray = ShmArray._convert(mem, a)
     b[9, 8, 7] = 300
-    Stop
+    b[0, 0, 0] = 300
+    If b[0, 0, 0] = b[9, 8, 7] And If b[0, 0, 0] = 300 Then
+        Print "[passed conversion test]"
+    Else
+        Print "[failed conversion test]"
+    Endif
     mem.Close()
 
 End

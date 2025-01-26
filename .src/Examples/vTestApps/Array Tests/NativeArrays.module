@@ -15,9 +15,8 @@ Public Sub Main()
         !a[1, 1, 1] = 600
         Print !a[1, 1, 1]
     End With
-    Print mymem!a[1, 1, 1]
+    Print "Passed =";; mymem!a[1, 1, 1] = 600
 
     MyMem.Close()
-    Quit 0
 
 End
