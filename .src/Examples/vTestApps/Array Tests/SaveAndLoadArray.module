@@ -28,6 +28,7 @@ Public Sub main()
     mem.LoadVar(testfile & "Native")
     Print mem!testarray.Export()
     Dim g As Variant = mem!testNative
+    Print g.Export()
     mem.Close()
     Quit 0
 

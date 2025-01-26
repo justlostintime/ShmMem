@@ -31,6 +31,6 @@ Groups=mageia:"System/Libraries"
 Groups=slackware:"Development/Libraries"
 Groups=suse:"Development/Libraries/Other"
 Groups=ubuntu:"libs"
-Tags=System,Utility
+Tags=System,Utility,WebDevelopment
 GambasVersion=3.19
 WebSite=https://github.com/justlostintime/ShmMem/wiki
