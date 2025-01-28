@@ -373,7 +373,7 @@ Public Sub _puttype(value As Variant, VirtAddress As Pointer, mytype As Integer)
 
 End
 
-'' Put a vlaue at the specivied virtual address type determined by the
+'' Put a vlaue at the specified virtual address type determined by the
 '' typeof the value
 Public Sub _put(value As Variant, VirtAddress As Pointer)
 
@@ -850,5 +850,51 @@ Private Function IsValid_Read() As Boolean
     Else
         Return True
     Endif
+
+End
+
+'' create an object from a string of hex
+Public Sub ObjectFromHex(theHex As String) As Variant
+
+    Dim working As String[] = Split(theHex, ":", "\"", True, True)
+    Dim len As Integer = Eval(working[0])
+    Dim Value As Variant
+    Dim Source As String = UnQuote(working[1])
+    Dim buffer As Pointer = Alloc(len)
+
+    For i As Integer = 0 To len - 1
+        Byte@(buffer + i) = Eval("&h" & source[i * 2] & source[(i * 2) + 1])
+    Next
+    Dim mfile As File
+
+    mfile = Memory buffer For Read
+    Value = Read #mFile As Variant
+    Close mFile
+    Free(buffer)
+    Return value
+Catch
+    Stop
+
+End
+
+'' Turn an object  into a string of hex
+Public Sub ObjectAsHex(vValue As Variant) As String
+
+    Dim len As Integer = Me.SizeOf(vValue)
+    Dim buffer As Pointer = Alloc(len)
+    Dim mfile As File
+
+    mfile = Memory buffer For Write
+    Write #mFile, vValue As Variant
+    Close mFile
+
+    Dim result As String = ""
+
+    For i As Integer = 0 To len - 1
+        result &= Hex(Byte@(buffer + i), 2)
+    Next
+
+    Free(buffer)
+    Return Str(len) & ":" & Quote(result)
 
 End

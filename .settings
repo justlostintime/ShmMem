@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={"LoadAndSaveValue":[25],"ShmManage":[440],"ShmQueueAndShmListTest":[147]}
+Breakpoints={}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -340,10 +340,16 @@ Geometry=[834,465,252,150]
 Geometry=[834,402,252,276]
 
 [DebugWindow/a]
-Geometry=[2617,372,252,504]
+Geometry=[2339,365,252,511]
 
 [DebugWindow/a.Bounds]
-Geometry=[834,498,252,508]
+Geometry=[2144,300,252,504]
+
+[DebugWindow/a.MemoryPool]
+Geometry=[2352,270,252,58]
+
+[DebugWindow/a.SubMax]
+Geometry=[2144,300,252,298]
 
 [DebugWindow/aValue]
 Geometry=[834,388,628,456]
@@ -355,7 +361,7 @@ Geometry=[848,402,252,150]
 Geometry=[834,402,639,327]
 
 [DebugWindow/b]
-Geometry=[834,512,252,508]
+Geometry=[834,512,539,511]
 
 [DebugWindow/b.ArrayData]
 Geometry=[848,512,252,110]
@@ -542,6 +548,9 @@ Geometry=[834,512,252,56]
 
 [DebugWindow/factor]
 Geometry=[834,402,252,276]
+
+[DebugWindow/g]
+Geometry=[834,288,424,511]
 
 [DebugWindow/item]
 Geometry=[834,512,252,56]
@@ -823,10 +832,13 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Add new method close to fix Circular ref/Un released blockes on exit\n\n* NEW: Added Close method to shmmem that must be called when program exits\n* BUG: Circular ref and unreleased blocks, fixed by close call in shmmem"
+LastCommit="Added Function to save gambas native values and Load them as ShmMem Variables\n\n* OPT: Cleanup examples\n* OPT: Update for publishing on Gambas FarmServer\n* OPT: Update internal documentation\n* NEW: Added Function SaveNativeVar(ShmMem_Name as string, Value as variant,Optional FileName as string)\n* NEW: Added Close method to shmmem that must be called when program exits\n* BUG: Circular ref and unreleased blocks, fixed by close call in shmmem\n* BUG: Fix variaous seg faults, verify memory before _free"
 
 [OpenFile]
-Count=0
+Count=2
+File[1]=".src/Examples/Demo/Demo_user1.module:0.12"
+Active=2
+File[2]=".src/Examples/vTestApps/Array Tests/SaveAndLoadArray.module:38.22"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

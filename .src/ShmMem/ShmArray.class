@@ -319,10 +319,10 @@ Public Sub ReDim(dims As Long[])
     Me.clear()                                                                                                                                            ' clear the existing array, frees all the data contained in it
     varmem.Free(ArrayDef.DataAddress)                                                                                       ' free the array if pointers to array values
     ArrayDef.dimcount = dims.Count
-    Array.count = 1
+    ArrayDef.count = 1
     For i = 0 To dims.max
         ArrayDef.dimensions[i] = dims[i]
-        Array.count *= Dims[i]
+        ArrayDef.count *= Dims[i]
     Next
 
     ArrayDef.DataAddress = VarMem.Alloc(ArrayDef.Count * SizeOf(gb.pointer))        ' alloc always clears the memory
@@ -767,7 +767,7 @@ End
 '' export  the assigned values, array size
 '' the array is exported completely, with information required to
 '' recreate the array, or reload the array
-Public Sub {Export}() As String
+Public Sub {Export}(Optional asText As Boolean = False) As String
 
     Dim vValue As Variant
     Dim i As Integer
@@ -785,14 +785,29 @@ Public Sub {Export}() As String
         If memptr <> Null Then
             vValue = varmem[memptr]
             If TypeOf(vValue) = gb.string Then vValue = Quote(vValue)
-            result &= Subst("&3:&1:&2\n", FormatDim(LinearToSubScript(index)), Str(vValue), Format(index, "000000"))
+            result &= Subst("&1:&2:", Format(index, "000000"), FormatDim(LinearToSubScript(index)))
         Else
-            result &= Subst("&3 :&1 : &2\n", FormatDim(LinearToSubScript(index)), Str(DefaultValue), Format(index, "000000"))
+            result &= Subst("&1:&2:", Format(index, "000000"), FormatDim(LinearToSubScript(index)))
         Endif
+        ' If asText Or If TypeOf(vValue) <> gb.object Then
+        '    result &= Str(vValue) & "\n"
+        'Else
+        result &= varmem.ObjectAsHex(vValue) & "\n"
+        'Endif
         Inc index
         PhysAddr += SizeOf(gb.pointer)                             ' move to the next slot
     Next
     Return result
+
+End
+
+'' Import and create a ShmArray and return the created array
+Static Public Sub FromImport(TheMem As ShmMem, sourceFile As String) As ShmArray
+
+    Dim a As New ShmArray(TheMem, [1])
+
+    a.Import(File.Load(sourceFile))
+    Return a
 
 End
 
@@ -817,12 +832,19 @@ Public Sub Import(data As String)
         working = Split(dataset[i], ":", "\"", True, True)
         dims = Eval(working[1])
         value = Eval(working[2])
-        realptr = GetOffset(dims)                                       ' get the offset within our memory area
+        realptr = GetOffset(dims)                                                 ' get the offset within our memory area
+        If working.count = 4 Then                                                ' we have a binary object
+            value = varmem.ObjectFromHex(Str(value) & ":" & working[3])
+        Endif
         Pointer@(RealPtr) = varmem.set(value)                      ' allocate a new variable in memory
     Next
 
 Finally
     Me.unlock()
+
+Catch
+    Error Error.text
+    Stop
 
 End
 

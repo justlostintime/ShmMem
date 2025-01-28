@@ -7,29 +7,41 @@ Public Sub main()
     Dim a As ShmArray = New ShmArray(mem, [3, 3, 3], "Test Message")
     Dim varfile As File
 
-    ' Now set values in a linear fasion, could use subscripts, but this is faster
-    For i As Integer = 0 To a.max
-        a[i] = "Test Value" & i
-    Next
+    With mem
+        ' Now set values in a linear fasion, could use subscripts, but this is faster
+        For i As Integer = 0 To a.max
+            a[i] = "Test Value" & i
+        Next
 
-    varfile = Open testfile For Write Create
-    Write #varfile, a As Object
-    Close #varfile
+        varfile = Open testfile For Write Create
+        Write #varfile, a As Object
+        Close #varfile
 
-    varfile = Open testfile For Read
-    Dim b As ShmArray
-    b = Read #Varfile As Object
-    If Error Then Print Error.text
+        varfile = Open testfile For Read
+        Dim b As ShmArray
+        b = Read #Varfile As Object
+        If Error Then Print Error.text
 
-    mem!a = a
-    mem.SaveNativeVar("testNative", a, testfile & "Native")
-    mem.SaveVar("a", testfile)
-    mem.LoadVar(testfile, "testarray")
-    mem.LoadVar(testfile & "Native")
-    Print mem!testarray.Export()
-    Dim g As Variant = mem!testNative
-    Print g.Export()
-    mem.Close()
+        !a = a
+        .SaveNativeVar("testNative", a, testfile & "Native")
+        .SaveVar("a", testfile)
+        .LoadVar(testfile, "testarray")    ' use the optional over ride symbol name so as not to overwrite !a
+        .LoadVar(testfile & "Native")
+        Print !testarray.Export()
+        Dim f As Variant = Json.ToString(!testArray)
+        !testArray[0, 0, 2] = ["hello", "pool", 1]
+        !testArray[0, 0, 1] = ["a", "b", "c"]
+        !testArray[1, 0, 0] = !a
+        Print "TestArray contains\n"; !testArray.Export()
+        File.Save("/tmp/testexport", !testarray.Export())
+        Dim g As Variant = !testNative
+        Print g.Export()
+        !w = ShmArray.FromImport(mem, "/tmp/testexport")
+        Print "W contains\n"; !w.Export()                                                    ' just use export to get a text representation of the array
+        Dim v As Variant = !w[0, 0, 1]
+        Print "W[0,0,1][0] should be 'a' = "; v[0];; !w[0, 0, 1][0];; Quote(!w[1, 0, 0][4])
+        mem.Close()
+    End With
     Quit 0
 
 End
