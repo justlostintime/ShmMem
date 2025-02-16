@@ -16,7 +16,7 @@ Public Sub main()
     Print "Begin Test"
     Dim MyVar As Variant
 
-    smem = New ShmMem(1280000, "test")
+    smem = New ShmMem(1280000, "test", 3000, 2.1, True)
     smem!cats = 45
     Dim result As Integer
     Dim StartTime As Float = Timer

@@ -1,0 +1,83 @@
+' Gambas class file
+
+Export
+
+''' If the library is started as an application then the Daemon is automatically started
+''' It will automatically create a default Shared segment by the name of the user starting it
+''' or by the name provided on the command line when invoked. This will not spin off into BG
+''' by default but should be started as a background task by the user, from command line
+''' or the users application. User must specify which variables they wish to keep
+''' synconized across hosts.
+'''
+''' It waits on the command port for commands to manage the shared memory segment
+''' Commands :
+'''   NewMem <MemName> \n                                      ' create a new named memory segment
+'''      New memory segments are always under the user the daemon is started as and permissions set
+'''      by that user, defined by   user, group and everyone permissions
+'''
+''' DelMem <MemName>  \n                                           ' close or delete the named memory segment
+'''     While it will close it, the memory will remain until the last user closes thier access
+'''
+''' Sync <hostName|ip address> \n                            ' begin a sync session with remote hosts ShmMem Daemon
+'''     Will start a sync session with the remote host, if no daemon found, then start one
+'''     The remote host must have an ssh connection and must have a key pair to share
+'''      the connection will be restricted to logon via key pair, not password
+'''
+''' EndSync <host nam | IP address>   \n                     ' End the remote sync session unless the other
+'''    end has also requested to sync with this host
+'''
+''' LoadImage <MemName> <imageName>  \n          'loads a saved image into a memory segment
+'''
+''' SaveImage <MemName> <ImageName>   \n       'Saves a memory segment to an image file
+'''
+''' The next section covers keeping variables synconized across
+''' Sync methods:
+'''      Write :    The updated values are written to remote hosts, the remote host using the value does not need to do anything
+'''                        special just use the named database as usual.
+'''      Read:      The Daemon requests the remote host to send updates, we will not change the content of the variable
+'''                        on this daemon's side.
+'''      Both:        The daemon will both send and read updates from remote hosts, attempt to merge/ arbitrate changes
+'''                         The daemon will attempt to arbitrate array and complex data sets.... not the best idea to sync BOTH for these
+''' var <variable name>  <Write | read | Both>                          ' add this variable to list of variable to keep syncronized
+''' delvar < Variable name>                                                                ' remove this variable from list to keep syncronized
+
+Property SystemPort As Integer Use $SystemPort = 5678
+Property MemAutoSize As Integer Use $MemAutoSize = 10000000                    ' default to 10 meg data space
+Property SharedMemNames As Variant[] Use $SharedMemNames
+Property SharenMemObj As ShmMem[] Use $SharedMemObj
+Property ServerRunning As Boolean Use $ServerRunning = False
+
+Public Sub _new(SharedMemoryNames As Variant[], Optional SegmentSize As Integer = $MemAutoSize, PortNumber As Integer = $SystemPort)
+
+    $SharedMemNames = SharedMemoryNames
+    $MemAutoSize = SegmentSize
+
+    $ServerRunning = True
+
+    For Each s As Variant[] In $SharedMemNames
+        Dim MemName As String = s[0]
+        Dim length As Integer = $MemAutoSize
+        If s.count > 1 Then
+            length = CInt(s[1])
+        Endif
+        Dim memnew As New ShmMem(length, MemName)
+    Next
+
+End
+
+Public Sub EndService()
+
+    Error "Service end requested"
+    $ServerRunning = False
+
+End
+
+Public Sub Run() As Integer
+
+    While $ServerRunning
+        Print "Waiting"
+        Wait 5
+    Wend
+    Return 0
+
+End

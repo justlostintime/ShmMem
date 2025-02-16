@@ -112,7 +112,7 @@ Static Public Sub GetMemSegment(sSignature As String) As ShmMem
 End
 
 '' Allocate the memory and symbol table. initialize structures
-Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault)
+Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault, isExecutable As Boolean = False, setPermissions As Integer = ShmMemBlock.DefaultPermissions)
 
     '  Print "Define memory block"
     $sDefaultDirectory = User.home &/ "vars"
@@ -164,7 +164,7 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
         'Print "Create memory blocks"
         'Flush
 
-        VarStore = New ShmMemBlock(VarMemLength, VarStoreName, LockTimeOut)
+        VarStore = New ShmMemBlock(VarMemLength, VarStoreName, LockTimeOut, isExecutable, setPermissions)
         SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), SymStoreName, LockTimeOut)
         'Print "Completed memory blocks"
         'Flush
@@ -172,7 +172,7 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
         VarStoreName = ""
         SymStoreName = ""
         $Signature = Str(Now) & ":" & Str(Timer) & ":" & Application.version
-        VarStore = New ShmMemBlock(VarMemLength, MemName, LockTimeOut)
+        VarStore = New ShmMemBlock(VarMemLength, MemName, LockTimeOut, isExecutable, setPermissions)
         SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), MemName, LockTimeOut)
     Endif
 

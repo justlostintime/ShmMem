@@ -832,13 +832,18 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Added Function to save gambas native values and Load them as ShmMem Variables\n\n* OPT: Cleanup examples\n* OPT: Update for publishing on Gambas FarmServer\n* OPT: Update internal documentation\n* NEW: Added Function SaveNativeVar(ShmMem_Name as string, Value as variant,Optional FileName as string)\n* NEW: Added Close method to shmmem that must be called when program exits\n* BUG: Circular ref and unreleased blocks, fixed by close call in shmmem\n* BUG: Fix variaous seg faults, verify memory before _free"
+LastCommit="Fix Export and import to allow any type of array content\n\n* NEW: add ObjectAsHex and OjectFromHex to ShmVarStorage, allows creation of files and send of objects\n* OPT: Cleanup examples\n* OPT: Update for publishing on Gambas FarmServer\n* OPT: Update internal documentation\n* NEW: Added Function SaveNativeVar(ShmMem_Name as string, Value as variant,Optional FileName as string)\n* NEW: Added Close method to shmmem that must be called when program exits\n* BUG: Circular ref and unreleased blocks, fixed by close call in shmmem\n* BUG: Fix variaous seg faults, verify memory before _free"
 
 [OpenFile]
-Count=2
-File[1]=".src/Examples/Demo/Demo_user1.module:0.12"
-Active=2
-File[2]=".src/Examples/vTestApps/Array Tests/SaveAndLoadArray.module:38.22"
+Count=7
+File[1]=".src/Server/ServerMain.module:78.45"
+Active=4
+File[2]=".src/Server/DaemonChild.class:8.79"
+File[3]=".src/ShmMem/shmMem.class:0.0"
+File[4]=".src/ShmMem/ShmMemBlock.class:43.33"
+File[5]=".src/ShmMem/ShmSymbolTable.class:0.0"
+File[6]=".src/ShmMem/ShmManage.class:4.466"
+File[7]=".src/ShmMem/ShmVarStorage.class:47.162"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

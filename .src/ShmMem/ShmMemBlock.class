@@ -31,6 +31,7 @@ Extern sched_yield() As Integer In "libpthread:0"
 
 Static Private Const PROT_READ As Integer = &H01
 Static Private Const PROT_WRITE As Integer = &H02
+Static Private Const PROT_EXEC As Integer = &H04
 Static Private Const MAP_SHARED As Integer = &H01
 Static Private Const MAP_ANONYMOUS As Integer = &H020
 
@@ -42,7 +43,8 @@ Static Private Const O_CREAT As Integer = &O0100
 Static Private Const O_EXCL As Integer = &O0200
 Static Private Const EEXIST As Integer = 11
 
-Static DefaultPermissions As Integer = &O660
+Static Public DefaultPermissions As Integer = &O660
+Static Private Const SetExecutable As Integer = &O110
 
 '' The managed header for the block of real shared memory
 Public Struct MemBlockHeader                            '' Memory block header
@@ -104,7 +106,7 @@ Static Public Sub ForceDelete(SharedName As String)
 
 End
 
-Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As String = "", WaitTimeout As Float = 2.1)
+Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As String = "", WaitTimeout As Float = 2.1, isExecutable As Boolean = False, Permissions As Integer = DefaultPermissions)
 
     ' $bDebug = True
 
@@ -113,10 +115,10 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
 
     If SharedName = "" Then
         If $bDebug Then Print Object.Class(Me).Name;; " Map unnamed segment"
-        MemoryAddress = MapMemory(MemoryLength)
+        MemoryAddress = MapMemory(MemoryLength, isExecutable)
     Else
         If $bDebug Then Print Object.Class(Me).Name;; "Map Named Segment "; SharedName
-        MemoryAddress = CreateNamedMem(SharedName, MemoryLength)
+        MemoryAddress = CreateNamedMem(SharedName, MemoryLength, False, isExecutable, Permissions)
     Endif
 
     If $bDebug Then Print Object.Class(Me).Name;; " Memory has been mapped"
@@ -227,14 +229,15 @@ Public Sub _free()
 End
 
 '' Map a block of named or unnamed memory into the address space of the app
-Public Sub MapMemory(BlockSize As Long) As Pointer
+Public Sub MapMemory(BlockSize As Long, Optional isExecutable As Boolean = False) As Pointer
 
     Dim MemPointer As Pointer
+    Dim Protect As Integer = (PROT_READ Or PROT_WRITE Or IIf(isExecutable, PROT_EXEC, 0))
 
-    If MemoryHandle = -1 Then
-        MemPointer = mmap(Null, BlockSize, (PROT_READ Or PROT_WRITE), (MAP_SHARED Or MAP_ANONYMOUS), MemoryHandle, 0) 'Or MAP_ANONYMOUS
+    If MemoryHandle = -1 Then                                      ' Check if it is a named memory segmet or not
+        MemPointer = mmap(Null, BlockSize, Protect, (MAP_SHARED Or MAP_ANONYMOUS), MemoryHandle, 0) ' Not named memory Or MAP_ANONYMOUS
     Else
-        MemPointer = mmap(Null, BlockSize, (PROT_READ Or PROT_WRITE), MAP_SHARED, MemoryHandle, 0) 'Or MAP_ANONYMOUS
+        MemPointer = mmap(Null, BlockSize, Protect, MAP_SHARED, MemoryHandle, 0) ' Named memory Or MAP_ANONYMOUS
     Endif
 
     If MemPointer = -1 Then
@@ -255,21 +258,22 @@ Public Sub MapMemory(BlockSize As Long) As Pointer
 End
 
 '' Allocate the block of named memory right away
-Public Sub CreateNamedMem(Optional MemName As String = User.name & Application.name, MemSize As Integer = DefaultLength, forceCleanup As Boolean = False) As Pointer
+Public Sub CreateNamedMem(Optional MemName As String = User.name & Application.name, MemSize As Integer = DefaultLength, forceCleanup As Boolean = False, isExecutable As Boolean = False, setPermissions As Integer = DefaultPermissions) As Pointer
 
     If ForceCleanup Then           ' try to clean up any leftover stuff
         Try shm_unlink(MemName)
     Endif
 
+    Dim permissions As Integer = setPermissions Or IIf(isExecutable, SetExecutable, 0)
     If $bDebug Then Print Object.Class(Me).Name;; " Call map named segment"
 
-    MemoryHandle = shm_open(MemName, O_CREAT Or O_RDWR Or O_EXCL, DefaultPermissions)     ' return an error if its already there
+    MemoryHandle = shm_open(MemName, O_CREAT Or O_RDWR Or O_EXCL, Permissions)     ' return an error if its already there
 
     If $bDebug Then Print Object.Class(Me).Name;; " Call map named segment complete"
 
     If MemoryHandle = -1 Then
         If $bDebug Then Print Object.Class(Me).Name;; " Memory already created, then just map it"
-        MemoryHandle = shm_open(MemName, O_RDWR, DefaultPermissions)
+        MemoryHandle = shm_open(MemName, O_RDWR, Permissions)
         If MemoryHandle = -1 Then
             Error.Raise("Unable to open Named Shared Memory" & MemName & " " & Str(System.error) & " " & String@(strerror(System.error)))
         Endif
@@ -286,7 +290,7 @@ Public Sub CreateNamedMem(Optional MemName As String = User.name & Application.n
 
     If $bDebug Then Print Object.Class(Me).Name;; "Do real mapping of allocated storage"
 
-    Return MapMemory(MemSize)
+    Return MapMemory(MemSize, isExecutable)
 
 End
 

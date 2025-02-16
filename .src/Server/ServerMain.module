@@ -1,0 +1,54 @@
+' Gambas module file
+
+Public Daemon As DaemonChild
+
+Public Sub main()
+
+    Dim Result As Integer = 1
+
+    Signal[Signal.SIGHUP].Catch
+    Signal[Signal.SIGABRT].Catch
+    Signal[Signal.SIGTERM].Catch
+    Signal[Signal.SIGINT].Catch
+    Signal[Signal.SIGQUIT].Catch
+
+    ' Application.Daemon = True
+
+    Daemon = New DaemonChild([[User.Name, 2000000]])
+    result = Daemon.run()
+
+Finally
+    Daemon.EndService()
+    Quit result
+
+Catch
+    Dim errorInfo As String = Error.where & " " & Error.text
+    Error errorinfo
+    Quit 0
+
+End
+
+Public Sub application_signal(signo As Integer)
+
+    With Daemon
+        Select Case signo
+            Case Signal.SIGHUP                   ' Hang up controlling terminal or  process
+                Error "SigHup";;
+                .$ServerRunning = False
+            Case Signal.SIGABRT                 ' Abnormal termination
+                Error "SIGABRT";;
+                .$ServerRunning = False
+            Case Signal.SIGTERM                ' Process termination
+                Error "SIGTERM";;
+            Case Signal.SIGINT                    ' Interrupt from keyboard, Control-C
+                Error "SIGINT";;
+                .$ServerRunning = False
+            Case Signal.SIGQUIT                ' Quit from keyboard, Control-\
+                Error "SIGQIUIT";;
+                .$ServerRunning = False
+            Default
+                Return
+        End Select
+    End With
+
+End

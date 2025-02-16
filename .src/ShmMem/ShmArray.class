@@ -636,7 +636,7 @@ Private Sub GetValue(where As Long[]) As Variant
 
     Me.lock()
 
-    realPtr = GetOffset(where)                                             ' get the offset within our memory area
+    realPtr = GetOffset(where)                                            ' get the offset within our memory area
     memptr = Pointer@(realPtr)                                           ' get the virtual address of the dpointer variable
 
     If memptr = Null Then
@@ -767,7 +767,8 @@ End
 '' export  the assigned values, array size
 '' the array is exported completely, with information required to
 '' recreate the array, or reload the array
-Public Sub {Export}(Optional asText As Boolean = False) As String
+'' returns a text formatted version of the variant
+Public Sub {Export}() As String
 
     Dim vValue As Variant
     Dim i As Integer

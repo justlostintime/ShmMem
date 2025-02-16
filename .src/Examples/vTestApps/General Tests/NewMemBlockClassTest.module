@@ -132,8 +132,10 @@ Public Sub main()
         y = MyVars._getType(Var_y, gb.integer)
         MyVars.Unlock()
     Next
+
     Print "Read using ShmVarStorage And Lock/unlock  time X "; longloop; " : "; Timer - starttime
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
+    Quit 0
 
 End

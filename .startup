@@ -1,9 +1,15 @@
-SaveAndLoadArray
+TestExecutableBlocks
 ShmMem
 #shmmem
 0
 2.1.19
 
+gb.args
+gb.dbus
 gb.eval
+gb.logging
+gb.net
+gb.net.smtp
+gb.signal
 gb.util.web
 
