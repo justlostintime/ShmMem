@@ -1,7 +1,7 @@
 # Gambas Project File 3.0
 Title=ShmMem
 Startup=TestExecutableBlocks
-Version=2.1.19
+Version=2.1.20
 Component=gb.args
 Component=gb.dbus
 Component=gb.eval
@@ -23,15 +23,15 @@ Address=justlostintime@gmail.com
 Url=https://github.com/justlostintime
 License=General Public License
 Prefix=1
-PackageName=westwood-shmmem-2.1.17
+PackageName=westwood-shmmem-2.1.20
 PackageVersion=7
 CreateEachDirectory=1
-RuntimeVersion="3.18"
+RuntimeVersion="3.20"
 Packager=1
 Systems=archlinux,autotools,debian,fedora,mageia,slackware,suse,ubuntu
 SameDependencies=1
 SameFiles=1
-Groups=archlinux:"libs"
+Groups=archlinux:"libdevel"
 Groups=debian:"libs"
 Groups=fedora:"Development/Libraries"
 Groups=mageia:"System/Libraries"

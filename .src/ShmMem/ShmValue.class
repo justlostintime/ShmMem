@@ -92,9 +92,9 @@ Public Sub _Assign(VEntry As DPointer)
 
 End
 
-'' Value may be accessed or created, VirtAddressOrTag = 0 then creat new list
+'' Value may be accessed or created, VirtAddressOrTag = 0 then creat new Value
 ''                                                                      VirtAddressOrTag = "tagname" then lookfor and return list with this tag
-''                                                                       VirtAddressOrTag > 0 then return list at this virtual address
+''                                                                       VirtAddressOrTag > 0 then return Value at this virtual address
 ''                                                                        VarStorage = type of stream  initialize from a file
 Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = 0, Tag As String = "", vValue As Variant = Null)
 

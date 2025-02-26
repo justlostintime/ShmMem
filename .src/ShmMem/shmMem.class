@@ -9,6 +9,8 @@
 Export
 
 'Fast Unsafe
+' when dumping the memory we must use a raw write mode
+Extern rWrite(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "write"
 
 Const VarMemDefault As Long = 2000000                                '' default memory size is 2 meg
 Const MaxSymbolsDefault As Integer = 8000                          '' default variable memory space 8000 entries
@@ -429,7 +431,7 @@ End
 '' Returns a Virtual Address pointer to Symbols Value
 Public Sub {VarPtr}(SymName As String) As Variant
 
-    Return vars.VarPtr(SymName)
+    Return vars.VarPtr(SymName).value
 
 End
 
@@ -589,11 +591,47 @@ Private Function Key_Read() As String
     Return $sKey
 
 End
-
 '' Returns the actual Physical address after traslating the Virtual pointer
-Public Sub RealAddress(VirtAddress As Pointer) As Pointer
+'' returns the pointer to the actual data portion of the variable
 
-    MyVarMem.RealAddress(VirtAddress)
+Public Sub RealDataAddress(VirtAddress As Variant) As Pointer
+
+    Dim result As Pointer
+
+    Select Case TypeOf(VirtAddress)
+        Case gb.string                 ' then it must be a variable name
+            virtAddress = Me.VarPtr(VirtAddress)
+            result = MyVarMem.RealDataAddress(VirtAddress)
+
+        Case gb.pointer, gb.long, gb.int
+            Result = MyVarMem.RealDataAddress(VirtAddress)
+
+        Default
+            error.Raise(("Invalid Real Address translation request"))
+    End Select
+
+    Return result
+
+End
+'' Returns the actual Physical address after traslating the Virtual pointer
+
+Public Sub RealAddress(VirtAddress As Variant) As Pointer
+
+    Dim result As Pointer
+
+    Select Case TypeOf(VirtAddress)
+        Case gb.string                 ' then it must be a variable name
+            virtAddress = Me.VarPtr(VirtAddress)
+            result = MyVarMem.RealAddress(VirtAddress)
+
+        Case gb.pointer, gb.long, gb.int
+            Result = MyVarMem.RealAddress(VirtAddress)
+
+        Default
+            error.Raise(("Invalid Real Address translation request"))
+    End Select
+
+    Return result
 
 End
 
@@ -610,5 +648,26 @@ End
 Private Function ShmObjects_Read() As Collection
 
     Return shmMem.objects
+
+End
+
+''  a function which may be called to dump the content of any memory area to a file
+'' The default location if no name specified is the users desktop as dumpfile
+Static Public Sub Dump(mPointer As Variant, IntLength As Integer, Optional Filename As String = User.home & "/Desktop/dumpfile.ghex")
+
+    Dim mFile As File
+
+    If File.Dir(Filename) = "" Then
+        filename = User.home & "/Desktop/" & filename
+    Endif
+    mFile = Open filename For Write Create
+
+    If TypeOf(mPointer) = gb.string Then
+        mpointer = Me.RealAddress(mPointer)
+    Endif
+
+    rWrite(mFile.handle, mPointer, IntLength)
+
+    Close mFile
 
 End

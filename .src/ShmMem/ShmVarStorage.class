@@ -577,7 +577,7 @@ Public Sub Getpointer(Type As Integer, VirtAddress As Pointer) As Variant
             Return sObject
             ' Return AllocPointer(realAddr, RealAddr, 0)
         Case StrData, ObjData
-            Dim sStrObj As DStrObj = RealAddr
+            Dim sStrObj As DStrObj = realAddr
             Return sStrObj
             ' Return AllocStrObj(realAddr, RealAddr, 0)
 

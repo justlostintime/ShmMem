@@ -409,11 +409,3 @@ Private Function address_Read() As Pointer
     Return BlockInfo.DataAddress
 
 End
-
-Private Function Debug_Read() As Boolean
-
-End
-
-Private Sub Debug_Write(Value As Boolean)
-
-End

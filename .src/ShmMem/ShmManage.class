@@ -114,8 +114,9 @@ End
 Public Sub RealDataAddress(VirtAddress As Pointer) As Pointer
 
     ' Dim p As Pointer = Storage.DataAddress + VirtAddress + SizeOf(AllocHeader)
+    Dim headLen As Integer = SizeOf(AllocHeader)
 
-    Return Storage.DataAddress + VirtAddress + SizeOf(AllocHeader)
+    Return Storage.DataAddress + VirtAddress + headLen
 
 End
 

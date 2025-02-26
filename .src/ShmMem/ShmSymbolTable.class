@@ -812,7 +812,7 @@ Public Sub NotifyStop(SymName As String, CallObject As Object, Optional CallFunc
 
 End
 
-'' Returns the Virtual Address of the symbol
+'' Returns the real address of the symbol table entry
 Public Sub {VarPtr}(SymName As String) As Variant
 
     Dim index As Long
