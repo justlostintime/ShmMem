@@ -1,4 +1,5 @@
 USE64
+; requires fasm fast assembler to assemble this file correctly
 
 SYS_exit  equ 60
 SYS_close equ 3
