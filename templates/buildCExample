@@ -1,2 +1,2 @@
 #! /bin/bash
-gcc -c pthreadStruct.c && objcopy -O binary -j .text pthreadStruct.o pthreadStruct.bin
+gcc -c pthreadStruct.c && objcopy -O binary -j .text pthreadStruct.o pthreadStruct.bin && objdump -d pthreadStruct.o
