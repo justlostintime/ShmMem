@@ -23,8 +23,10 @@ main:
   push rdx
   push rsi
 
-  lea rsi,[msg_start]
-  mov rdx,msg_start_len
+  ;lea rsi,[msg_start]
+  mov rsi,rdi
+  call strlen
+  mov rdx,rax
   call writeMsg
 
   mov rax, SYS_open
@@ -85,6 +87,20 @@ writeMsg:
   syscall
   ret
 
+strlen:
+    xor rax, rax        ; loop counter
+
+startLoop:
+    xor dx, dx
+    mov dl, byte [rsi+rax]
+    cmp dl, 0x0    ; null byte
+    je  strlencomplete
+    inc rax
+    jmp startLoop
+  
+strlencomplete:
+    ret
+
 msg_start db 10,"Begin the thread!",10
 msg_start_len =  $-msg_start
 
@@ -94,7 +110,7 @@ msg_len = $ - msg
 log db "/home/brian/Desktop/bin_log.log",0
 log_len = $-log
 
-data_msg db "this is a data message",10
+data_msg db "this is a data Pass String",10
 data_msg_len = $-data_msg
 
 err_open_failed db "Open of log failed",10

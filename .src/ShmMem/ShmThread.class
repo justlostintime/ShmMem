@@ -18,7 +18,7 @@ Private a As New Pthread_p
 Private b As Pointer = Alloc(100)
 'pthread_create(pthread_t *, const pthread_attr_t *,   void * ( * )(void * ), void * );
 
-Extern pthread_create(thread As Pthread_t, attributes As Pointer, start_routine As Pointer, arg As Pthread_args) As Integer In "libc:6"
+Extern pthread_create(thread As Pthread_t, attributes As Pointer, start_routine As Pointer, arg As Pointer) As Integer In "libc:6"
 Extern pthread_join(thread As Pointer, result As Pointer) As Integer In "libc:6"
 
 Property Read Thread As Pointer Use $Thread = Null
@@ -28,9 +28,8 @@ Property Read Call_Memory As ShmMem Use $Call_Memory = Null
 Property Read Call_Args As Pointer Use $Call_Args = Null
 Property Read result As Long Use $result = 4
 
-Public Sub _new(SysMem As ShmMem, Ident As Variant, args As Pointer)
+Public Sub _new(SysMem As ShmMem, Ident As Variant)
 
-    Dim result As Integer
     Dim R_type As Integer = TypeOf(Ident)
 
     Select Case R_type
@@ -43,19 +42,27 @@ Public Sub _new(SysMem As ShmMem, Ident As Variant, args As Pointer)
     End Select
 
     $Function_address = ident
-    $Call_Args = args
     $Call_memory = SysMem
-    SysMem.Dump($Function_Address, 200)
-    result = pthread_create(VarPtr($Thread), Null, $Function_Address, VarPtr($Call_args))
+    '  SysMem.Dump($Function_Address, 200)
+
+End
+
+Public Sub execute(Optional arg As Pointer = Null) As Variant
+
+    Dim result As Integer
+
+    $Call_Args = VarPtr(arg)
+    $Call_memory.Dump(arg, 200)
+    result = pthread_create(VarPtr($Thread), Null, $Function_Address, arg)
     Wait 0.1
-    Debug "pthread_create result=";; result
+    'Debug "pthread_create result=";; result
     If result <> 0 Then
         Error.Raise(Subst(("System error while creating thread &1"), System.error))
         Return
     Endif
 
     result = pthread_join($Thread, b)
-    Debug "pthread_join result=";; result;; "returned value=";; Long@(b)
+    'Debug "pthread_join result=";; result;; "returned value=";; Long@(b)
     Return
 
 End

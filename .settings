@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={"ShmThread":[47,54,57,56,32],"TestExecutableBlocks":[15,23]}
+Breakpoints={}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -841,15 +841,14 @@ Lock=False
 LastCommit="New addition od executable shared memory segments, see included examples\n\n* NEW: Extend shared block to allow executable block, direct implementation jit code generation\n* NEW: add ObjectAsHex and OjectFromHex to ShmVarStorage, allows creation of files and send of objects\n* OPT: Cleanup examples\n* OPT: Update for publishing on Gambas FarmServer\n* OPT: Update internal documentation\n* NEW: Added Function SaveNativeVar(ShmMem_Name as string, Value as variant,Optional FileName as string)\n* NEW: Added Close method to shmmem that must be called when program exits\n* BUG: Circular ref and unreleased blocks, fixed by close call in shmmem\n* BUG: Fix variaous seg faults, verify memory before _free"
 
 [OpenFile]
-Count=7
-File[1]=".src/ShmMem/shmMem.class:17.612"
+Count=6
+File[1]=".src/Examples/vTestApps/General Tests/TestExecutableBlocks.module:0.50"
 Active=5
-File[2]=".src/Examples/vTestApps/General Tests/TestExecutableBlocks.module:22.23"
-File[3]=".src/ShmMem/ShmMemBlock.class:0.208"
-File[4]="H.files/pthread.h:31.213"
-File[5]=".src/ShmMem/ShmThread.class:33.57"
-File[6]="templates/pthread.asm:5.20"
-File[7]=".src/ShmMem/ShmManage.class:0.118"
+File[2]="H.files/pthread.h:31.213"
+File[3]=".src/ShmMem/ShmThread.class:72.64"
+File[4]="templates/pthreadPassString.asm:26.94"
+File[5]="templates/pthreadPassStruct.asm:1.126"
+File[6]="templates/pthreadPassValue.asm:12.36"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"
