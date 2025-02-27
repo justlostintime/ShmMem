@@ -37,18 +37,24 @@ Public Sub main()
         Dim b As New ShmThread(smem, "b")
         !c = File.Load("templates/pthreadPassStruct.bin")                                 ' load the binary into memory
         Dim c As New ShmThread(smem, "c")
+        !d = File.Load("templates/pthreadStruct.bin")                                        ' load the c binary into memory
+        Dim d As New ShmThread(smem, "d")
 
         a.execute(startmessage)
         b.execute(3)
-        Wait 0.1
+
         ptr = Alloc(SizeOf(messitup))
-        Wait 0.1
         mymess = ptr
         MyMess.value = 4
         MyMess.message = " big bad string\n\r\0"
-        Wait 0.1
         c.execute(ptr)
         Print "Result value from thread is ";; MyMess.result
+
+        MyMess.value = 4
+        MyMess.message = " big bad string\n\r\0"
+        MyMess.result = 0
+        d.execute(ptr)
+        Print "Result value from thread C  is ";; MyMess.result
 
         Print shmMem.GetObjectClass(Me).name;; "Completed"
         smem.Close()
