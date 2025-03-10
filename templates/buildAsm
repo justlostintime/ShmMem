@@ -1,0 +1,5 @@
+#! /bin/bash
+rm pthreadPassString.bin pthreadPassStruct.bin  pthreadPassValue.bin
+fasm pthreadPassString.asm pthreadPassString.bin
+fasm pthreadPassStruct.asm pthreadPassStruct.bin
+fasm pthreadPassValue.asm pthreadPassValue.bin

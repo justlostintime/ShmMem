@@ -1,0 +1,9 @@
+#! /bin/bash
+rm pthreadStruct.o pthreadStruct.bin
+gcc -g -finline-functions -fno-stack-protector -c pthreadStruct.c && \
+objcopy -O binary -j .text pthreadStruct.o pthreadStruct.bin && \
+objdump -d -M intel -S pthreadStruct.o
+
+# the following line is needed if you need to create a linked object
+# Cation, I never actually got it to work correctly, maybe you will have beter luck
+#ld --static -t linkinfo -o pthreadStruct.bin pthreadStruct.o --entry threadEntry -z noexecstack

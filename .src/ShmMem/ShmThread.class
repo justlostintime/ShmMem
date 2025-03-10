@@ -52,9 +52,8 @@ Public Sub execute(Optional arg As Pointer = Null) As Variant
     Dim result As Integer
 
     $Call_Args = VarPtr(arg)
-    $Call_memory.Dump(arg, 200)
+    '$Call_memory.Dump(arg, 200)                                                                                  ' Dump struct to file for debug
     result = pthread_create(VarPtr($Thread), Null, $Function_Address, arg)
-    Wait 0.1
     'Debug "pthread_create result=";; result
     If result <> 0 Then
         Error.Raise(Subst(("System error while creating thread &1"), System.error))

@@ -1,0 +1,62 @@
+' Gambas module file
+
+smem As ShmMem
+loopcount As Integer = 1000000
+startmessage As String = "Starting  string thread right now\n\r"
+
+Public Struct messitup
+    result As Long                    ' by convention result is the first field of any passed structure
+    value As Long
+    message As String
+    writeLen As Long
+End Struct
+
+Public MyMess As New MessitUp
+
+Public Sub main()
+
+    Dim smem As ShmMem
+
+    Print "Begin  background thread Test"
+    Dim MyVar As Variant
+    shmMem.ForceDelete("test")                                                                             ' make sure to cleanup any leftover test
+    smem = New ShmMem(1280000, "test", 3000, 2.1, True)
+    Try Kill "/tmp/shm_exec.log"                                                                               ' each asm blob will write to this logfile
+    With smem
+        !a = File.Load("templates/pthreadPassString.bin")                                  ' load the binary into memory
+        Dim a As New ShmThread(smem, "a")
+        !b = File.Load("templates/pthreadPassValue.bin")                                  ' load the binary into memory
+        Dim b As New ShmThread(smem, "b")
+        !c = File.Load("templates/pthreadPassStruct.bin")                                  ' load the binary into memory
+        Dim c As New ShmThread(smem, "c")
+        !d = File.Load("templates/pthreadStruct.bin")                                           ' load the c binary into memory
+        Dim d As New ShmThread(smem, "d")
+        For xxx As Integer = 0 To 1000
+            Print "Pass ASM String ********************************************"
+            a.execute(startmessage)
+            Print "Pass Asm Value *********************************************"
+            b.execute(3)
+            Print "Pass Asm Structure ******************************************"
+            MyMess.value = 4
+            MyMess.message = " big bad structure in asm\n\r\0"
+            c.execute(Object.Data(MyMess))
+            Print "Result value from thread is ";; MyMess.result
+
+            Print "Pass C Structure *********************************************"
+            MyMess.value = 20
+            MyMess.message = " big bad structure in C\n\r\0"
+            MyMess.result = 0
+            d.execute(Object.Data(MyMess))
+            Print "Result value from thread C  is ";; MyMess.result;; "String length is";; MyMess.writeLen
+        Next
+        Print shmMem.GetObjectClass(Me).name;; "Completed"
+        smem.Close()
+    End With
+
+    Quit 0
+
+Catch
+    Error Error.text;; "-- At :";; Error.where
+    Quit 1
+
+End

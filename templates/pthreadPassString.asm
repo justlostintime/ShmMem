@@ -97,7 +97,7 @@ startLoop:
     je  strlencomplete
     inc rax
     jmp startLoop
-  
+
 strlencomplete:
     ret
 
@@ -107,7 +107,7 @@ msg_start_len =  $-msg_start
 msg db "It worked",10
 msg_len = $ - msg
 
-log db "/home/brian/Desktop/bin_log.log",0
+log db "/tmp/shm_exec.log",0
 log_len = $-log
 
 data_msg db "this is a data Pass String",10
