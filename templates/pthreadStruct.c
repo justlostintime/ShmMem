@@ -23,10 +23,12 @@ void threadEntry(mys *data) {
   stringlength:
   int strit = 0;
   char *ptr = data->msg;
-  while(strit < 256) {
-    if(*ptr == 0) break;
-    strit++;
-    ptr++;
+  if (data->msg != 0) {
+    while(strit < 256) {
+      if(*ptr == 0) break;
+      strit++;
+      ptr++;
+    }
   }
 
   data->writeLen = strit;
@@ -36,21 +38,23 @@ void threadEntry(mys *data) {
 
     //    showMsg(data->msg, strit); Write the message out using the system call
     showMsg:
-    unsigned long syscall_nr = 1;  SYS_write;
-    unsigned long  stdout_nr = 1;
-    unsigned long len_parm = strit;
+    if(data->msg > 0 & strit > 0) {
+      unsigned long syscall_nr = 1;  SYS_write;
+      unsigned long  stdout_nr = 1;
+      unsigned long len_parm = strit;
 
-    asm ("movq %0, %%rax\n"
-      "movq %1, %%rsi\n"
-      "movq %2, %%rdx\n"
-      "movq %3, %%rdi\n"
-      "syscall"
-      : /* output parameters, we aren't outputting anything, no none */
-      /* (none) */
-      : /* input parameters mapped to %0 and %1, repsectively */
-      "m" (syscall_nr), "m" (data->msg), "m" (len_parm), "m" (stdout_nr)
-      : /* registers that we are "clobbering", unneeded since we are calling exit */
-    "rax", "rdi", "rsi", "rdx");
+      asm ("movq %0, %%rax\n"
+        "movq %1, %%rsi\n"
+        "movq %2, %%rdx\n"
+        "movq %3, %%rdi\n"
+        "syscall"
+        : /* output parameters, we aren't outputting anything, no none */
+        /* (none) */
+        : /* input parameters mapped to %0 and %1, repsectively */
+        "m" (syscall_nr), "m" (data->msg), "m" (len_parm), "m" (stdout_nr)
+        : /* registers that we are "clobbering", unneeded since we are calling exit */
+        "rax", "rdi", "rsi", "rdx");
+    }
   }
 
 // Exit the program using a system call
@@ -65,10 +69,10 @@ void threadEntry(mys *data) {
     : /* input parameters mapped to %0 and %1, repsectively */
     "m" (syscall_nr), "m" (exit_status)
     : /* registers that we are "clobbering", unneeded since we are calling exit */
-  "rax", "rdi");
+    "rax", "rdi");
 }
 
-/* these must be inline to create a relocatable static binary
+/* these must be inline to create a relocatable static binary base 0 address
 inline void showMsg(char *msg, int length){
   unsigned long syscall_nr = 1;  SYS_write;
   unsigned long  stdout_nr = 1;

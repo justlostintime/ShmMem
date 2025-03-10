@@ -26,14 +26,7 @@ resultValue = 0
 main:
 
   push rdi     ; save the first parameter passed
-
-;*******************************************************************
-; write the startup message
-;*******************************************************************
-  lea rsi,[msg_start]
-  mov rdx,msg_start_len
-  call writeMsg
-
+  
 ;*******************************************************************
 ; Look at the structure passed and read the time to display
 ; and get the message to display and calc length
@@ -41,8 +34,19 @@ main:
 
   mov rsi,[rdi+StringPtr]      ; point to the message
   call strlen                  ; calculate the length and return inrax
+  mov r15,rax                  ; keep the length of string to print
   mov rdx,rax                  ; get the length of the string
   mov rax,[rdi+RepeatCount]    ; Get the number of times to print a message
+
+;*******************************************************************
+; write the startup message
+;*******************************************************************
+  cmp rsi,0                    ; check if there is no message, so no message
+  je  NoStartMessage
+  lea rsi,[msg_start]
+  mov rdx,msg_start_len
+  call writeMsg
+NoStartMessage:
 
 ;*******************************************************************
 ; print the message the number of time presented
@@ -105,10 +109,12 @@ continueWrite:
 quickExit:
   push rdi              ; save the result from the last call
 
+  cmp r15,0
+  je  NoExitMsg
   lea rsi,[msg]
   mov rdx,msg_len
   call writeMsg
-
+NoExitMsg:
   pop rax               ; rdi is the value returned on exit in rax
 
 ;*******************************************************************
@@ -151,7 +157,9 @@ writeMsg:
 ;*******************************************************************
 strlen:
     xor rax, rax        ; loop counter
-
+    cmp rsi,0           ; check if null pointer
+    je  NoMessage       ; return zero length if no message
+    
 startLoop:
     xor dx, dx
     mov dl, byte [rsi+rax]
@@ -160,15 +168,16 @@ startLoop:
     cmp dl, 0x0    ; null byte
     jne startLoop
     dec rax
+NoMessage:
     ret
 
 ;*******************************************************************
 ; Data section
 ;*******************************************************************
-msg_start db 10,"Begin the thread for structure",10
+msg_start db 10,"Begin the thread for ASM structure",10
 msg_start_len =  $-msg_start
 
-msg db "It worked",10
+msg db "It worked for ASM struct",10
 msg_len = $ - msg
 
 log db "/tmp/shm_exec.log",0

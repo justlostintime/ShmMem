@@ -20,9 +20,9 @@ APPEND  = 0x400
 EXCL    = 0x80
 
 main:
-  push rdx
-  push rsi
+  push rbx
 
+  mov r15,rdi
   mov rax,rdi
   lea rsi,[msg_start]
   mov rdx, msg_start_len
@@ -35,62 +35,61 @@ msgloop:
   jmp msgloop
 
 msgLoopDone:
-
+  cmp r15,0x0
+  je  NoMessages
+  
   mov rax, SYS_open
   lea rdi, [log]
   mov rsi, WRONLY or CREAT or APPEND
   mov rdx, 0660o
   syscall
 
+  mov  r13,rax              ; get result
   test rax,rax
   jnl  continueWrite
-  push rax
-
+  
   lea rsi,[err_open_failed]
   mov rdx, err_open_failed_len
   call writeMsg
-
-  pop  rdi
   jmp  quickExit
 
 continueWrite:
 
-  mov rdi,rax
-  push rdi                ; rdi contains the file descriptor
-
+  mov rdi, r13
   mov rax, SYS_write
   lea rsi, [data_msg]
   mov rdx, data_msg_len
   syscall
 
-  pop rdi
-  push rdi
+  mov rdi,r13
   mov rax, SYS_fsync
   syscall
 
-  pop rdi
+  mov rdi,r13
   mov rax, SYS_close
   syscall
-
-  pop rsi
-  pop rdx
-
-  mov rdi, 0         ; no error
+  
+NoMessages:
+  mov r13, 0         ; no error
 
 quickExit:
-  push rdi
-
+  cmp r15,0x0        ; if we write it 0 times then skip end msg
+  je  NoExitMsg
   lea rsi,[msg]
   mov rdx,msg_len
   call writeMsg
-
-  pop rdi
-  pop rsi
-  pop rdx
+  
+NoExitMsg:
+  pop rbx
+  mov rdi,r13
   mov rax, SYS_exit
   syscall
 
 writeMsg:
+  cmp  rsi,0x0
+  je   NoWrite
+  cmp  rdx,0x0
+  je   NoWrite
   push rax
   push rdi
   push rdx
@@ -102,26 +101,30 @@ writeMsg:
   pop rdx
   pop rdi
   pop rax
-
+  
+NoWrite:
   ret
 
 strlen:
+    push rdx
     xor rax, rax        ; loop counter
-
+    cmp rsi,0x0         ; null pointer then return 0 length
+    je  NoLength
 startLoop:
     xor dx, dx
     mov dl, byte [rsi+rax]
     inc rax
-
     cmp dl, 0x0    ; null byte
     jne startLoop
     dec rax
+NoLength:
+    pop rdx
     ret
 
 msg_start db 10,"Begin the thread ?: Passing by value",10," so loop provided times",10
 msg_start_len =  $-msg_start
 
-msg db "It worked",10
+msg db "It worked for ASM Value ",10
 msg_len = $ - msg
 
 log db "/tmp/shm_exec.log",0

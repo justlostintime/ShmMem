@@ -1,8 +1,10 @@
 ' Gambas module file
 
 smem As ShmMem
+RepeatLoop As Integer = 1000
+NoMessage As Boolean = False
 loopcount As Integer = 1000000
-startmessage As String = "Starting  string thread right now\n\r"
+startmessage As String = "Inside  string thread right now\n\r"
 
 Public Struct messitup
     result As Long                    ' by convention result is the first field of any passed structure
@@ -31,23 +33,23 @@ Public Sub main()
         Dim c As New ShmThread(smem, "c")
         !d = File.Load("templates/pthreadStruct.bin")                                           ' load the c binary into memory
         Dim d As New ShmThread(smem, "d")
-        For xxx As Integer = 0 To 1000
-            Print "Pass ASM String ********************************************"
-            a.execute(startmessage)
-            Print "Pass Asm Value *********************************************"
-            b.execute(3)
-            Print "Pass Asm Structure ******************************************"
+        For xxx As Integer = 0 To RepeatLoop
+            If Not NoMessage Then Print "Pass ASM String ********************************************"
+            a.execute(IIf(NoMessage, "", startmessage))
+            If Not NoMessage Then Print "Pass Asm Value *********************************************"
+            b.execute(IIf(NoMessage, 0, 2))
+            If Not NoMessage Then Print "Pass Asm Structure ******************************************"
             MyMess.value = 4
-            MyMess.message = " big bad structure in asm\n\r\0"
+            MyMess.message = IIf(NoMessage, "", " big bad structure in asm\n\r\0")
             c.execute(Object.Data(MyMess))
-            Print "Result value from thread is ";; MyMess.result
+            If Not NoMessage Then Print "Result value from thread is ";; MyMess.result
 
-            Print "Pass C Structure *********************************************"
+            If Not NoMessage Then Print "Pass C Structure *********************************************"
             MyMess.value = 20
-            MyMess.message = " big bad structure in C\n\r\0"
+            MyMess.message = IIf(NoMessage, "", " big bad structure in C\n\r\0")
             MyMess.result = 0
             d.execute(Object.Data(MyMess))
-            Print "Result value from thread C  is ";; MyMess.result;; "String length is";; MyMess.writeLen
+            If Not NoMessage Then Print "Result value from thread C  is ";; MyMess.result;; "String length is";; MyMess.writeLen
         Next
         Print shmMem.GetObjectClass(Me).name;; "Completed"
         smem.Close()

@@ -20,12 +20,16 @@ APPEND  = 0x400
 EXCL    = 0x80
 
 main:
-  push rdx
-  push rsi
-
-  ;lea rsi,[msg_start]
+  push rbx
+  
+  mov  r12,rdi            ; save the string address
+  
+  cmp rdi,0               ; if it is a null message then dont write anything
+  je  NullMessage
+  
   mov rsi,rdi
   call strlen
+  mov  r15,rax
   mov rdx,rax
   call writeMsg
 
@@ -37,59 +41,65 @@ main:
 
   test rax,rax
   jnl  continueWrite
-  push rax
+  mov r13, rax                    ; get the error number
 
   lea rsi,[err_open_failed]
   mov rdx, err_open_failed_len
   call writeMsg
-
-  pop  rdi
   jmp  quickExit
 
 continueWrite:
 
-  mov rdi,rax
-  push rdi                ; rdi contains the file descriptor
+  mov r14,rax                     ; preserve the file descriptor
 
   mov rax, SYS_write
   lea rsi, [data_msg]
   mov rdx, data_msg_len
   syscall
-
-  pop rdi
-  push rdi
+  
+  mov rdi,r14
   mov rax, SYS_fsync
   syscall
 
-  pop rdi
+  mov rdi,r14
   mov rax, SYS_close
   syscall
 
-  pop rsi
-  pop rdx
+NullMessage:
 
-  mov rdi, 0         ; no error
+  mov r13, 0              ; no error
 
 quickExit:
-  push rdi
 
+  cmp r15,0               ; check if it is a null message
+  je  NoExitMsg
+  
   lea rsi,[msg]
   mov rdx,msg_len
   call writeMsg
+  
+NoExitMsg:
 
-  pop rdi
+  pop rbx
+  
+  mov rdi,r13
   mov rax, SYS_exit
   syscall
 
 writeMsg:
+  cmp rsi,0             ; check for null pointer
+  je NoMessage          ; skip write if it is
   mov rax,SYS_write
   mov rdi,1
   syscall
+NoMessage:
   ret
 
 strlen:
     xor rax, rax        ; loop counter
-
+    cmp rsi, 0          ; check if null pointer passed
+    je  strlencomplete  ; return 0 length if no message found
+    
 startLoop:
     xor dx, dx
     mov dl, byte [rsi+rax]
@@ -104,7 +114,7 @@ strlencomplete:
 msg_start db 10,"Begin the thread!",10
 msg_start_len =  $-msg_start
 
-msg db "It worked",10
+msg db "It worked For ASM String",10
 msg_len = $ - msg
 
 log db "/tmp/shm_exec.log",0
