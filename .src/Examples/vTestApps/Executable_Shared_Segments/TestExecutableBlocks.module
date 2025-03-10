@@ -2,8 +2,9 @@
 
 smem As ShmMem
 RepeatLoop As Integer = 1000
-NoMessage As Boolean = False
-loopcount As Integer = 1000000
+NoMessage As Boolean = True
+WaitComplete As Boolean = False
+'loopcount As Integer = 1000000
 startmessage As String = "Inside  string thread right now\n\r"
 
 Public Struct messitup
@@ -13,11 +14,12 @@ Public Struct messitup
     writeLen As Long
 End Struct
 
-Public MyMess As New MessitUp
+Public MyMess As MessitUp
 
 Public Sub main()
 
     Dim smem As ShmMem
+    Dim LastThread As ShmThread
 
     Print "Begin  background thread Test"
     Dim MyVar As Variant
@@ -35,22 +37,28 @@ Public Sub main()
         Dim d As New ShmThread(smem, "d")
         For xxx As Integer = 0 To RepeatLoop
             If Not NoMessage Then Print "Pass ASM String ********************************************"
-            a.execute(IIf(NoMessage, "", startmessage))
+            a.execute(IIf(NoMessage, "", startmessage), WaitComplete)
             If Not NoMessage Then Print "Pass Asm Value *********************************************"
-            b.execute(IIf(NoMessage, 0, 2))
+            b.execute(IIf(NoMessage, 0, 2), WaitComplete)
             If Not NoMessage Then Print "Pass Asm Structure ******************************************"
+            MyMess = New Messitup
             MyMess.value = 4
+            MyMess.result = 0
             MyMess.message = IIf(NoMessage, "", " big bad structure in asm\n\r\0")
-            c.execute(Object.Data(MyMess))
+            c.execute(Object.Data(MyMess), WaitComplete)
             If Not NoMessage Then Print "Result value from thread is ";; MyMess.result
 
             If Not NoMessage Then Print "Pass C Structure *********************************************"
-            MyMess.value = 20
+            MyMess = New Messitup
+            MyMess.value = IIf(NoMessage, 1000000000, 10)
             MyMess.message = IIf(NoMessage, "", " big bad structure in C\n\r\0")
             MyMess.result = 0
-            d.execute(Object.Data(MyMess))
+            d.execute(Object.Data(MyMess), WaitComplete)
             If Not NoMessage Then Print "Result value from thread C  is ";; MyMess.result;; "String length is";; MyMess.writeLen
+            LastThread = d
         Next
+        Print "Wait for last thread to complete"
+        LastThread.ThreadWait()
         Print shmMem.GetObjectClass(Me).name;; "Completed"
         smem.Close()
     End With

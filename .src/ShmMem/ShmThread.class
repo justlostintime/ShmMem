@@ -47,7 +47,7 @@ Public Sub _new(SysMem As ShmMem, Ident As Variant)
 
 End
 
-Public Sub execute(Optional arg As Pointer = Null) As Variant
+Public Sub execute(Optional arg As Pointer = Null, WaitComplete As Boolean = True) As Variant
 
     Dim result As Integer
 
@@ -60,8 +60,16 @@ Public Sub execute(Optional arg As Pointer = Null) As Variant
         Return
     Endif
 
-    result = pthread_join($Thread, b)
+    If WaitComplete Then result = pthread_join($Thread, b)
     'Debug "pthread_join result=";; result;; "returned value=";; Long@(b)
     Return
+
+End
+
+Public Sub ThreadWait() As Variant
+
+    Dim result As Variant
+    result = pthread_join($Thread, b)
+    Return result
 
 End
