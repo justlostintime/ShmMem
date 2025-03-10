@@ -58,7 +58,7 @@ Public Sub main()
             LastThread = d
         Next
         Print "Wait for last thread to complete"
-        LastThread.ThreadWait()
+        LastThread.WaitComplete()
         Print shmMem.GetObjectClass(Me).name;; "Completed"
         smem.Close()
     End With

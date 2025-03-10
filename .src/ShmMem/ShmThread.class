@@ -66,9 +66,10 @@ Public Sub execute(Optional arg As Pointer = Null, WaitComplete As Boolean = Tru
 
 End
 
-Public Sub ThreadWait() As Variant
+Public Sub WaitComplete() As Variant
 
     Dim result As Variant
+
     result = pthread_join($Thread, b)
     Return result
 
