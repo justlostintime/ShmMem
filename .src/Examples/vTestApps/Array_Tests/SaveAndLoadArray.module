@@ -28,7 +28,8 @@ Public Sub main()
         .LoadVar(testfile, "testarray")    ' use the optional over ride symbol name so as not to overwrite !a
         .LoadVar(testfile & "Native")
         Print !testarray.Export()
-        Dim f As Variant = Json.ToString(!testArray)
+        Dim f As Variant
+        f = Json.ToString(!testArray)
         !testArray[0, 0, 2] = ["hello", "pool", 1]
         !testArray[0, 0, 1] = ["a", "b", "c"]
         !testArray[1, 0, 0] = !a

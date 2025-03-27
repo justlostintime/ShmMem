@@ -35,13 +35,13 @@ End
 
 Public Sub WhenNew(SymNAme As String, value As Variant, timedout As Boolean)
 
-    Print " New Symbol ";; SymName;; "=";; Str(value)
+    Print " New Symbol ";; SymName;; "=";; Str(value);; "Timed Out ? ";; timedout
 
 End
 
 Public Sub WhenRemoved(SymName As String, value As Variant, timedout As Boolean)
 
-    Print " Removed Symbol ";; SymName;; "was";; value
+    Print " Removed Symbol ";; SymName;; "was";; value;; "Timed Out ? ";; timedout
 
 End
 

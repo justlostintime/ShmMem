@@ -2,7 +2,7 @@
 
 smem As ShmMem
 RepeatLoop As Integer = 1000
-NoMessage As Boolean = True
+NoMessage As Boolean = False
 WaitComplete As Boolean = False
 'loopcount As Integer = 1000000
 startmessage As String = "Inside  string thread right now\n\r"
@@ -18,11 +18,10 @@ Public MyMess As MessitUp
 
 Public Sub main()
 
-    Dim smem As ShmMem
     Dim LastThread As ShmThread
 
     Print "Begin  background thread Test"
-    Dim MyVar As Variant
+    'Dim MyVar As Variant
     shmMem.ForceDelete("test")                                                                             ' make sure to cleanup any leftover test
     smem = New ShmMem(1280000, "test", 3000, 2.1, True)
     Try Kill "/tmp/shm_exec.log"                                                                               ' each asm blob will write to this logfile
@@ -35,6 +34,11 @@ Public Sub main()
         Dim c As New ShmThread(smem, "c")
         !d = File.Load("templates/pthreadStruct.bin")                                           ' load the c binary into memory
         Dim d As New ShmThread(smem, "d")
+        Dim e As New ShmThread(smem, "", 4000)                                               ' automatically create 4000 byte program space
+        Dim eprog As String
+        eprog = File.Load("templates/pthreadPassStruct.bin")                         ' load the binary into memory/ Test the assign operator for thread type
+        e[0] = eprog                                                                                                            ' load the binary into memory/ Test the assign operator for thread type
+
         For xxx As Integer = 0 To RepeatLoop
             If Not NoMessage Then Print "Pass ASM String ********************************************"
             a.execute(IIf(NoMessage, "", startmessage), WaitComplete)
@@ -55,14 +59,34 @@ Public Sub main()
             MyMess.result = 0
             d.execute(Object.Data(MyMess), WaitComplete)
             If Not NoMessage Then Print "Result value from thread C  is ";; MyMess.result;; "String length is";; MyMess.writeLen
-            LastThread = d
+
+            If Not NoMessage Then Print "Pass Asm Structure Direct assign  ***********************************"
+            MyMess = New Messitup
+            MyMess.value = 2
+            MyMess.result = 6
+            MyMess.message = IIf(NoMessage, "", " big bad structure in Direct Assign asm\n\r\0")
+            e.execute(Object.Data(MyMess), WaitComplete)
+            If Not NoMessage Then Print "Result value from Direct assign thread is ";; MyMess.result
+
+            LastThread = e
+
         Next
         Print "Wait for last thread to complete"
         LastThread.WaitComplete()
         Print shmMem.GetObjectClass(Me).name;; "Completed"
-        smem.Close()
     End With
 
+    ' If Not NoMessage Then Print "Pass C Structure Test kill thread  *********************************************"
+    ' MyMess = New Messitup
+    ' MyMess.value = 10000
+    ' MyMess.message = IIf(NoMessage, "", " big bad structure in C\n\r\0")
+    ' MyMess.result = 0
+    ' d.execute(Object.Data(MyMess), False)
+    ' If Not NoMessage Then Print "Result value from thread C  is ";; MyMess.result;; "String length is";; MyMess.writeLen
+    ' Wait 0.5
+    ' d.cancel()
+    ' d.WaitComplete()
+    smem.Close()
     Quit 0
 
 Catch

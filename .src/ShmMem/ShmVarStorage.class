@@ -232,6 +232,8 @@ End
 '' will force the cleanup of the memory
 Public Sub _free()
 
+    If Not Me.isvalid Then Return
+
     If varmem Then
         varmem._free()
         varmem = Null

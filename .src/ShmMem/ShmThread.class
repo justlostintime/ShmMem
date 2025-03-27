@@ -14,63 +14,156 @@ Public Struct pthread_args
     values[20] As Pointer
 End Struct
 
-Private a As New Pthread_p
+'Private a As New Pthread_p
 Private b As Pointer = Alloc(100)
 'pthread_create(pthread_t *, const pthread_attr_t *,   void * ( * )(void * ), void * );
 
 Extern pthread_create(thread As Pthread_t, attributes As Pointer, start_routine As Pointer, arg As Pointer) As Integer In "libc:6"
 Extern pthread_join(thread As Pointer, result As Pointer) As Integer In "libc:6"
+Extern pthread_kill(thread As Pointer, sig As Integer) As Integer In "libc:6"
+Extern pthread_cancel(thread As Pointer) As Integer In "libc:6"
 
 Property Read Thread As Pointer Use $Thread = Null
 Property Read Attribute As Pointer Use $Attribute = Null
-Property Read Function_Address As Pointer Use $Function_Address = Null
-Property Read Call_Memory As ShmMem Use $Call_Memory = Null
+Property Read Function_Address As Pointer Use $Function_Address = Null           ' The real physical address of the function
+Property Read Function_VirtAddr As Pointer Use $Function_VirtAddr = Null            ' used when magic alloc internally happens
+Property Read Call_Memory As ShmMem Use $Call_Memory = Null                            ' The physical refrence to be used
 Property Read Call_Args As Pointer Use $Call_Args = Null
 Property Read result As Long Use $result = 4
+Property Read Auto As Boolean Use $Auto = False   ' set if the Program Memory is created by New
 
-Public Sub _new(SysMem As ShmMem, Ident As Variant)
+Public Sub _new(SysMem As ShmMem, Ident As Variant, Optional ProgramLength As Integer = 0)
 
     Dim R_type As Integer = TypeOf(Ident)
 
     Select Case R_type
-        Case gb.string                                                                          ' if it is a string must be a variable name
-            ident = SysMem.RealDataAddress(Ident) + 8           ' was 8 or 10string have an additional 8 bytes
-        Case gb.Pointer, gb.long, gb.integer                               ' if it is integer or long then must be a virtual address
-            ident = CPointer(ident)
+        Case gb.string                                                                                                ' if it is a string must be a variable name
+            If ident = "" And ProgramLength > 0 Then
+                $Function_VirtAddr = SysMem.Alloc(ProgramLength)              ' allocate some random space for the program
+                ident = SysMem.RealDataAddress($Function_VirtAddr)         ' pointer to the real address in memory
+                $Auto = True
+            Else
+                $Function_VirtAddr = SysMem.VarPtr(Ident)                             ' get the virtual address of the symbols value/Data
+                ident = SysMem.RealDataAddress(Ident) + 8                            ' was 8 or 10string have an additional 8 bytes
+            Endif
+        Case gb.Pointer, gb.long, gb.integer                                                   ' if it is integer or long then must be a virtual address
+            $Function_VirtAddr = CPointer(Ident)
+            ident = SysMem.RealDataAddress(CPointer(ident))                  ' convert this  relative address to a real address
         Default
             Error.Raise("Invalid request, must be varname or pointer, long, integer values")
     End Select
 
-    $Function_address = ident
-    $Call_memory = SysMem
+    $Function_address = ident                                                                  ' set the real address of the function to call
+    $Call_memory = SysMem                                                                     ' set the base segment information
     '  SysMem.Dump($Function_Address, 200)
 
 End
 
-Public Sub execute(Optional arg As Pointer = Null, WaitComplete As Boolean = True) As Variant
+Public Sub execute(Optional arg As Pointer = Null, WaitToComplete As Boolean = True) As Variant
 
     Dim result As Integer
 
-    $Call_Args = VarPtr(arg)
+    $Call_Args = VarPtr(arg)                                                                                               ' Save the args for later refrence
     '$Call_memory.Dump(arg, 200)                                                                                  ' Dump struct to file for debug
     result = pthread_create(VarPtr($Thread), Null, $Function_Address, arg)
     'Debug "pthread_create result=";; result
     If result <> 0 Then
         Error.Raise(Subst(("System error while creating thread &1"), System.error))
-        Return
+        Return result
     Endif
 
-    If WaitComplete Then result = pthread_join($Thread, b)
-    'Debug "pthread_join result=";; result;; "returned value=";; Long@(b)
-    Return
+    If WaitToComplete Then
+        Return WaitComplete()
+    Else
+        Return result
+    Endif
+
+End
+'' Cancel a running thread
+
+Public Sub {cancel}() As Integer
+
+    Return pthread_cancel($thread)
 
 End
 
+'' Send a signal to the running thread
+'' Default to sigkill  when no option is provided
+Public Sub {kill}(Optional signumber As Integer = Signal.SIGKILL) As Integer
+
+    Return pthread_kill($Thread, signumber)
+
+End
+
+'' Wait for the running thread to complete
+'' this should be used most of the time as running a bg thread
+'' could be dangerous
 Public Sub WaitComplete() As Variant
 
     Dim result As Variant
 
     result = pthread_join($Thread, b)
-    Return result
+    'Debug "pthread_join result=";; result;; "returned value=";; Long@(b)
+    If result = 0 Then
+        Return Pointer@(b)
+    Else
+        Return result
+    Endif
+
+End
+
+'' Write a byte or array of bytes to an offset in the memory    to be executes later
+'' Returns the next index unused byte
+Public Sub _put(Value As Variant, Optional index As Integer = 0)                        ' write a byte or string of bytes to the program memory
+
+    Dim ProgramLength As Integer
+
+    ProgramLength = $Call_Memory.VarMnge.DataLength($Function_VirtAddr)                 ' get the length of the area allocated for programs
+
+    index = WriteBytes(value, index, $Function_Address, ProgramLength)
+
+End
+
+Private Sub WriteBytes(Value As Variant, index As Integer, BaseDataAddress As Pointer, ProgramLength As Integer) As Integer
+
+    Dim currentindex As Integer = 0
+    Dim ptrData As Pointer = BaseDataAddress
+
+    If index < 0 Or If index >= ProgramLength Then
+        Error.Raise("Invalid Program offset value : out of range max = " & Str(ProgramLength - 1))
+    Endif
+
+    Select Case TypeOf(Value)
+        Case gb.integer, gb.long, gb.Pointer, gb.byte, gb.short
+            Byte@(BaseDataAddress + index) = CByte(value)
+            Inc index
+
+        Case gb.String
+            If value.len + index >= ProgramLength Then
+                Error.Raise(Subst("Invalid String Length + index > reserved program memory len = &1, str len + index = &2", ProgramLength, value.len + index))
+            Endif
+            ptrData += index
+            For currentindex = 0 To value.len - 1
+                Dim aByte As Byte = CByte(Asc(value[currentIndex]))
+                Byte@(ptrData) = aByte
+                Inc ptrData
+            Next
+            index += value.len
+
+        Case gb.object                                                                     ' Allow an array, bytes, values,or a string
+            Dim objName As String = Object.Type(Value)
+            If Right(objName, 2) == "[]" Then                               ' expect it to be an array
+                For currentIndex = 0 To value.max
+                    index = WriteBytes(value[currentIndex], index, BaseDataAddress, ProgramLength)
+                Next
+            Else
+                Error.Raise("Invalid object type for conversion to byte or bytes")
+            Endif
+
+        Default
+            Error.Raise("Invalid Data type for conversion to byte or bytes")
+    End Select
+
+    Return index
 
 End

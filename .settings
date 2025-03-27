@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={"TestExecutableBlocks":[53,47]}
+Breakpoints={"TestExecutableBlocks":[78]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -787,7 +787,7 @@ Geometry=[2108,45,440,361]
 Geometry=[2196,554,252,56]
 
 [DebugWindow/virt]
-Geometry=[2115,742,252,110]
+Geometry=[834,542,252,56]
 
 [DebugWindow/vlist]
 Geometry=[834,512,252,56]
@@ -838,20 +838,21 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="New addition od executable shared memory segments, see included examples\n\n* OPT: Updated buildCStruct to do a dissasemble of the generated code\n* NEW: Added c example of binary executable thread blob\n* NEW: Examples of Executable segment , pass string, value and structure to thread\n* NEW: Extend shared block to allow executable block, direct implementation jit code generation\n* NEW: add ObjectAsHex and OjectFromHex to ShmVarStorage, allows creation of files and send of objects\n* OPT: Cleanup examples\n* OPT: Update for publishing on Gambas FarmServer\n* OPT: Update internal documentation\n* NEW: Added Function SaveNativeVar(ShmMem_Name as string, Value as variant,Optional FileName as string)\n* NEW: Added Close method to shmmem that must be called when program exits\n* BUG: Circular ref and unreleased blocks, fixed by close call in shmmem\n* BUG: Fix variaous seg faults, verify memory before _free"
+LastCommit="Update to version 2.2, Add completed executable segment with Asm and c examples\n\n*OPT: Added a wait no wait interface call to ShmThread\n*NEW: Added WaitComplete interface for ShmThread\n*OPT: Allow to write no messages to output to test overhead time Start End times\n*NEW: Build script in template directory for c and asm blobs\n*OPT: Completed SHM execte segment and ShmThread classes"
 
 [OpenFile]
-Count=3
-File[1]="templates/buildC:0.6"
-Active=3
-File[2]="templates/pthreadStruct.c:13.80"
-File[3]=".src/Examples/vTestApps/General Tests/TestExecutableBlocks.module:22.50"
+Count=4
+File[1]=".src/Examples/vTestApps/Executable_Shared_Segments/TestExecutableBlocks.module:0.78"
+Active=4
+File[2]=".src/ShmMem/ShmManage.class:26.123"
+File[3]=".src/ShmMem/ShmThread.class:0.130"
+File[4]=".src/ShmMem/shmMem.class:4.203"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"
 
 [Watches]
-Count=14
+Count=24
 Watch[1]="param"
 Watch[2]="me"
 Watch[3]="notifyqueue[0]"
@@ -866,4 +867,14 @@ Watch[11]="Super.listhead"
 Watch[12]="listhead"
 Watch[13]="enum.index"
 Watch[14]="object.Type(Me)"
+Watch[15]="notifyqueue[0]Ü@\u00x1\u00x0?Werror.text"
+Watch[16]="application.id;M\u00x1\u00x0?Wparams"
+Watch[17]="mymem!a[1,1,1]&v\u00x1\u00x0?Wa[1,1,1]"
+Watch[18]="Super.listheadÀÉ\u00x1\u00x0?Wlisthead"
+Watch[19]="object.Type(MeΩè\u00x1\u00x0&V~a"
+Watch[20]="notifyqueue[0]MÏó[?Werror.text"
+Watch[21]="application.idDˇó[?Wparams"
+Watch[22]="mymem!a[1,1,1]Õiò[?Wa[1,1,1]"
+Watch[23]="Super.listheadûÑò[?Wlisthead"
+Watch[24]="object.Type(Me∫¢ò[?Wnotifyqueue[0]Ü@\u00x1\u00x0?Werror.text"
 

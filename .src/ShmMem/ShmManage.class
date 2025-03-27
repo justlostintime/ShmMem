@@ -175,6 +175,34 @@ Private Sub RemoveFree(VirtAddr As Pointer)
 
 End
 
+'' Get Length of data portion of the allocated memory block
+Public Sub DataLength(VirtAddr As Pointer) As Long    ' virt address pointes to the data area, not the actual header
+
+    Dim virt As Allocheader
+    Dim ClearLength As Long
+
+    If virtaddr = Null Then Return
+
+    If virtaddr >= ManagedInfo.EndOfMem Or Virtaddr < ManagedInfo.StartOfMem Then
+        Error.Raise("Out Of Bounds : " & VirtAddr)
+    Endif
+
+    'If $bDebug Then Print Application.id, "AddFree ShmManage.exclusive " & VirtAddr
+    'Storage.Exclusive()
+
+    virt = AllocPtr(VirtAddr - SizeOf(AllocHeader))
+    clearLength = virt.length - SizeOf(AllocHeader)
+
+    If virt.address <> (VirtAddr - SizeOf(AllocHeader)) Or virt.Length = 0 Then
+        ' Storage.Release()
+        'If $bDebug Then Print Application.id, "AddFree ShmManage.release " & VirtAddr
+        Error.Raise("Invalid memory Block detected")
+    Endif
+
+    Return clearLength
+
+End
+
 '' Add/Merge a block from the free list
 Private Sub AddFree(VirtAddr As Pointer)
 

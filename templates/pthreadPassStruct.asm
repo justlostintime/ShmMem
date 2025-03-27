@@ -19,14 +19,17 @@ CREAT   = 0x40
 APPEND  = 0x400
 EXCL    = 0x80
 
+; Define the layout of the structure being passed
+resultValue = 0
 RepeatCount = 8
 StringPtr = 16
-resultValue = 0
+WriteCount = 24
+
 
 main:
 
   push rdi     ; save the first parameter passed
-  
+
 ;*******************************************************************
 ; Look at the structure passed and read the time to display
 ; and get the message to display and calc length
@@ -54,6 +57,8 @@ NoStartMessage:
 doloop:
   cmp rax,0x0
   je  cont1
+  mov rsi,[rdi+StringPtr]      ; point to the message
+  mov rdx,r15
   call writeMsg
   dec rax
   jmp doloop
@@ -137,6 +142,8 @@ setresult:
 
 ;*******************************************************************
 ; Write message
+; rsi = message address
+; rdx = length of the message
 ;*******************************************************************
 writeMsg:
   push rax
@@ -159,7 +166,7 @@ strlen:
     xor rax, rax        ; loop counter
     cmp rsi,0           ; check if null pointer
     je  NoMessage       ; return zero length if no message
-    
+
 startLoop:
     xor dx, dx
     mov dl, byte [rsi+rax]

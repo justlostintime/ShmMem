@@ -231,7 +231,7 @@ Public Sub _free()
     If vars Then Vars._free()                                                 ' free the symbol table
     Vars = Null
 
-    If myvarmem Then MyVarMem._free()                       ' Value storage manger freed
+    If myvarmem And If MyVarMem.IsValid Then MyVarMem._free()                       ' Value storage manger freed
     MyVarMem = Null
 
     varMnge = Null                                                                   ' memory block manager freed
