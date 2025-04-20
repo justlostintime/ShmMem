@@ -1,0 +1,176 @@
+
+pthreadStruct.elf:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <threadEntry>:
+void ThreadExit(int result);
+
+// threadEntry must be the first function in the file
+// The loaded thread expects to start a zero address in the binary
+// the linker expects this function to exist and be first
+void threadEntry(mys *data) {
+   0:	f3 0f 1e fa          	endbr64 
+   4:	55                   	push   rbp
+   5:	48 89 e5             	mov    rbp,rsp
+   8:	48 83 ec 20          	sub    rsp,0x20
+   c:	48 89 7d e8          	mov    QWORD PTR [rbp-0x18],rdi
+  int y;
+  //  void * wrtit = &showMsg;
+  //  void * slen  = &stringlength;
+
+  int strit = stringlength(data->msg);
+  10:	48 8b 45 e8          	mov    rax,QWORD PTR [rbp-0x18]
+  14:	48 8b 40 10          	mov    rax,QWORD PTR [rax+0x10]
+  18:	48 89 c7             	mov    rdi,rax
+  1b:	e8 c6 00 00 00       	call   e6 <stringlength>
+  20:	89 45 f8             	mov    DWORD PTR [rbp-0x8],eax
+
+  data->writeLen = strit;
+  23:	8b 45 f8             	mov    eax,DWORD PTR [rbp-0x8]
+  26:	48 63 d0             	movsxd rdx,eax
+  29:	48 8b 45 e8          	mov    rax,QWORD PTR [rbp-0x18]
+  2d:	48 89 50 18          	mov    QWORD PTR [rax+0x18],rdx
+
+  for(y=1; y <= data->count; y++) {
+  31:	c7 45 fc 01 00 00 00 	mov    DWORD PTR [rbp-0x4],0x1
+  38:	eb 26                	jmp    60 <threadEntry+0x60>
+    data->result=y;
+  3a:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]
+  3d:	48 63 d0             	movsxd rdx,eax
+  40:	48 8b 45 e8          	mov    rax,QWORD PTR [rbp-0x18]
+  44:	48 89 10             	mov    QWORD PTR [rax],rdx
+
+    showMsg(data->msg, strit); // Write the message out using the system call
+  47:	48 8b 45 e8          	mov    rax,QWORD PTR [rbp-0x18]
+  4b:	48 8b 40 10          	mov    rax,QWORD PTR [rax+0x10]
+  4f:	8b 55 f8             	mov    edx,DWORD PTR [rbp-0x8]
+  52:	89 d6                	mov    esi,edx
+  54:	48 89 c7             	mov    rdi,rax
+  57:	e8 4d 00 00 00       	call   a9 <showMsg>
+  for(y=1; y <= data->count; y++) {
+  5c:	83 45 fc 01          	add    DWORD PTR [rbp-0x4],0x1
+  60:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]
+  63:	48 63 d0             	movsxd rdx,eax
+  66:	48 8b 45 e8          	mov    rax,QWORD PTR [rbp-0x18]
+  6a:	48 8b 40 08          	mov    rax,QWORD PTR [rax+0x8]
+  6e:	48 39 c2             	cmp    rdx,rax
+  71:	7e c7                	jle    3a <threadEntry+0x3a>
+
+  }
+
+  // Exit the program using a system call
+  ThreadExit(84);
+  73:	bf 54 00 00 00       	mov    edi,0x54
+  78:	e8 03 00 00 00       	call   80 <ThreadExit>
+  //pthread_exit(data);
+
+}
+  7d:	90                   	nop
+  7e:	c9                   	leave  
+  7f:	c3                   	ret    
+
+0000000000000080 <ThreadExit>:
+
+// Exit the thread right away
+void ThreadExit(int result){
+  80:	f3 0f 1e fa          	endbr64 
+  84:	55                   	push   rbp
+  85:	48 89 e5             	mov    rbp,rsp
+  88:	89 7d ec             	mov    DWORD PTR [rbp-0x14],edi
+  unsigned long syscall_nr = SYS_exit;
+  8b:	48 c7 45 f8 3c 00 00 	mov    QWORD PTR [rbp-0x8],0x3c
+  92:	00 
+  long exit_status = result;
+  93:	8b 45 ec             	mov    eax,DWORD PTR [rbp-0x14]
+  96:	48 98                	cdqe   
+  98:	48 89 45 f0          	mov    QWORD PTR [rbp-0x10],rax
+
+  asm ("movq %0, %%rax\n"
+  9c:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+  a0:	48 8b 7d f0          	mov    rdi,QWORD PTR [rbp-0x10]
+  a4:	0f 05                	syscall 
+    // (none)
+    : // input parameters mapped to %0 and %1, repsectively
+    "m" (syscall_nr), "m" (exit_status)
+    : // registers that we are "clobbering", unneeded since we are calling exit
+  "rax", "rdi");
+}
+  a6:	90                   	nop
+  a7:	5d                   	pop    rbp
+  a8:	c3                   	ret    
+
+00000000000000a9 <showMsg>:
+
+
+// these must be inline to create a relocatable static binary base 0 address
+void showMsg(char *msg, int length){
+  a9:	f3 0f 1e fa          	endbr64 
+  ad:	55                   	push   rbp
+  ae:	48 89 e5             	mov    rbp,rsp
+  b1:	48 89 7d d8          	mov    QWORD PTR [rbp-0x28],rdi
+  b5:	89 75 d4             	mov    DWORD PTR [rbp-0x2c],esi
+  unsigned long syscall_nr = SYS_write;
+  b8:	48 c7 45 f8 01 00 00 	mov    QWORD PTR [rbp-0x8],0x1
+  bf:	00 
+  unsigned long  stdout_nr = 1;
+  c0:	48 c7 45 f0 01 00 00 	mov    QWORD PTR [rbp-0x10],0x1
+  c7:	00 
+  unsigned long len_parm = length;
+  c8:	8b 45 d4             	mov    eax,DWORD PTR [rbp-0x2c]
+  cb:	48 98                	cdqe   
+  cd:	48 89 45 e8          	mov    QWORD PTR [rbp-0x18],rax
+
+  asm ("movq %0, %%rax\n"
+  d1:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+  d5:	48 8b 75 d8          	mov    rsi,QWORD PTR [rbp-0x28]
+  d9:	48 8b 55 e8          	mov    rdx,QWORD PTR [rbp-0x18]
+  dd:	48 8b 7d f0          	mov    rdi,QWORD PTR [rbp-0x10]
+  e1:	0f 05                	syscall 
+    : // input parameters mapped to %0 and %1, repsectively
+    "m" (syscall_nr), "m" (msg), "m" (len_parm), "m" (stdout_nr)
+    : // registers that we are "clobbering", unneeded since we are calling exit
+  "rax", "rdi", "rsi", "rdx");
+
+  return;
+  e3:	90                   	nop
+}
+  e4:	5d                   	pop    rbp
+  e5:	c3                   	ret    
+
+00000000000000e6 <stringlength>:
+
+int stringlength(char *msg) {
+  e6:	f3 0f 1e fa          	endbr64 
+  ea:	55                   	push   rbp
+  eb:	48 89 e5             	mov    rbp,rsp
+  ee:	48 89 7d e8          	mov    QWORD PTR [rbp-0x18],rdi
+  int count = 0;
+  f2:	c7 45 fc 00 00 00 00 	mov    DWORD PTR [rbp-0x4],0x0
+  char *ptr = msg;
+  f9:	48 8b 45 e8          	mov    rax,QWORD PTR [rbp-0x18]
+  fd:	48 89 45 f0          	mov    QWORD PTR [rbp-0x10],rax
+  while(count < 1024) {
+ 101:	eb 14                	jmp    117 <stringlength+0x31>
+    if(*ptr == 0) break;
+ 103:	48 8b 45 f0          	mov    rax,QWORD PTR [rbp-0x10]
+ 107:	0f b6 00             	movzx  eax,BYTE PTR [rax]
+ 10a:	84 c0                	test   al,al
+ 10c:	74 14                	je     122 <stringlength+0x3c>
+    count++;
+ 10e:	83 45 fc 01          	add    DWORD PTR [rbp-0x4],0x1
+    ptr++;
+ 112:	48 83 45 f0 01       	add    QWORD PTR [rbp-0x10],0x1
+  while(count < 1024) {
+ 117:	81 7d fc ff 03 00 00 	cmp    DWORD PTR [rbp-0x4],0x3ff
+ 11e:	7e e3                	jle    103 <stringlength+0x1d>
+ 120:	eb 01                	jmp    123 <stringlength+0x3d>
+    if(*ptr == 0) break;
+ 122:	90                   	nop
+  }
+  return count;
+ 123:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]
+}
+ 126:	5d                   	pop    rbp
+ 127:	c3                   	ret    

@@ -1,5 +1,5 @@
 #! /bin/bash
-rm pthreadStruct.o pthreadStruct.bin
+rm pthreadStruct.o pthreadStruct.bin pthreadStruct.elf
 gcc -g  -fPIE -finline-functions -fno-stack-protector  -c pthreadStruct.c  && \
 ld  -T linkinfo -o pthreadStruct.elf pthreadStruct.o --entry threadEntry -z noexecstack
 objcopy -O binary -j .text pthreadStruct.elf pthreadStruct.bin && \

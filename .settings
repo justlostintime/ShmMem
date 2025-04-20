@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={"TestExecutableBlocks":[78]}
+Breakpoints={}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -105,6 +105,9 @@ Geometry=[2153,547,252,504]
 [DebugWindow/MyMem["list"]]
 Geometry=[2716,479,252,504]
 
+[DebugWindow/MyMess]
+Geometry=[834,511,368,118]
+
 [DebugWindow/MyQueue]
 Geometry=[2449,543,480,508]
 
@@ -113,6 +116,9 @@ Geometry=[834,512,252,56]
 
 [DebugWindow/MyValue]
 Geometry=[834,455,537,231]
+
+[DebugWindow/MyVarMem]
+Geometry=[834,542,252,58]
 
 [DebugWindow/NewElement]
 Geometry=[2203,217,252,56]
@@ -290,6 +296,9 @@ Geometry=[2123,331,252,508]
 
 [DebugWindow/SymMem.Table[index]]
 Geometry=[834,431,252,190]
+
+[DebugWindow/SymStore]
+Geometry=[834,412,507,392]
 
 [DebugWindow/SymTblMem]
 Geometry=[834,405,606,270]
@@ -838,43 +847,18 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Update to version 2.2, Add completed executable segment with Asm and c examples\n\n*OPT: Added a wait no wait interface call to ShmThread\n*NEW: Added WaitComplete interface for ShmThread\n*OPT: Allow to write no messages to output to test overhead time Start End times\n*NEW: Build script in template directory for c and asm blobs\n*OPT: Completed SHM execte segment and ShmThread classes"
+LastCommit="Updated for various bugs, template fixes, build fixes\n\n*BUG: Variaous bugs in template file, updated c build to link correctly\n*OPT: Added a wait no wait interface call to ShmThread\n*NEW: Added WaitComplete interface for ShmThread\n*OPT: Allow to write no messages to output to test overhead time Start End times\n*NEW: Build script in template directory for c and asm blobs\n*OPT: Completed SHM execte segment and ShmThread classes"
 
 [OpenFile]
-Count=4
-File[1]=".src/Examples/vTestApps/Executable_Shared_Segments/TestExecutableBlocks.module:0.78"
-Active=4
-File[2]=".src/ShmMem/ShmManage.class:26.123"
-File[3]=".src/ShmMem/ShmThread.class:0.130"
-File[4]=".src/ShmMem/shmMem.class:4.203"
+Count=3
+File[1]="templates/linkinfo:0.7"
+Active=3
+File[2]="templates/buildC:37.1"
+File[3]="templates/pthreadStruct.c:4.39"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"
 
 [Watches]
-Count=24
-Watch[1]="param"
-Watch[2]="me"
-Watch[3]="notifyqueue[0]"
-Watch[4]="error.text"
-Watch[5]="application.id"
-Watch[6]="params"
-Watch[7]="param.all"
-Watch[8]="MyMem!a"
-Watch[9]="mymem!a[1,1,1]"
-Watch[10]="a[1,1,1]"
-Watch[11]="Super.listhead"
-Watch[12]="listhead"
-Watch[13]="enum.index"
-Watch[14]="object.Type(Me)"
-Watch[15]="notifyqueue[0]Ü@\u00x1\u00x0?Werror.text"
-Watch[16]="application.id;M\u00x1\u00x0?Wparams"
-Watch[17]="mymem!a[1,1,1]&v\u00x1\u00x0?Wa[1,1,1]"
-Watch[18]="Super.listheadÀÉ\u00x1\u00x0?Wlisthead"
-Watch[19]="object.Type(MeΩè\u00x1\u00x0&V~a"
-Watch[20]="notifyqueue[0]MÏó[?Werror.text"
-Watch[21]="application.idDˇó[?Wparams"
-Watch[22]="mymem!a[1,1,1]Õiò[?Wa[1,1,1]"
-Watch[23]="Super.listheadûÑò[?Wlisthead"
-Watch[24]="object.Type(Me∫¢ò[?Wnotifyqueue[0]Ü@\u00x1\u00x0?Werror.text"
+Count=0
 
