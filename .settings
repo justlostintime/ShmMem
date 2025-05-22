@@ -847,14 +847,19 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Updated for various bugs, template fixes, build fixes\n\n*BUG: Variaous bugs in template file, updated c build to link correctly\n*OPT: Added a wait no wait interface call to ShmThread\n*NEW: Added WaitComplete interface for ShmThread\n*OPT: Allow to write no messages to output to test overhead time Start End times\n*NEW: Build script in template directory for c and asm blobs\n*OPT: Completed SHM execte segment and ShmThread classes"
+LastCommit="Updated for various bugs, template fixes, build fixes .. even more\n\n*BUG: Variaous bugs in template file, updated c build to link correctly\n*OPT: Added a wait no wait interface call to ShmThread\n*NEW: Added WaitComplete interface for ShmThread\n*OPT: Allow to write no messages to output to test overhead time Start End times\n*NEW: Build script in template directory for c and asm blobs\n*OPT: Completed SHM execte segment and ShmThread classes"
 
 [OpenFile]
-Count=3
+Count=8
 File[1]="templates/linkinfo:0.7"
-Active=3
+Active=8
 File[2]="templates/buildC:37.1"
-File[3]="templates/pthreadStruct.c:4.39"
+File[3]="templates/pthreadStruct.c:88.8"
+File[4]="templates/pthreadPassValue.asm:0.0"
+File[5]="templates/pthreadPassStruct.asm:0.0"
+File[6]="templates/pthreadPassString.asm:0.0"
+File[7]="templates/C_dump.txt:0.0"
+File[8]="templates/buildAsm:0.0"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

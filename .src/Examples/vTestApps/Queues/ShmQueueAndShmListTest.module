@@ -10,27 +10,27 @@ Public Sub main()
         For i As Integer = 0 To 1000
 
             Dim qa As New ShmQueue(myMem, CPointer(0), False, "Queue_" & Str(i))
-            qa.enqueue("This is even higher 201", 201)
-            qa.enqueue("This is higher 100", 100)
-            qa.enqueue("This is higher 110", 110)
-            qa.enqueue("This is even higher 200", 200)
+            qa.enqueue("This is even higher 201", 201, "Enqueued")
+            qa.enqueue("This is higher 100", 100, "Enqueued")
+            qa.enqueue("This is higher 110", 110, "Enqueued")
+            qa.enqueue("This is even higher 200", 200, "Enqueued")
 
-            qa.enqueue("This is low 2", 2)
-            qa.enqueue("This is very low 1", 1)
-            qa.enqueue("This is low 2", 2)
-            qa.enqueue("This is very low 1", 1)
-            qa.enqueue("This is low 99", 99)
-            qa.enqueue("This is higher 100", 100)
-            qa.enqueue("This is even higher 300", 300)
-            qa.enqueue("This is very low 19", 19)
-            qa.enqueue("This is low 2", 2)
-            qa.enqueue("This is higher 100", 100)
-            qa.enqueue("This is even higher 200", 200)
-            qa.enqueue("This is very low 1", 1)
+            qa.enqueue("This is low        2", 2, "Enqueued")
+            qa.enqueue("This is very low 1", 1, "Enqueued")
+            qa.enqueue("This is low      2", 2, "Enqueued")
+            qa.enqueue("This is very low 1", 1, "Enqueued")
+            qa.enqueue("This is low     99", 99, "Enqueued")
+            qa.enqueue("This is higher 100", 100, "Enqueued")
+            qa.enqueue("This is even higher 300", 300, "Enqueued")
+            qa.enqueue("This is very low 19", 19, "Enqueued")
+            qa.enqueue("This is low        2", 2, "Enqueued")
+            qa.enqueue("This is higher 100", 100, "Enqueued")
+            qa.enqueue("This is even higher 200", 200, "Enqueued")
+            qa.enqueue("This is very low 1", 1, "Enqueued")
 
             Print "For each loop over the queue begins ==========================================="
             For Each v As Variant In qa
-                Print v
+                Print Left(v & Space(20), 25), qa.key, qa.Key_ExtendedId, qa.Key_Tag
             Next
             Print "For each loop ends ========================================================="
 
@@ -38,14 +38,14 @@ Public Sub main()
                 qa.Pop()
             Wend
 
-            qa.enqueue("This is low 99", 99)
-            qa.enqueue("This is higher 100", 100)
-            qa.enqueue("This is even higher 300", 300)
-            qa.enqueue("This is very low 19", 19)
-            qa.enqueue("This is low 2", 2)
-            qa.enqueue("This is higher 100", 100)
-            qa.enqueue("This is even higher 200", 200)
-            qa.enqueue("This is very low 1", 1)
+            qa.enqueue("This is low 99", 99, "Enqueued")
+            qa.enqueue("This is higher 100", 100, "Enqueued")
+            qa.enqueue("This is even higher 300", 300, "Enqueued")
+            qa.enqueue("This is very low 19", 19, "Enqueued")
+            qa.enqueue("This is low        2", 2, "Enqueued")
+            qa.enqueue("This is higher 100", 100, "Enqueued")
+            qa.enqueue("This is even higher 200", 200, "Enqueued")
+            qa.enqueue("This is very low 1", 1, "Enqueued")
             ' myMem.varMnge._Print()
             ' myMem.PrintTree()
 
