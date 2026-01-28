@@ -22,7 +22,7 @@ Public Sub Main()
         Wait 0.1
     Next
     Print shmMem.GetObjectClass(Me).name;; "Completed"
-    qa.Close()
+    qa.free()
 
 Catch
     Print Error.text, Error.where

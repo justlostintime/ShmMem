@@ -1,115 +1,95 @@
-#!/usr/bin/env gbs3
-'Auto Generated Script 06/16/2024 19:04:26.261 Version (3.19.90)
-#Script Startup = "FMain"
-#Script Version = "0.0.1"
-Use "gb.image"
-Use "gb.gui"
-Use "gb.form"
-Use ":westwood.shmmem:2.1"
-Class FMain
-' Gambas class file
+#!/usr/bin/env gbs3 
 
+#Script Startup = "FMain"
+#Script Version = "1.0.1"
+Use "gb.image", "gb.gui", "gb.form"
+Use ":westwood.shmmem:2.2"
+
+' Gambas class file
+Class FMain
 Public MyMemory As ShmMem
-Public variables As New String[]
+Public variables As New Collection(gb.ignorecase)
+Public SortedList As New String[]
 
 Public Sub Form_Open()
 
-  MyMemory = New ShmMem(2000000, "MySharedMem", 8000)          '' Open the test database
-  MyMemory.NotifyOnNew(True, Me)                               '' get notified when new variables appear
-  MyMemory.NotifyOnRemove(True, Me, "WhenRemoved")             '' get notified when one is removed
-  VariableList.Columns.count = 2
-  VariableList.Columns[0].Title = "Variable Name"
-  VariableList.Columns[1].Title = "Value"
-  VariableList.Rows.count = 100
-  For Each var As String In MyMemory
-    variables.Add(MyMemory.key)
-    MyMemory.Notify(MyMemory.key, Me, "onanychange")
-  Next
-  Variables.Sort()
-
+    FMain.text = "Using SHM Monitor for shared heap 'MySharedMem' - SHM variable monitor V1 pid=" & application.id
+    MyMemory = New ShmMem(2000000, "MySharedMem", 8000)          '' Open the test database
+    MyMemory.NotifyOnNew(True, Me)                               '' get notified when new variables appear
+    MyMemory.NotifyOnRemove(True, Me, "WhenRemoved")
+    VariableList.Columns.count = 2
+    VariableList.Columns[0].Title = "Variable Name"
+    VariableList.Columns[1].Title = "Value"
+    VariableList.Rows.count = 100
+    For Each var As String In MyMemory
+        'print "Adding";;MyMemory.key;;"value=";var
+        variables.Add(var, MyMemory.key)
+        MyMemory.Notify(MyMemory.key, Me, "onanychange")
+    Next
+    SortedList = Variables.keys.sort()
 End
 
 Public Sub Form_Close()
 
-  For Each var As String In variables
-    If Left(var, 1) = "#" Then
-      MyMemory.NotifyOnNew(False, Me)
-    Else
-      MyMemory.NotifyStop(var, Me, "onanychange")
-    Endif
-  Next
-  MyMemory.close()
-  Quit 0
+    MyMemory.NotifyOnNew(False, Me)
+    For Each var As String In variables
+       Try MyMemory.NotifyStop(variables.key, Me, "onanychange")
+    Next
+    MyMemory.close()
+    MyMemory = Null
 
 End
 
 '' Get the notifications
 Public Sub OnNew_Created(SymName As String, value As Variant, TimedOut As Boolean)
-
-  variables.Add(SymName)
-  Variables.Sort()
-  MyMemory.Notify(SymName, Me, "onanychange")
-  VariableList.Refresh()
-
+    variables.Add(value, SymName)
+    MyMemory.Notify(SymName, Me, "onanychange")
+    SortedList = Variables.keys.sort()
 End
 
-'' Get the removed notification
 Public Sub WhenRemoved(SymName As String, value As Variant, TimedOut As Boolean)
-
-  Variables.Remove(variables.Find(SymName))
-  Print SymName;; "removed"
-  Variables.Sort()
-  'MyMemory.NotifyStop(SymName, Me, "onanychange") dont do this as variable is gone
-  VariableList.Refresh()
-
+    Try variables.remove(SymName)
+    SortedList = Variables.keys.sort()
+    VariableList.Refresh()
 End
 
 Public Sub OnAnyChange(varname As String, value As Variant, timedOut As Boolean)
 
-  Dim index As Integer = Variables.Find(varname)
+    Dim index As Integer = SortedList.Find(varname)
 
-  If index = -1 Then
-    Print "Deleted  variable name returned index = " & Str(index) & " for " & Quote(varname)
-  Else If varname == "done" And If value == "true" Then
-    Form_Close()
-  Endif
-
-  VariableList.Rows[index].text = value
+    If index = -1 Then Return 
+    
+    Variables[varname] = value
+    VariableList.Rows[index].text = value
 
 End
 
 Public Sub VariableList_Data(Row As Integer, Column As Integer)
-
-  If Row > variables.max Then Return
-  If column = 0 Then
-    VariableList.Data.text = variables[row]
-  Else
-    VariableList.Data.text = Str(MyMemory[variables[row]])
-  Endif
-
-End
-
-Public Sub form_resize()
-
-  VariableList.w = fmain.w - 4
-  VariableList.h = Fmain.h - 4
+ 
+    If Row > SortedList.max Then Return
+    If column = 0 Then
+        VariableList.Data.text = SortedList[row]
+    Else
+        VariableList.Data.text = Str(Variables[SortedList[row]])
+    Endif
 
 End
+
 
 End Class
 form FMain
 #Gambas Form File 3.0
 
 {  Form Form
-MoveScaled(0, 0, 136, 73)
-{ !VariableList GridView
-MoveScaled(1, 0, 133, 71)
-#Public = True
-Expand = True
-Header = GridView.Horizontal
-ScrollBar = Scroll.Vertical
-Sorted = True
-}
+  MoveScaled(0, 0, 136, 73)
+  { !VariableList GridView
+    MoveScaled(1, 0, 133, 71)
+    #Public = True
+    Expand = True
+    Header = GridView.Horizontal
+    ScrollBar = Scroll.Vertical
+    Sorted = True
   }
+}
 
-  End form
+End form

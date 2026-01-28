@@ -1,5 +1,9 @@
 ' Gambas class file
 
+''' This class is used to start a native c or asm code thread
+''' within the current gambas application. this is not a gambas thread
+''' do not use this unless ununderstand what you are doing.
+
 Export
 
 Public Struct pthread_p

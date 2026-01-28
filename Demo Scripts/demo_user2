@@ -3,38 +3,30 @@
 ''' Each of the User1-3 should be executed as seperate application
 ''' They give an example of sharing data between application.
 ''' Notifications are used to signal the apps as data changes
-
+#Script Version = "2.34.1"
 Public MyShare As ShmMem
 Public Completed As Boolean = False
 Use "westwood.shmmem:2.1"
 
 Public Sub main()
 
-  MyShare = New ShmMem(2000000, "MySharedMem", 8000)
-  MyShare!Cat = "Felix"
-  MyShare!Dog = "Rover"
-  MyShare!Rabbit = 1000
-  MyShare!Done = False
+  MyShare = New ShmMem(2000000, "MySharedMem", 800)
+  Print "Access heap complete"
+ ' MyShare!Cat = "Felix the second"
+ ' MyShare!Dog = "Rover rolled over"
+ ' MyShare!Rabbit = 1000
 
-  MyShare.Notify("Cat", Me, "changes")
-  MyShare.Notify("Dog", Me, "changes")
-  MyShare.Notify("Rabbit", Me, "changes")
-  MyShare.Notify("Done", Me, "changes")
-
-  Print " User 2 monitoring all variables"
   While Not completed
+    
+    Print "\e[H\e[2JDisplaying the variables every 10 seconds";; application.version
     PrintStuff(MyShare)
-    Wait 2
+    Wait 10
 
   Wend
 
-  MyShare.Notifystop("Cat", Me, "changes")
-  MyShare.NotifyStop("Dog", Me, "changes")
-  MyShare.NotifyStop("Rabbit", Me, "changes")
-  MyShare.NotifyStop("Done", Me, "changes")
-
-  Print "User 2 Completed and exits"
-  MyShare.close()
+  Print "Good bye"
+  
+  Quit 0
 
 End
 
@@ -50,7 +42,6 @@ End
 
 Public Sub changes(varname As String, value As Variant, TimedOut As Boolean)
 
-  Print varname;; "has been updated to";; value;; "Timed Out="; Str(timedout)
-  If VarName == "done" And value == "true" Then Completed = True
+  If VarName == "done" And value == True Then Completed = True
 
 End

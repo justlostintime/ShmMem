@@ -55,7 +55,7 @@ Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
 Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
-' Extern sched_yield() As Integer In "libpthread:0"
+Extern sched_yield() As Integer In "libpthread:0"
 
 Private VirtualAddress As Pointer = 0                  '' Virtual pointer to darray in memory
 Private VarMem As ShmVarStorage                    '' The storage pool to used or referenced
@@ -353,8 +353,8 @@ Private Sub locateByTag(tag As String) As Pointer
 End
 
 '' Locate an array by virtual address in the shared memory source
-'' used to veryify a valid address is passed
-Private Sub locateByAddress(Virt As Pointer) As Pointer
+'' used to verify a valid address is passed
+Public Sub locateByAddress(Virt As Pointer) As Pointer
 
     Dim result As Pointer = Null
 
@@ -446,9 +446,9 @@ TryAgain:
     Endif
 
     $key = LinearToSubScript(Enum.index)
-    PhysAddr = VarMem.RealDataAddress(ArrayDef.DataAddress)                                        ' Get a pointer to the real memory array of pointers
+    PhysAddr = VarMem.RealDataAddress(ArrayDef.DataAddress)             ' Get a pointer to the real memory array of pointers
     PhysAddr += Enum.Index * SizeOf(gb.pointer)
-    PhysAddr = Pointer@(PhysAddr)                                                                                                  ' get the virtual address of the value
+    PhysAddr = Pointer@(PhysAddr)                                       ' get the virtual address of the value
 
     If PhysAddr = Null Then
         If $IterateAll Then
@@ -458,17 +458,17 @@ TryAgain:
             Goto TryAgain
         Endif
     Else
-        Return VarMem[PhysAddr]                                                                                                          ' get the value from that virtual address
+        Return VarMem[PhysAddr]                                        ' get the value from that virtual address
     Endif
 
 End
 
 ''  Lock the Array  while processing the request
 '' This is not automatic, the user must do this if required
-Public Sub {lock}() As Boolean
+Public Sub {lock}(Optional Wait_Time As Float = 0.001, Auto_Recovery As Boolean = False) As Boolean
 
     Dim result As Integer = -1
-    Dim retrycounter As Long = 10
+    Dim retry As Boolean = Auto_recovery
 
     If Not $UseLock Then Return True
 
@@ -476,20 +476,22 @@ Public Sub {lock}() As Boolean
         Error.Raise("ShmArray - invald Refrence")
     Endif
 
+    Dim end_time As Float = Timer + Wait_time
     While result <> 0
         result = sem_trywait(SemAddress)
         If result <> 0 Then
-            Wait 0.0001
-            Dec RetryCounter
-            If retryCounter < 4 Then
-                If ArrayDef.bDebug Then Print Application.id, "ShmArray Locking Race condition attempting fix ";; retryCounter
+            sched_yield()
+            If end_time > Timer Then Continue
+            If retry Then
+                If ArrayDef.bDebug Then Print Application.id, "ShmArray Locking Race condition attempting fix...."
+                retry = False
                 Me.unlock()
             Endif
         Else
             Return True
         Endif
     Wend
-    If ArrayDef.bDebug Then Print Application.id, "ShmArray Locking Race condition attempt to fix failed";; retryCounter
+    If ArrayDef.bDebug Then Print Application.id, "ShmArray Locking Race condition attempted";; IIf(Auto_Recovery, "Recovery Failed", "No Recovery Attempted")
     Return False
 
 End

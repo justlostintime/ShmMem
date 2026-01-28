@@ -4,7 +4,7 @@
 ''' They give an example of sharing data between application.
 ''' Notifications are used to signal the apps as data changes
 
-Use "westwood.shmmem:2.1"
+Use "westwood.shmmem:2.2"
 
 Public MyShare As ShmMem
 Public Completed As Boolean = False
@@ -23,7 +23,7 @@ Public Sub main()
   MyShare.Notify("rabbit", Me)
   MyShare.Notify("Done", Me, "It_Is_Done")
 
-  Print " User 3 monitoring all variables"
+  Print " User 3 monitoring Cat, Dog, rabbit variables"
   While Not completed
     Wait 0.001
   Wend
@@ -58,7 +58,7 @@ End
 
 Public Sub It_Is_Done(varname As String, value As Variant, TimedOut As Boolean)
 
-  If value == "True" Then
+  If value == True Then
     Completed = True
     Print VarName;; "Is committed";; "Timed Out="; Str(timedout)
   Else

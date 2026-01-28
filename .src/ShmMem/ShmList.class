@@ -56,7 +56,7 @@ Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
 Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
 Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
-' Extern sched_yield() As Integer In "libpthread:0"
+Extern sched_yield() As Integer In "libpthread:0"
 
 Private VirtualAddress As Pointer = 0              '' Pointer to the head of the list
 Public ListHead As DList                                         '' Pointer to the actual list
@@ -279,9 +279,9 @@ Private Sub locateByTag(tag As String) As Pointer
 
 End
 ' Locate an array by virtual address in the shared memory source
-'' used to veryify a valid address is passed
+'' used to verify a valid address is passed
 
-Private Sub locateByAddress(Virt As Pointer) As Pointer
+Public Sub locateByAddress(Virt As Pointer) As Pointer
 
     Dim result As Pointer = Null
 
@@ -431,29 +431,33 @@ End
 
 ''  Lock the list/queue  while processing the request
 '' This is not automatic, the user must do this if required
-Public Sub {lock}() As Boolean
+Public Sub {lock}(Optional Wait_Time As Float = 0.001, Auto_Recovery As Boolean = False) As Boolean
 
     Dim result As Integer = -1
-    Dim retrycounter As Long = 10
+    Dim retry As Boolean = Auto_recovery
 
     If listhead = Null Then
         Error.Raise("List/Queue - invald listhead")
     Endif
 
+    Dim end_time As Float = Timer + Wait_time
     While result <> 0
         result = sem_trywait(SemAddress)
         If result <> 0 Then
-            Wait 0.0001
-            Dec RetryCounter
-            If retryCounter < 4 Then
-                If ListHead.bDebug Then Print Application.id, "ShmList Locking Race condition attempting fix ";; retryCounter
+            sched_yield()
+            If end_time > Timer Then Continue
+            If retry Then
+                If ListHead.bDebug Then Print Application.id, "ShmList Locking Race condition attempting fix...."
+                retry = False
                 Me.unlock()
+            Else
+                Break
             Endif
         Else
             Return True
         Endif
     Wend
-    If ListHead.bDebug Then Print Application.id, "ShmList Locking Race condition attempt to fix failed";; retryCounter
+    If ListHead.bDebug Then Print Application.id, "ShmList Locking Race condition attempted";; IIf(Auto_Recovery, "Recovery Failed", "No Recovery Attempted")
     Return False
 
 End
@@ -465,7 +469,7 @@ End
 Public Sub {unlock}() As Boolean
 
     If listhead = Null Then
-        Error.Raise("List/Queue - invald listhead")
+        Error.Raise("List/Queue - invalid listhead")
     Endif
 
     Dim value As Integer = 0

@@ -7,7 +7,7 @@
 '  See project license file.
 
 ''' This class represents the base native class, ie defined as a shared memory object
-''' accessing this class access shared memory directly
+''' accessing this class access shared memory directly. This is a prototype!
 
 Export
 

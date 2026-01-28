@@ -39,7 +39,7 @@ Export
 '''      Both:        The daemon will both send and read updates from remote hosts, attempt to merge/ arbitrate changes
 '''                         The daemon will attempt to arbitrate array and complex data sets.... not the best idea to sync BOTH for these
 ''' var <variable name>  <Write | read | Both>                          ' add this variable to list of variable to keep syncronized
-''' delvar < Variable name>                                                                ' remove this variable from list to keep syncronized
+''' delvar < Variable name>                                             ' remove this variable from list to keep syncronized
 
 Property SystemPort As Integer Use $SystemPort = 5678
 Property MemAutoSize As Integer Use $MemAutoSize = 10000000                    ' default to 10 meg data space

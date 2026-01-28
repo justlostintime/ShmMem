@@ -847,19 +847,21 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Updated for various bugs, template fixes, build fixes .. even more\n\n*BUG: Variaous bugs in template file, updated c build to link correctly\n*OPT: Added a wait no wait interface call to ShmThread\n*NEW: Added WaitComplete interface for ShmThread\n*OPT: Allow to write no messages to output to test overhead time Start End times\n*NEW: Build script in template directory for c and asm blobs\n*OPT: Completed SHM execte segment and ShmThread classes"
+LastCommit="Cleanup queue examples, work on wiki to match functions\n\n*OPT: update examples for Queue data type"
 
 [OpenFile]
-Count=8
-File[1]="templates/linkinfo:0.7"
-Active=8
-File[2]="templates/buildC:37.1"
-File[3]="templates/pthreadStruct.c:88.8"
-File[4]="templates/pthreadPassValue.asm:0.0"
-File[5]="templates/pthreadPassStruct.asm:0.0"
-File[6]="templates/pthreadPassString.asm:0.0"
-File[7]="templates/C_dump.txt:0.0"
-File[8]="templates/buildAsm:0.0"
+Count=10
+File[1]=".src/Examples/vTestApps/Queues/NewQueueTest.module:41.19"
+Active=10
+File[2]=".src/Examples/vTestApps/Queues/ShmQueueAndShmListTest.module:16.33"
+File[3]=".src/ShmMem/ShmManage.class:0.0"
+File[4]=".src/Examples/vTestApps/Queues/NewQueueBG.class:11.24"
+File[5]="Demo Scripts/demo_user1:0.0"
+File[6]="Demo Scripts/demo_monitornew:0.0"
+File[7]=".src/ShmMem/shmMem.class:4.474"
+File[8]=".src/Examples/vTestApps/Notify Tests/Define2NotifyAgain.class:0.0"
+File[9]=".src/Examples/vTestApps/Notify Tests/NotifyBGTask.class:0.2"
+File[10]=".src/ShmMem/ShmMemBlock.class:13.208"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

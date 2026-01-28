@@ -84,7 +84,7 @@ End
 Public Sub _Assign(VEntry As DPointer)
 
     If ValueDef = Null Then
-        vEntry.value = Null                                    ' if the listhead is valid then continue
+        vEntry.value = Null                    ' if the listhead is valid then continue
     Else
         vEntry.Value = ValueDef.Address        '  Assign this to the variable
         Inc ValueDef.RefCount
@@ -92,10 +92,10 @@ Public Sub _Assign(VEntry As DPointer)
 
 End
 
-'' Value may be accessed or created, VirtAddressOrTag = 0 then creat new Value
-''                                                                      VirtAddressOrTag = "tagname" then lookfor and return list with this tag
-''                                                                       VirtAddressOrTag > 0 then return Value at this virtual address
-''                                                                        VarStorage = type of stream  initialize from a file
+'' Value may be accessed or created, VirtAddressOrTag = 0 then create new Value
+'' VirtAddressOrTag = "tagname" then look for and return variable with this tag
+'' VirtAddressOrTag > 0 then return Value at this virtual address
+'' VarStorage = type of stream  initialize from a file
 Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = 0, Tag As String = "", vValue As Variant = Null)
 
     Dim pType As Integer = TypeOf(VarStorage)
@@ -266,7 +266,7 @@ End
 
 ''  Locate an array by virtual address  in the shared memory space
 '' used to verify that a virtual address is valid
-Private Sub locateByAddress(Virt As Pointer) As Pointer
+Public Sub locateByAddress(Virt As Pointer) As Pointer
 
     Dim result As Pointer = Null
 

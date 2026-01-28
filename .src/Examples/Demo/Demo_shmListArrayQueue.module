@@ -4,7 +4,7 @@ Public Sub Main()
 
     Dim i As Integer
 
-    shmMem.ForceDelete("myseg")                                ' force remove the named segment in case crash leaves it over
+    shmMem.ForceDelete("myseg")                        ' force remove the named segment in case crash leaves it over
     Dim mem As New Shmmem("myseg")                     ' using named memory, other apps can access Space
     ' if in the same user or group defaults to rw-rw----
     With mem
@@ -15,7 +15,7 @@ Public Sub Main()
         !d = New ShmFiFo(mem, 0, False, "This FiFo 1")
         !e = New ShmFiLo(mem, 0, False, "This FiLo 1")
 
-        ' initialize array to a number of values sparce
+        ' initialize array to a number of values sparse
         For ia As Integer = 0 To !a.submax[0]
             For ib As Integer = 0 To !a.submax[1]
                 For ic As Integer = 0 To !a.submax[2]
@@ -72,11 +72,11 @@ Public Sub Main()
         Next
 
         ' compare the list they all point to the same list so should be equal
-        Print "######################In order!b = Access list 'b' = fifo 'ba' ###############################"
+        Print "###################### In order!b = Access list 'b' = fifo 'ba' ###############################"
         For i As Integer = 0 To !b.max
             Print ((!b[i] = b[i]) And (!b[i] = ba[i]));; ba[i];; "=";; !b[i];; "=";; b[i]
         Next
-        Print "======================In order list and fifo ============================================="
+        Print "====================== In order list and fifo ============================================="
         ' Print the random list and add to the queue
         Dim r As Variant
         Dim counter As Integer = 1   ' sets the priority for each element Higher is sooner
@@ -88,7 +88,7 @@ Public Sub Main()
         Next
 
         Print "~~~~~~~~~~~~~~~~~~ Retrieve from queue by priority, and Filo ~~~~~~~~~~~~~~~~~~~"
-        Print "----------------------------------compare revesed order---------------------------------------"
+        Print "----------------------------------compare reversed order---------------------------------------"
         Dim g As Variant
         While !c.count > 0
             f = !c.pop()

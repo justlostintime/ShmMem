@@ -206,7 +206,7 @@ Public Sub _free()
 
     If blockInfo <> Null Then
         If name <> "" Then
-            Debug "Del named block";; Name
+            'Debug "Del named block";; Name
             Dec BlockInfo.InUseCounter
             Try rClose(MemoryHandle)
             If BlockInfo.InUseCounter = 0 Then
