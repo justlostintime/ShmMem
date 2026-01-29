@@ -11,28 +11,29 @@ Export
 '' How a symbol is stored in the shared memory
 
 Public Struct Symbol
-    Name[128] As Byte                       '' Max length of any variable name actual length is 127 with terminating 0
-    Used As Boolean                          '' This slot is in use
+    Name[128] As Byte                    '' Max length of any variable name actual length is 127 with terminating 0
+    Used As Boolean                      '' This slot is in use
     NotifyBlock As Pointer               '' pointer to chain of pids waiting to be notified when This symbol changes
-    Address As Long                          '' virtual address of the value, 0 means no value yet, pointer to structures for internal shm extended data types
-    Hash As Long                                 '' Hash value for the symbol, used to match when collision
-    NameLength As Integer              '' the length of the symbol Name
-    {Next} As Long                               '' in case of a hash conflict index to the next in this chain -1 of not used
-    Previous As Long                           '' in case of hash conflict index to the parent of this value -1 if not used
-    Type As Integer                              '' data type of the data stored into the memory, -1 if gambas data type
+    Address As Long                      '' virtual address of the value, 0 means no value yet, pointer to structures for internal shm extended data types
+    Hash As Long                         '' Hash value for the symbol, used to match when collision
+    NameLength As Integer                '' the length of the symbol Name
+    {Next} As Long                       '' in case of a hash conflict index to the next in this chain -1 of not used
+    Previous As Long                     '' in case of hash conflict index to the parent of this value -1 if not used
+    Type As Integer                      '' data type of the data stored into the memory, -1 if gambas data type
 End Struct
 
 '' The content of table structure and each entry in the symbol table
 Public Struct TableInfo
-    Initialized As Boolean                  '' indicates if memory must be initialized
-    LastUpdate As Float                    '' The last time the table was updated
-    Count As Long                               '' Number of actual table slots available
-    Collisions As Pointer                     '' Number of times hash was already used
-    UsedCount As Long                      '' Number of used Entries
-    MaxCount As Long                        '' Max Number of entries ever used
-    TotalRetryCount As Pointer       '' Max number of retries when looking for symbols
-    NotifyOnNew As Short                '' set this when someone is waiting to be notified of Activity
-    NotifyOnDelete As Short             '' Set when wanting to know if variable is removed
+    Initialized As Boolean               '' indicates if memory must be initialized
+    LastUpdate As Float                  '' The last time the table was updated
+    Count As Long                        '' Number of actual table slots available
+    Collisions As Pointer                '' Number of times hash was already used
+    UsedCount As Long                    '' Number of used Entries
+    MaxCount As Long                     '' Max Number of entries ever used
+    TotalRetryCount As Pointer           '' Max number of retries when looking for symbols
+    NotifyOnNew As Short                 '' set this when someone is waiting to be notified of Activity
+    NotifyOnDelete As Short              '' Set when wanting to know if variable is removed
+    NotifyOnAny As Short                 '' Set when wanting to know if any variable changes
 End Struct
 
 '' The structure of the actual symbol table, Virtual definition see Max default entries in ShmMem
@@ -273,6 +274,15 @@ Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional Acti
         index = GetSymbol("#onremove")
         sym = SymMem.Table[index]
         NotList = New ShmList(Varmem, 0, True, "On Remove Queue")
+        sym.NotifyBlock = NotList.Address
+    Endif
+
+    If Not Me.Exist("#onany") Then
+        Me["#onany"] = "Holding Queue for any symbol changed"
+        SymInfo.NotifyOnAny = 0                                                        '' no nitification requested on symbol table changes
+        index = GetSymbol("#onany")
+        sym = SymMem.Table[index]
+        NotList = New ShmList(Varmem, 0, True, "On Any Queue")
         sym.NotifyBlock = NotList.Address
     Endif
 
@@ -672,6 +682,14 @@ Public Sub _put(value As Variant, SymName As String)
         NotifyVars.SignalEach(Sym)
     Endif
 
+    If SymInfo.NotifyOnAny > 0 Then
+        SymbolIndex = GetSymbol("#onany")
+        Sym = SymMem.Table[SymbolIndex]
+        If Sym.NotifyBlock <> 0 Then
+            NotifyVars.SignalEach(Sym, SymName)
+        Endif
+    Endif
+
 End
 
 '' Creates a notification queue for this symbol
@@ -705,7 +723,36 @@ Public Sub GetObjectClass(BasicObject As Object) As Class
 
 End
 
+'' Create enqueue a request for app/task to be notifies of any variable change
+'' Default function name is "OnAny_change"
+Public Sub NotifyOnAny(Enabled As Boolean, NotifyObject As Object, Optional FuncName As String = "") As Boolean
+
+    If FuncName = "" Then funcName = "OnAny_change"
+    Dim Tag As String = "OnAny_PID{" & Application.id & "}"
+
+    If Enabled Then
+
+        Try Notify("#onany", NotifyObject, FuncName, 0, Tag)
+        If Error Then
+            Return False
+        Else
+            Inc SymInfo.NotifyOnAny
+        Endif
+
+    Else If SymInfo.NotifyOnAny > 0 Then
+        Try NotifyStop("#onany", NotifyObject, FuncName, Tag)
+        If Error Then
+            Return False
+        Else
+            Dec SymInfo.NotifyOnAny
+        Endif
+    Endif
+    Return True
+
+End
+
 '' Create enqueue a request for an app/task to be notified when a new symbol is created
+'' Default function name is "OnNew_Created"
 Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional FuncName As String = "") As Boolean
 
     If FuncName = "" Then funcName = "OnNew_Created"
@@ -733,9 +780,10 @@ Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional Func
 End
 
 '' Create enqueue a request for an app/task to be notified when a symbol is deleted
+'' Default function name id "OnRemove_Removed"
 Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional FuncName As String = "") As Boolean
 
-    If FuncName = "" Then funcName = "OnDelete_Created"
+    If FuncName = "" Then funcName = "OnRemove_Removed"
     Dim Tag As String = "OnDel_PID{" & Application.id & "}"
 
     If Enabled Then

@@ -96,16 +96,16 @@ Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String,
     '' Now create a queue to contain all the pid(programs/tasks) requesting to be notified about this particular symbol
     '' This is only created by the first app/task to make a call to notify for a particular variable. And is Global to this Symtable
     '' For the variable referenced. There is one of these for each variable being watched.
-    If SymEntry.NotifyBlock = 0 Then                                                                        ' Check if a PID queue has already been created
+    If SymEntry.NotifyBlock = 0 Then                                     ' Check if a PID queue has already been created
         PidQueue = New ShmList(VarMem, 0, True, "PIDQ-" & SymName)       ' create a new List
         ' PidQueue.Debug = True
-        SymEntry.NotifyBlock = PidQueue.Address                                                 ' Put the Address of the PID queue into the symbol Table
+        SymEntry.NotifyBlock = PidQueue.Address                          ' Put the Address of the PID queue into the symbol Table
     Else
-        PidQueue = New ShmList(VarMem, SymEntry.NotifyBlock)                    ' Get the address to the exsisting queue
+        PidQueue = New ShmList(VarMem, SymEntry.NotifyBlock)             ' Get the address to the exsisting queue
     Endif
 
     If NotifyQueue = Null Then
-        NotifyVars = New Collection(gb.ignorecase)                                              ' Local copy of the list of variables we are waiting for
+        NotifyVars = New Collection(gb.ignorecase)                       ' Local copy of the list of variables we are waiting for
         NotifyQueue = New ShmList(VarMem, 0, True, "nq_" & MyAppId)      ' Create a new queue for variable changes per task/process"
         ' NotifyQueue.Debug = True
     Endif
@@ -129,7 +129,7 @@ Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String,
 
     If Not NotifyVars.Exist(SymName) Then
         Dim todoList As New Collection(gb.ignorecase)   ' now create a collection of all the parts of this program asking for notification
-        NotifyVars.Add(todoList, SymName)                       ' add the collection to the list of variables
+        NotifyVars.Add(todoList, SymName)               ' add the collection to the list of variables
     Else
         todoList = NotifyVars[SymName]
     Endif

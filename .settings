@@ -847,21 +847,21 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Cleanup queue examples, work on wiki to match functions\n\n*OPT: update examples for Queue data type"
+LastCommit="Remove wait statements in semi handling, cleanup examples\n*OPT: cleanup examples shmconsole and demo_user1,2,3\n*OPT: update examples for Queue data type"
 
 [OpenFile]
 Count=10
-File[1]=".src/Examples/vTestApps/Queues/NewQueueTest.module:41.19"
+File[1]=".src/ShmMem/ShmArray.class:14.355"
 Active=10
-File[2]=".src/Examples/vTestApps/Queues/ShmQueueAndShmListTest.module:16.33"
-File[3]=".src/ShmMem/ShmManage.class:0.0"
-File[4]=".src/Examples/vTestApps/Queues/NewQueueBG.class:11.24"
-File[5]="Demo Scripts/demo_user1:0.0"
-File[6]="Demo Scripts/demo_monitornew:0.0"
-File[7]=".src/ShmMem/shmMem.class:4.474"
-File[8]=".src/Examples/vTestApps/Notify Tests/Define2NotifyAgain.class:0.0"
-File[9]=".src/Examples/vTestApps/Notify Tests/NotifyBGTask.class:0.2"
-File[10]=".src/ShmMem/ShmMemBlock.class:13.208"
+File[2]=".src/ShmMem/ShmList.class:14.281"
+File[3]=".src/ShmMem/ShmMemBlock.class:21.23"
+File[4]=".src/ShmMem/ShmThread.class:0.2"
+File[5]=".src/ShmMem/ShmValue.class:32.270"
+File[6]=".src/ShmMem/shmMem.class:30.502"
+File[7]="Demo Scripts/shmconsole:0.95"
+File[8]="Demo Scripts/demo_user1:0.173"
+File[9]="Demo Scripts/demo_user2:0.47"
+File[10]="Demo Scripts/demo_user3:0.68"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

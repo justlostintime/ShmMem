@@ -6,54 +6,40 @@
 
 Use "westwood.shmmem:2.2"
 
-Public MyShare As ShmMem
+Public MyShare As New ShmMem(2000000, "MySharedMem", 8000)
 Public Completed As Boolean = False
 
 Public Sub main()
 
-  MyShare = New ShmMem(2000000, "MySharedMem", 8000)
-  MyShare.print()
+ ' MyShare.print()
   MyShare!Cat = "Felix"
   MyShare!Dog = "Rover"
   MyShare!Rabbit = 1000
   MyShare!Done = False
-
-  MyShare.Notify("Cat", Me)
-  MyShare.Notify("Dog", Me)
-  MyShare.Notify("rabbit", Me)
+  
   MyShare.Notify("Done", Me, "It_Is_Done")
 
-  Print " User 3 monitoring Cat, Dog, rabbit variables"
+  Print " User 3 monitoring variables"
+  Every 10.0 Do PrintAll()
   While Not completed
     Wait 0.001
   Wend
 
-  MyShare.NotifyStop("Cat", Me)
-  MyShare.NotifyStop("Dog", Me)
-  MyShare.NotifyStop("rabbit", Me)
   MyShare.NotifyStop("Done", Me, "It_Is_Done")
 
   Print "User 3 Completed and exits"
   MyShare.close()
+  
+Catch 
+ Print "oops";; error.text
 
 End
 
-Public Sub cat_changed(varname As String, value As Variant, TimedOut As Boolean)
-
-  Print Varname;; "has been updated ";; value;; "Timed Out="; Str(timedout)
-
-End
-
-Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
-
-  Print VarName;; "has been updated ";; value;; "Timed Out="; Str(timedout)
-
-End
-
-Public Sub Rabbit_changed(varname As String, value As Variant, TimedOut As Boolean)
-
-  Print VarName;; "has been updated ";; value;; "Timed Out="; Str(timedout)
-
+Public Sub PrintAll()
+    Print "\e[2J\e[H";
+     For Each s As Variant In MyShare
+       Print MyShare.key;; "=";; s
+     Next
 End
 
 Public Sub It_Is_Done(varname As String, value As Variant, TimedOut As Boolean)

@@ -490,6 +490,13 @@ Public Sub WaitValueChange(SymName As String, Value As Variant, Optional Timeout
 
 End
 
+'' Get a notification whenever any variable is changed
+Public Sub NotifyOnAny(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "") As Boolean
+
+    Return vars.NotifyOnAny(enabled, NotifyObject, NotifyFunction)
+
+End
+
 '' Get a notification whenever a new symbol is created
 Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "") As Boolean
 

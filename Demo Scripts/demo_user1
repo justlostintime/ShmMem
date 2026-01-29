@@ -1,4 +1,4 @@
-#!/usr/bin/env gbs3
+#!/usr/bin/env -S  gbs3 -g
 Use "westwood.shmmem:2.2"
 Use "gb.eval", "gb.signal"
 ''' Each of the User1-3 should be executed as seperate application
@@ -31,17 +31,18 @@ Public Sub main()
 
     'PrintStuff(MyShare)
 
-    .Notify("Cat", Me)
+    '.Notify("Cat", Me)
     'PrintStuff(MyShare)
-    .Notify("Dog", Me)
+    '.Notify("Dog", Me)
     'PrintStuff(MyShare)
-    .Notify("rabbit", Me)
+    '.Notify("rabbit", Me)
     'PrintStuff(MyShare)
     .Notify("Done", Me)
 
     ' PrintStuff(MyShare)
-
+    .NotifyOnAny(True, Me)
     .NotifyOnNew(True, Me)
+    
     'PrintStuff(MyShare)
     Dim console As Process
     console = Exec [env["PWD"] &/ "shmconsole"]
@@ -59,13 +60,18 @@ Public Sub main()
       Print " > ";
       Flush
       Line Input Buffer
+      Print "process";; Quote(buffer)
       ' element = Split(buffer, "=", "\"", True, False)
       element = Tokenize(buffer, "_$%!", ["\""], ["="], False)
-      
+      If element.count = 0 Then Continue
       Select element.count
       Case 1
-          Try Print element[0];; "=";; MyShare[element[0]]
-          If Error Then Print error.text
+          If .exist(element[0]) Then
+            Try Print element[0];; "=";; MyShare[element[0]]
+            If Error Then Print error.text
+          Else
+            Try Print element[0];; "Not found"
+          Endif
           
       Case 2
           If element[1] <> "=" Then
@@ -105,12 +111,14 @@ Public Sub main()
       Wait 0.001
     Wend
 
-    .Notifystop("Cat", Me)
-    .Notifystop("Dog", Me)
-    .Notifystop("rabbit", Me)
+    '.Notifystop("Cat", Me)
+    '.Notifystop("Dog", Me)
+    '.Notifystop("rabbit", Me)
     .Notifystop("Done", Me)
+    .NotifyOnAny(False, Me)
     .NotifyOnNew(False, Me)
     PrintStuff(MyShare)
+    
   End With
   
   Print "Managing User Completed and exits, console id "; console.id
@@ -119,6 +127,9 @@ Public Sub main()
   Wait 1.0
   MyShare.close()
   Quit 0
+  
+Catch 
+  Print "oops user 1";; error.text;; error.where
 
 End
 
@@ -134,40 +145,31 @@ Public Sub PrintStuff(vMyShare As ShmMem)
   'For Each item As Shmlist In lists
   '  Print item.textTree()
   'Next
-
+Catch 
+  Print "oops user 1";; error.text;; error.where
+  
 End
 
 Public Sub onnew_created(varname As String, value As Variant, timedOut As Boolean)
 
   Print "Notified that";; varname;; "was created and set to";; value;; "Timeout is ignored";; Str(timedout)
-
+Catch 
+  Print "oops user 1";; error.text;; error.where
 End
 
-Public Sub cat_changed(varname As String, value As Variant, TimedOut As Boolean)
+Public Sub onany_change(varname As String, value As Variant, timedOut As Boolean)
 
-  Print "Recieved  ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
-
-End
-
-Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
-
-  Print "Recieved ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
-
-End
-
-Public Sub Rabbit_changed(varname As String, value As Variant, TimedOut As Boolean)
-
-  Print "Recieved";; value;; "for";; VarName;; "Timed Out="; Str(timedout)
-
+  Print "Notified that";; varname;; "was changed and set to";; value
+Catch 
+  Print "oops user 1";; error.text;; error.where
 End
 
 Public Sub done_changed(varname As String, value As Variant, TimedOut As Boolean)
 
   If value == True Then
     Completed = True
-    Print VarName;; "Is committed";; "Timed Out="; Str(timedout)
-  Else
-    Print varname;; " set to "; value;; "Timed Out="; Str(timedout)
+    Print VarName;; "Is committed, Notify other users we are completed"
   Endif
-
+Catch 
+  Print "oops user 1";; error.text;; error.where
 End

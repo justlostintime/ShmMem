@@ -1,4 +1,4 @@
-#!/usr/bin/env gbs3 
+#!/usr/bin/env -S gbs3 -g
 
 #Script Startup = "FMain"
 #Script Version = "1.0.1"
@@ -11,12 +11,15 @@ Public MyMemory As ShmMem
 Public variables As New Collection(gb.ignorecase)
 Public SortedList As New String[]
 
+
 Public Sub Form_Open()
 
     FMain.text = "Using SHM Monitor for shared heap 'MySharedMem' - SHM variable monitor V1 pid=" & application.id
     MyMemory = New ShmMem(2000000, "MySharedMem", 8000)          '' Open the test database
     MyMemory.NotifyOnNew(True, Me)                               '' get notified when new variables appear
-    MyMemory.NotifyOnRemove(True, Me, "WhenRemoved")
+    MyMemory.NotifyOnRemove(True, Me, "WhenRemoved")              '' get told when a variable is removed
+    MyMemory.NotifyOnAny(True, Me, "WhenChanged")                  '' get told when any variable changes
+    
     VariableList.Columns.count = 2
     VariableList.Columns[0].Title = "Variable Name"
     VariableList.Columns[1].Title = "Value"
@@ -24,43 +27,47 @@ Public Sub Form_Open()
     For Each var As String In MyMemory
         'print "Adding";;MyMemory.key;;"value=";var
         variables.Add(var, MyMemory.key)
-        MyMemory.Notify(MyMemory.key, Me, "onanychange")
     Next
     SortedList = Variables.keys.sort()
+    Every 5.0 Do VariableList.Refresh()
+    
+Catch
+  Print "oops shmconsole";; error.txt;; error.where
 End
 
 Public Sub Form_Close()
 
     MyMemory.NotifyOnNew(False, Me)
-    For Each var As String In variables
-       Try MyMemory.NotifyStop(variables.key, Me, "onanychange")
-    Next
+    MyMemory.NotifyOnRemove(False, Me)
+    MyMemory.NotifyOnAny(False, Me)
     MyMemory.close()
-    MyMemory = Null
-
+    
+Catch
+  Print "oops shmconsole";; error.txt;; error.where
 End
 
 '' Get the notifications
 Public Sub OnNew_Created(SymName As String, value As Variant, TimedOut As Boolean)
     variables.Add(value, SymName)
-    MyMemory.Notify(SymName, Me, "onanychange")
     SortedList = Variables.keys.sort()
+Catch
+  Print "oops shmconsole";; error.txt;; error.where
 End
 
 Public Sub WhenRemoved(SymName As String, value As Variant, TimedOut As Boolean)
     Try variables.remove(SymName)
     SortedList = Variables.keys.sort()
-    VariableList.Refresh()
+Catch
+  Print "oops shmconsole";; error.txt;; error.where
 End
 
-Public Sub OnAnyChange(varname As String, value As Variant, timedOut As Boolean)
+Public Sub WhenChanged(varname As String, value As Variant, timedOut As Boolean)
 
-    Dim index As Integer = SortedList.Find(varname)
-
-    If index = -1 Then Return 
+    If varname = "done" And value = True Then Quit 0
+    If Variables.exist(varname) Then Variables[varname] = value ' sometimes the remove comes before the change, don't want to recreate
     
-    Variables[varname] = value
-    VariableList.Rows[index].text = value
+Catch
+  Print "oops shmconsole";; error.txt;; error.where
 
 End
 
@@ -72,11 +79,15 @@ Public Sub VariableList_Data(Row As Integer, Column As Integer)
     Else
         VariableList.Data.text = Str(Variables[SortedList[row]])
     Endif
-
+    
+Catch
+  Print "oops shmconsole";; error.txt;; error.where
+  
 End
 
 
 End Class
+
 form FMain
 #Gambas Form File 3.0
 
