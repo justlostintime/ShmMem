@@ -22,22 +22,22 @@ Public Sub main()
 
     Print "Begin  background thread Test"
     'Dim MyVar As Variant
-    shmMem.ForceDelete("test")                                                                             ' make sure to cleanup any leftover test
-    smem = New ShmMem(1280000, "test", 3000, 2.1, True)
-    Try Kill "/tmp/shm_exec.log"                                                                               ' each asm blob will write to this logfile
+    shmMem.ForceDelete("test")                                           ' make sure to cleanup any leftover test
+    smem = New ShmMem(1280000, "test", 3000, 2.2, True)                  ' memsize,heapName,timeoutforlock,executable in heap
+    Try Kill "/tmp/shm_exec.log"                                         ' each asm blob will write to this logfile
     With smem
-        !a = File.Load("templates/pthreadPassString.bin")                                  ' load the binary into memory
+        !a = File.Load("templates/pthreadPassString.bin")                ' load the binary into memory
         Dim a As New ShmThread(smem, "a")
-        !b = File.Load("templates/pthreadPassValue.bin")                                  ' load the binary into memory
+        !b = File.Load("templates/pthreadPassValue.bin")                 ' load the binary into memory
         Dim b As New ShmThread(smem, "b")
-        !c = File.Load("templates/pthreadPassStruct.bin")                                  ' load the binary into memory
+        !c = File.Load("templates/pthreadPassStruct.bin")                ' load the binary into memory
         Dim c As New ShmThread(smem, "c")
-        !d = File.Load("templates/pthreadStruct.bin")                                           ' load the c binary into memory
+        !d = File.Load("templates/pthreadStruct.bin")                    ' load the c binary into memory
         Dim d As New ShmThread(smem, "d")
-        Dim e As New ShmThread(smem, "", 4000)                                               ' automatically create 4000 byte program space
+        Dim e As New ShmThread(smem, "", 4000)                           ' automatically create 4000 byte Heap/Stack for program
         Dim eprog As String
-        eprog = File.Load("templates/pthreadPassStruct.bin")                         ' load the binary into memory/ Test the assign operator for thread type
-        e[0] = eprog                                                                                                            ' load the binary into memory/ Test the assign operator for thread type
+        eprog = File.Load("templates/pthreadPassStruct.bin")             ' load the binary into memory/ Test the assign operator for thread type
+        e[0] = eprog                                                     ' load the binary into memory/ Test the assign operator for thread type
 
         For xxx As Integer = 0 To RepeatLoop
             If Not NoMessage Then Print "Pass ASM String ********************************************"

@@ -1,6 +1,6 @@
 # Gambas Project File 3.0
 Title=ShmMem
-Startup=TestExecutableBlocks
+Startup=Demo_user1
 Version=2.2.6
 Component=gb.args
 Component=gb.dbus

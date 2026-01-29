@@ -1,7 +1,7 @@
-#!/usr/bin/env gbs3
+#!/usr/bin/env -S gbs3 -g
 ' Gambas Script File Created 06/28/2024 08:13:35
 
-Use ":westwood.shmmem:2"
+Use ":westwood.shmmem:2.2"
 Dim mem As New Shmmem("myseg")                     ' using named memory, other apps can access Space
 ' if in the same user or group defaults to rw-rw----
 With mem

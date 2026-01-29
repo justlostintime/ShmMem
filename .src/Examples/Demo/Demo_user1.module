@@ -28,13 +28,14 @@ Public Sub main()
 
         PrintStuff(MyShare)
 
-        .Notify("Cat", Me)
-        PrintStuff(MyShare)
-        .Notify("Dog", Me)
-        PrintStuff(MyShare)
-        .Notify("rabbit", Me)
-        PrintStuff(MyShare)
+        ' .Notify("Cat", Me)  updated to use the new notifyonany
+        ' PrintStuff(MyShare)
+        ' .Notify("Dog", Me)
+        ' PrintStuff(MyShare)
+        ' .Notify("rabbit", Me)
+        ' PrintStuff(MyShare)
         .Notify("Done", Me)
+        .NotifyOnAny(True, Me)
 
         PrintStuff(MyShare)
 
@@ -43,7 +44,7 @@ Public Sub main()
 
         Print " User 1 monitoring all variables"
         While Not completed
-            Print "Input Variable Name{cat,dog,rabbit,done} followed by an = and the new value\nExample: Cat=this, or enter ?? to list all variables"
+            Print "Input Variable Name followed by an = and the new value\nExample: Cat=this, or enter ?? to list all variables\nset done=true to end program"
             Line Input Buffer
             If Trim(buffer)[0] = "?" Then
                 Dim varitem As String = Trim(Right(Trim(buffer), -1))
@@ -62,12 +63,13 @@ Public Sub main()
                     Else
                         Print "Assigning :"; element[0];;
                     Endif
-                    Print "Value="; element[1]
+                    Dim result As Variant = Eval(element[1])
+                    Print "Value="; result
                 Else
                     Print "You may only assign : varname=value or varname="
                 Endif
                 If element.count > 1 Then
-                    MyShare[element[0]] = element[1]
+                    MyShare[element[0]] = result
                 Else If element.count = 1 Then
                     'MyShare[element[0]] = "unassigned"
                     Try MyShare.Remove(element[0])
@@ -80,10 +82,11 @@ Public Sub main()
             Wait 0.001
         Wend
 
-        .Notifystop("Cat", Me)
-        .Notifystop("Dog", Me)
-        .Notifystop("rabbit", Me)
+        ' .Notifystop("Cat", Me)
+        ' .Notifystop("Dog", Me)
+        ' .Notifystop("rabbit", Me)
         .Notifystop("Done", Me)
+        .NotifyOnAny(False, Me)
         .NotifyOnNew(False, Me)
         PrintStuff(MyShare)
     End With
@@ -109,31 +112,37 @@ End
 
 Public Sub onnew_created(varname As String, value As Variant, timedOut As Boolean)
 
-    Print "Notified that";; varname;; "was created and set to";; value;; "Timeout is ignored";; Str(timedout)
+    Print "Notified that";; varname;; "was created and set to";; value
 
 End
 
-Public Sub cat_changed(varname As String, value As Variant, TimedOut As Boolean)
+Public Sub OnAny_change(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print "Sent  ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
-
-End
-
-Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
-
-    Print "Sent ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
+    Print "Notified that ";; Varname;; " was updated to ";; value
 
 End
 
-Public Sub Rabbit_changed(varname As String, value As Variant, TimedOut As Boolean)
-
-    Print "Sent";; value;; "for";; VarName;; "Timed Out="; Str(timedout)
-
-End
+' Public Sub cat_changed(varname As String, value As Variant, TimedOut As Boolean)
+'
+'     Print "Sent  ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
+'
+' End
+'
+' Public Sub dog_changed(varname As String, value As Variant, TimedOut As Boolean)
+'
+'     Print "Sent ";; value;; " For";; Varname;; "Timed Out="; Str(timedout)
+'
+' End
+'
+' Public Sub Rabbit_changed(varname As String, value As Variant, TimedOut As Boolean)
+'
+'     Print "Sent";; value;; "for";; VarName;; "Timed Out="; Str(timedout)
+'
+' End
 
 Public Sub done_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    If value == "True" Then
+    If value == True Then
         Completed = True
         Print VarName;; "Is committed";; "Timed Out="; Str(timedout)
     Else

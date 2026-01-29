@@ -1,7 +1,7 @@
-#!/usr/bin/env gbs3
+#!/usr/bin/env -S gbs3 -g
 ' Gambas Script File Created 06/04/2024 09:12:29
 
-Use ":westwood.shmmem:2.1"
+Use ":westwood.shmmem:2.2"
 
 Print "hello world"
 Dim mymem As New Shmmem

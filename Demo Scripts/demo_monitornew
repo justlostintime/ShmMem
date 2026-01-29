@@ -1,6 +1,6 @@
 #!/usr/bin/env gbs3
 
-Use "westwood.shmmem:2.1"
+Use "westwood.shmmem:2.2"
 Public MyShare As ShmMem
 Public Completed As Boolean = False
 
@@ -12,7 +12,7 @@ Public Sub Main()
     '  Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional FuncName As String = "", Tag As String = "")
     .NotifyOnNew(True, Me)
     .Print()
-    !Done = "waiting"
+    !Done = False
     .notify("done", Me)
     While Not Completed
       Wait 0.01
@@ -22,7 +22,7 @@ Public Sub Main()
     .notifyStop("done", Me)
 
   End With
-  
+
   MyShare.close()
 
 End
@@ -35,6 +35,6 @@ End
 
 Public Sub done_changed(varname As String, value As Variant, timedout As Boolean)
 
-  If MyShare!Done == "True" Then completed = True
+  If MyShare!Done == True Then completed = True
 
 End

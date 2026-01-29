@@ -1,4 +1,4 @@
-#!/usr/bin/env gbs3
+#!/usr/bin/env -S gbs3 -g
 ' Gambas script
 ''' Each of the User1-3 should be executed as seperate application
 ''' They give an example of sharing data between application.
@@ -12,12 +12,12 @@ Public Sub main()
 
   MyShare = New ShmMem(2000000, "MySharedMem", 800)
   Print "Access heap complete"
- ' MyShare!Cat = "Felix the second"
- ' MyShare!Dog = "Rover rolled over"
- ' MyShare!Rabbit = 1000
+  ' MyShare!Cat = "Felix the second"
+  ' MyShare!Dog = "Rover rolled over"
+  ' MyShare!Rabbit = 1000
 
   While Not completed
-    
+
     Print "\e[H\e[2JDisplaying the variables every 10 seconds";; application.version
     PrintStuff(MyShare)
     Wait 10
@@ -25,7 +25,7 @@ Public Sub main()
   Wend
 
   Print "Good bye"
-  
+
   Quit 0
 
 End

@@ -1,4 +1,4 @@
-#!/usr/bin/env gbs3
+#!/usr/bin/env -s gbs3 -g
 ' Gambas script
 ''' Each of the User1-3 should be executed as seperate application
 ''' They give an example of sharing data between application.
