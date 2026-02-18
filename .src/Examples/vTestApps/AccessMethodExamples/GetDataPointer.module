@@ -1,0 +1,27 @@
+' Gambas module file
+
+Public mymem As New ShmMem
+
+Public Sub main()
+
+    With mymem
+
+        !myvalue = 100
+        !mystring = "this is a short string"
+
+        Dim x, y As Pointer
+        x = .varptr("myvalue")
+        y = .VarPtr("mystring")
+        Print "Start counter";; x, Integer@(x), y, String@(y), !mystring
+        For i As Integer = 0 To 1000000
+            Integer@(x) = Integer@(x) + 1
+        Next
+        Print "End counter";; x, Integer@(x), y, String@(y), !MyString
+
+        .Print()
+    End With
+
+    mymem.Close()
+
+End
+

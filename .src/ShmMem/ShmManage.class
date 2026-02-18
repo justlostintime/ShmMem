@@ -27,6 +27,12 @@ Public Struct InfoHeader
     FreeList As Pointer                           '' First element in the free list chain
 End Struct
 
+Public Struct dHeader
+    Length As Long                          '' Length including header
+    Address As Pointer                   '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+End Struct
+
 Extern memset(Dest As Pointer, value As Integer, length As Integer) As Pointer In "libc:6"
 ' Extern AllocInfo(dest As Pointer, src As Pointer, Len As Integer) As AllocHeader In "libc:6" Exec "memcpy"
 ' Extern InfoInfo(dest As Pointer, src As Pointer, Len As Integer) As InfoHeader In "libc:6" Exec "memcpy"

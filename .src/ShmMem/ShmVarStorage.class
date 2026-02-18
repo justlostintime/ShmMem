@@ -17,30 +17,36 @@ Export
 
 Private varmem As ShmManage
 Private Storage As ShmMemBlock
-Static Public DefaultAlloc As Integer = 1024      '' Default increments used when allocating string and object memory
-Public Const MaxArrayDims As Integer = 10       '' Max number of array dims
+Static Public DefaultAlloc As Integer = 1024  '' Default increments used when allocating string and object memory
+Public Const MaxArrayDims As Integer = 10     '' Max number of array dims
 
 Public Struct AllocHeader
-    Length As Long                             '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                            '' Type of memory
+    Length As Long                            '' Length including header
+    Address As Pointer                        '' The virtual address of this block, speed pointer conversion
+    Type As Integer                           '' Type of memory
     {Next} As Pointer                         '' null if no more in list
 End Struct
 
-Public Struct dList                           '' A defined entry in list of objects
-    Length As Long                            '' Length including header
-    Address As Pointer                    '' The virtual address of this block, speed pointer conversion
-    Type As Integer                           '' Type of memory
+Public Struct dHeader
+    Length As Long                           '' Length including header
+    Address As Pointer                       '' The virtual address of this block, speed pointer conversion
+    Type As Integer                          '' Type of memory
+End Struct
+
+Public Struct dList                          '' A defined entry in list of objects
+    Length As Long                           '' Length including header
+    Address As Pointer                       '' The virtual address of this block, speed pointer conversion
+    Type As Integer                          '' Type of memory
     {Next} As Pointer                        '' Next in list or head of pool
-    Prev As Pointer                            '' previous in list or end of pool
-    sema As Pointer                           '' The locking semephor for each list
-    Global As Integer                         '' Defines if this is a global memory object or not
-    bDebug As Boolean                    '' Turns on debugging
-    Tag[64] As Byte                            '' a user text tag for this list, can be used to identify nameless queues
-    RefCount As Long                       '' Number of refrences to this element
-    Priority As Long                           '' in a queue this is the priority of this element or the Extended Id of a list
-    UsePriority As Boolean              '' Enable the use of priority ordering in the queue
-    Value As Pointer                           '' Value of entry or count if pool
+    Prev As Pointer                          '' previous in list or end of pool
+    sema As Pointer                          '' The locking semephor for each list
+    Global As Integer                        '' Defines if this is a global memory object or not
+    bDebug As Boolean                        '' Turns on debugging
+    Tag[64] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
+    RefCount As Long                         '' Number of refrences to this element
+    Priority As Long                         '' in a queue this is the priority of this element or the Extended Id of a list
+    UsePriority As Boolean                   '' Enable the use of priority ordering in the queue
+    Value As Pointer                         '' Value of entry or count if pool
 End Struct
 
 '' Array Header structure for all types
@@ -135,19 +141,19 @@ End Struct
 
 Public Struct dStrObjInfo
     Length As Long                         '' Length including header
-    Address As Pointer                  '' The virtual address of this block, speed pointer conversion
+    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
     Type As Integer                        '' Type of memory
     ObjLen As Long                         '' length of the actual string/Object
-    WriteLen As Long                     '' The length of the actually written data
+    WriteLen As Long                       '' The length of the actually written data
 End Struct
 
 Public Struct dStrObj
-    Length As Long                             '' Length including header
-    Address As Pointer                     '' The virtual address of this block, speed pointer conversion
-    Type As Integer                            '' Type of memory
-    ObjLen As Long                            '' length of the actual string/Object
+    Length As Long                          '' Length including header
+    Address As Pointer                      '' The virtual address of this block, speed pointer conversion
+    Type As Integer                         '' Type of memory
+    ObjLen As Long                          '' length of the actual string/Object
     WriteLen As Long                        '' The length of the actually written data
-    Value[1000000] As Byte             '' The actual value for usage assign as byte but we ref the value.data real address this is dummy
+    Value[1000000] As Byte                  '' The actual value for usage assign as byte but we ref the value.data real address this is dummy
 End Struct
 
 Const StrData As Integer = 18
@@ -620,6 +626,30 @@ Public Sub {VarPtr}(VirtAddress As Pointer) As Variant
     Return svptr
 
 End
+
+'' Returns the actual pointer to the value storage ie, can use integer@ or string@ etc.
+Public Sub Atptr(svptr As Variant) As Pointer
+
+    Dim tmpptr As Dstrobj
+    Dim vptr As Pointer
+
+    Select Case svptr.type
+        Case gb.String, gb.object
+            tmpptr = GetPointer(StrData, svptr.value)
+            vptr = RealAddress(tmpptr.address + SizeOf(dStrObjInfo))
+
+        Case -1
+            vptr = svptr.length
+
+        Case Else
+            Dim hdrsize As Integer = SizeOf(gb.long) + SizeOf(gb.pointer) + SizeOf(gb.integer)
+            vptr = RealAddress(svptr.address + hdrsize)
+
+    End Select
+    Return vptr
+
+End
+
 
 '' Return the actual storage required for any data type
 '' objects must have a _write public function.

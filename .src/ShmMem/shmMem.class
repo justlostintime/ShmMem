@@ -16,27 +16,27 @@ Const VarMemDefault As Long = 2000000                                '' default 
 Const MaxSymbolsDefault As Integer = 8000                          '' default variable memory space 8000 entries
 Const TimeOutDefault As Float = 0.1                                          '' Default sem timeout
 
-Public VarStore As ShmMemBlock                                               '' the pysical memory segment being shared
-Public VarMnge As ShmManage                                                    '' the Object resposible to managing the raw memory
-Public MyVarMem As ShmVarStorage                                        '' manages the actual values stored into the shared memory
+Public VarStore As ShmMemBlock                                                    '' the pysical memory segment being shared
+Public VarMnge As ShmManage                                                       '' the Object resposible to managing the raw memory
+Public MyVarMem As ShmVarStorage                                                  '' manages the actual values stored into the shared memory
 Public VarStoreName As String                                                     '' The name for named memory
 
-Public SymStore As ShmMemBlock                                               '' the Raw memory used to store the symbol table
-Public Vars As ShmSymbolTable                                                    '' the object which will manage symbol table
-Public SymStoreName As String                                                    '' the name of the symbol table for the named memory
-Static Public PID As Integer = 0                                                       '' The pid of the application using this class
-Private Local_PID As Integer = 0                                                     '' pid of the app/task class instaciating this as object
+Public SymStore As ShmMemBlock                                                    '' the Raw memory used to store the symbol table
+Public Vars As ShmSymbolTable                                                     '' the object which will manage symbol table
+Public SymStoreName As String                                                     '' the name of the symbol table for the named memory
+Static Public PID As Integer = 0                                                  '' The pid of the application using this class
+Private Local_PID As Integer = 0                                                  '' pid of the app/task class instaciating this as object
 
 Property Read Count As Integer                                                     '' number of symbols
-Property Read Max As Integer                                                         '' Max index into the list
+Property Read Max As Integer                                                       '' Max index into the list
 Property Read Length As Integer                                                    '' number of entries in the list
-Private $sKey As String                                                                       '' text key
-Property Read Key As String                                                             '' returns the index of the current entry in for next
-Property Debug As Boolean Use $bDebug                                   '' Turns on and off the Debug messages
-Property DefaultDirectory As String Use $sDefaultDirectory '' the default directiry used to save and load Images and variables
-Property Signature As String Use $Signature                             '' Used to reconstitute co correct object shmmem in an application
-Static Public Objects As New Collection(gb.ignorecase)          '' The list of instanciations of the class
-Property Read ShmObjects As Collection                                     '' returns a list of allocated memory segments
+Private $sKey As String                                                            '' text key
+Property Read Key As String                                                        '' returns the index of the current entry in for next
+Property Debug As Boolean Use $bDebug                                              '' Turns on and off the Debug messages
+Property DefaultDirectory As String Use $sDefaultDirectory                         '' the default directiry used to save and load Images and variables
+Property Signature As String Use $Signature                                        '' Used to reconstitute co correct object shmmem in an application
+Static Public Objects As New Collection(gb.ignorecase)                             '' The list of instanciations of the class
+Property Read ShmObjects As Collection                                             '' returns a list of allocated memory segments
 
 '' We need to determine if the object is a class=module or object=class instanciated object
 '' This function correctly retruns the class for both objects and modules
@@ -431,7 +431,10 @@ End
 '' Returns a Virtual Address pointer to Symbols Value
 Public Sub {VarPtr}(SymName As String) As Variant
 
-    Return vars.VarPtr(SymName).value
+    Dim ValueBlock As Variant
+
+    ValueBlock = vars.VarPtr(SymName)    ' get a pointer to the the value control block
+    Return ValueBlock
 
 End
 
@@ -607,10 +610,10 @@ Public Sub RealDataAddress(VirtAddress As Variant) As Pointer
 
     Select Case TypeOf(VirtAddress)
         Case gb.string                 ' then it must be a variable name
-            virtAddress = Me.VarPtr(VirtAddress)
+            virtAddress = vars.VarPtr(virtaddress).address
             result = MyVarMem.RealDataAddress(VirtAddress)
 
-        Case gb.pointer, gb.long, gb.int
+        Case gb.pointer, gb.long, gb.integer
             Result = MyVarMem.RealDataAddress(VirtAddress)
 
         Default

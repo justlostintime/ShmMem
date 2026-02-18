@@ -881,7 +881,7 @@ Public Sub {VarPtr}(SymName As String) As Variant
     Endif
 
     value = VarMem.varptr(SymMem.Table[index].Address)
-    Return value
+    Return VarMem.atptr(value)
 
 End
 
