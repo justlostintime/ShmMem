@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={}
+Breakpoints={"ShmVarStorage":[645]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -696,6 +696,9 @@ Geometry=[848,402,252,276]
 [DebugWindow/s]
 Geometry=[834,274,534,625]
 
+[DebugWindow/sInteger]
+Geometry=[823,528,273,259]
+
 [DebugWindow/shm]
 Geometry=[834,498,252,56]
 
@@ -718,7 +721,7 @@ Geometry=[834,512,252,56]
 Geometry=[834,388,252,276]
 
 [DebugWindow/svptr]
-Geometry=[834,512,252,110]
+Geometry=[823,528,273,259]
 
 [DebugWindow/sym]
 Geometry=[834,445,558,210]
@@ -781,7 +784,7 @@ Geometry=[2137,375,252,88]
 Geometry=[834,498,252,56]
 
 [DebugWindow/value]
-Geometry=[834,388,252,504]
+Geometry=[823,528,273,259]
 
 [DebugWindow/values]
 Geometry=[834,402,252,276]
@@ -805,7 +808,7 @@ Geometry=[834,512,252,56]
 Geometry=[834,512,252,56]
 
 [DebugWindow/vptr]
-Geometry=[834,512,252,110]
+Geometry=[823,528,273,259]
 
 [DebugWindow/where]
 Geometry=[834,388,252,276]
@@ -847,15 +850,12 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Even More Cleanup, Updated with notification when any variable changes, Cleanup examples to use it, and every..do.. to poll\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
+LastCommit="Fix varptr calculation for most values and objects\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
 
 [OpenFile]
-Count=4
-File[1]=".src/ShmMem/shmMem.class:29.610"
-File[2]=".src/ShmMem/ShmSymbolTable.class:4.609"
+Count=1
+File[1]=".src/Examples/vTestApps/AccessMethodExamples/GetDataPointer.module:16.20"
 Active=1
-File[3]=".src/ShmMem/ShmVarStorage.class:17.526"
-File[4]=".src/ShmMem/ShmManage.class:4.115"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

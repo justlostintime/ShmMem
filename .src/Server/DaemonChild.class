@@ -16,7 +16,7 @@ Export
 '''      by that user, defined by   user, group and everyone permissions
 '''
 ''' DelMem <MemName>  \n                                           ' close or delete the named memory segment
-'''     While it will close it, the memory will remain until the last user closes thier access
+'''     While it will close it, the memory will remain until the last user closes their access
 '''
 ''' Sync <hostName|ip address> \n                            ' begin a sync session with remote hosts ShmMem Daemon
 '''     Will start a sync session with the remote host, if no daemon found, then start one
@@ -46,12 +46,13 @@ Property MemAutoSize As Integer Use $MemAutoSize = 10000000                    '
 Property SharedMemNames As Variant[] Use $SharedMemNames
 Property SharenMemObj As ShmMem[] Use $SharedMemObj
 Property ServerRunning As Boolean Use $ServerRunning = False
+Property ServerMemoryPool As Collection Use $ServerMemoryPool = New Collection(gb.ignorecase)
 
 Public Sub _new(SharedMemoryNames As Variant[], Optional SegmentSize As Integer = $MemAutoSize, PortNumber As Integer = $SystemPort)
 
     $SharedMemNames = SharedMemoryNames
     $MemAutoSize = SegmentSize
-
+    $SystemPort = PortNumber
     $ServerRunning = True
 
     For Each s As Variant[] In $SharedMemNames
@@ -61,6 +62,7 @@ Public Sub _new(SharedMemoryNames As Variant[], Optional SegmentSize As Integer 
             length = CInt(s[1])
         Endif
         Dim memnew As New ShmMem(length, MemName)
+        $ServerMemoryPool[MemName] = memnew
     Next
 
 End
@@ -81,3 +83,4 @@ Public Sub Run() As Integer
     Return 0
 
 End
+

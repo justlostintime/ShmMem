@@ -112,13 +112,13 @@ End
 
 Public Sub onnew_created(varname As String, value As Variant, timedOut As Boolean)
 
-    Print "Notified that";; varname;; "was created and set to";; value
+    Print "Notified that";; varname;; "was created and set to";; value;; IIf(timedOut, "Timed out", "Not timed out")
 
 End
 
 Public Sub OnAny_change(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print "Notified that ";; Varname;; " was updated to ";; value
+    Print "Notified that ";; Varname;; " was updated to ";; value;; IIf(timedOut, "Timed out", "Not timed out")
 
 End
 

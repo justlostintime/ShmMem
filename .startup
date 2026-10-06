@@ -9,7 +9,7 @@ gb.dbus
 gb.eval
 gb.logging
 gb.net
-gb.net.smtp
 gb.signal
 gb.util.web
+gb.net.smtp
 
