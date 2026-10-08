@@ -5,7 +5,7 @@ ShmValue=[88]
 NewShmMemInterfaceTest=[]
 
 [Debug]
-Breakpoints={"TestExecutableBlocks":[25,64,51],"shmMem":[634,613,612],"ShmThread":[50],"ShmSymbolTable":[883]}
+Breakpoints={"LoadAndSaveValue":[4,27,36]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -871,15 +871,10 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Added more debug info\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
+LastCommit="ACleanup after 2 pass compiler was deployed\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
 
 [OpenFile]
-Count=4
-File[1]=".src/ShmMem/ShmThread.class:28.47"
-Active=4
-File[2]=".src/ShmMem/shmMem.class:58.612"
-File[3]=".src/Examples/vTestApps/Executable_Shared_Segments/TestExecutableBlocks.module:0.25"
-File[4]=".src/ShmMem/ShmVarStorage.class:15.637"
+Count=0
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

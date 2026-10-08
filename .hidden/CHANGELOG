@@ -1,3 +1,6 @@
+* Thu Oct 08 2026 brian <justlostintime@gmail.com> 2.2.8
+- Updated bugs and malfunctions around executable memory segments
+
 * Wed Jan 28 2026 brian <justlostintime@gmail.com> 2.2.5
 - Updated to remove WAIT calles in the semi handling functions
 
