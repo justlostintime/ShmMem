@@ -41,14 +41,19 @@ Public Sub main()
 
         For xxx As Integer = 0 To RepeatLoop
             If Not NoMessage Then Print "Pass ASM String ********************************************"
+            Flush
             a.execute(IIf(NoMessage, "", startmessage), WaitComplete)
+
             If Not NoMessage Then Print "Pass Asm Value *********************************************"
             b.execute(IIf(NoMessage, 0, 2), WaitComplete)
             If Not NoMessage Then Print "Pass Asm Structure ******************************************"
+
+            ' Dim structptr As Pointer = Alloc(SizeOf(messitup))
             MyMess = New Messitup
             MyMess.value = 4
             MyMess.result = 0
             MyMess.message = IIf(NoMessage, "", " big bad structure in asm\n\r\0")
+
             c.execute(Object.Data(MyMess), WaitComplete)
             If Not NoMessage Then Print "Result value from thread is ";; MyMess.result
 

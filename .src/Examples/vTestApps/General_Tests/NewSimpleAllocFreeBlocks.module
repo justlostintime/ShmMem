@@ -1,6 +1,5 @@
 ' Gambas module file
 
-'Fast Unsafe
 ''' Test Basic block management
 Public Sub main()
 
@@ -9,7 +8,7 @@ Public Sub main()
     Dim StartTime As Float
     Dim pp, xx, yy, aa As Long
 
-    Print "Starting Test.... Alloc and release blocks of memory ";
+    Print "Starting Test.... Alloc and release blocks of memory "
     Flush
     starttime = Timer
 

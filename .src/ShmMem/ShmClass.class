@@ -10,6 +10,7 @@
 ''' accessing this class access shared memory directly. This is a prototype!
 
 Export
+Fast Unsafe
 
 Public Struct AllocHeader              '' Standard header
     Length As Long                              '' Length including header

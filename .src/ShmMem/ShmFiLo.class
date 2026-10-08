@@ -7,7 +7,7 @@
 '  See project license file.
 
 Export
-'Fast Unsafe
+Fast Unsafe
 
 ''' Implements a first in last out queue in shared memory
 Inherits ShmList

@@ -7,7 +7,7 @@
 '  See project license file.
 
 Export
-'Fast Unsafe
+Fast Unsafe
 '' How a symbol is stored in the shared memory
 
 Public Struct Symbol
@@ -860,7 +860,7 @@ Public Sub NotifyStop(SymName As String, CallObject As Object, Optional CallFunc
 
 End
 
-'' Returns the real address of the symbol table entry
+'' Returns the real address of the symbol table entry Value
 Public Sub {VarPtr}(SymName As String) As Variant
 
     Dim index As Long
@@ -882,6 +882,9 @@ Public Sub {VarPtr}(SymName As String) As Variant
 
     value = VarMem.varptr(SymMem.Table[index].Address)
     Return VarMem.atptr(value)
+Catch
+    Error Error.Where;; Error.Text
+    Stop
 
 End
 

@@ -11,7 +11,7 @@ Public Sub main()
 
         Dim x, y As Pointer
         x = .varptr("myvalue")
-        y = .VarPtr("mystring")
+        y = .varptr("mystring")
         Print "Start counter";; x, Integer@(x), y, String@(y), !mystring
         For i As Integer = 0 To 1000000
             Integer@(x) = Integer@(x) + 1

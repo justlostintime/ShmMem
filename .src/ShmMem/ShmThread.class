@@ -41,25 +41,28 @@ Public Sub _new(SysMem As ShmMem, Ident As Variant, Optional ProgramLength As In
     Dim R_type As Integer = TypeOf(Ident)
 
     Select Case R_type
-        Case gb.string                                                                                                ' if it is a string must be a variable name
+        Case gb.string                                                       ' if it is a string must be a variable name
             If ident = "" And ProgramLength > 0 Then
-                $Function_VirtAddr = SysMem.Alloc(ProgramLength)              ' allocate some random space for the program
-                ident = SysMem.RealDataAddress($Function_VirtAddr)         ' pointer to the real address in memory
+                $Function_VirtAddr = SysMem.Alloc(ProgramLength)             ' allocate some random space for the program
+                ident = SysMem.RealDataAddress($Function_VirtAddr)           ' pointer to the real address in memory
                 $Auto = True
             Else
-                $Function_VirtAddr = SysMem.VarPtr(Ident)                             ' get the virtual address of the symbols value/Data
-                ident = SysMem.RealDataAddress(Ident) + 8                            ' was 8 or 10string have an additional 8 bytes
+                $Function_VirtAddr = SysMem.varentryptr(Ident).address            ' get the virtual address of the symbols value/Data
+                'ident = SysMem.RealDataAddress(Ident) + 8                    ' was 8 or 10string have an additional 8 bytes
+                ident = SysMem.VarPtr(ident)
             Endif
-        Case gb.Pointer, gb.long, gb.integer                                                   ' if it is integer or long then must be a virtual address
+        Case gb.Pointer, gb.long, gb.integer                                 ' if it is integer or long then must be a virtual address
             $Function_VirtAddr = CPointer(Ident)
             ident = SysMem.RealDataAddress(CPointer(ident))                  ' convert this  relative address to a real address
         Default
             Error.Raise("Invalid request, must be varname or pointer, long, integer values")
     End Select
 
-    $Function_address = ident                                                                  ' set the real address of the function to call
-    $Call_memory = SysMem                                                                     ' set the base segment information
+    $Function_address = ident                                                 ' set the real address of the function to call
+    $Call_memory = SysMem                                                     ' set the base segment information
     '  SysMem.Dump($Function_Address, 200)
+Catch
+    Stop
 
 End
 
@@ -127,6 +130,17 @@ Public Sub _put(Value As Variant, Optional index As Integer = 0)                
     index = WriteBytes(value, index, $Function_Address, ProgramLength)
 
 End
+
+'' Read the program content and return it as a string
+Public Sub _get(Optional index As Integer) As Variant
+
+    Dim ProgramLength As Integer
+
+    ProgramLength = $Call_Memory.VarMnge.DataLength($Function_VirtAddr)                 ' get the length of the area allocated for programs
+    Return Null
+
+End
+
 
 Private Sub WriteBytes(Value As Variant, index As Integer, BaseDataAddress As Pointer, ProgramLength As Integer) As Integer
 

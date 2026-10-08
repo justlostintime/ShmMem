@@ -2,15 +2,18 @@
 shmMem=[234]
 ShmNotifyEntry=[54]
 ShmValue=[88]
+NewShmMemInterfaceTest=[]
 
 [Debug]
-Breakpoints={"ShmVarStorage":[645]}
+Breakpoints={"TestExecutableBlocks":[25,64,51],"shmMem":[634,613,612],"ShmThread":[50],"ShmSymbolTable":[883]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
 Remote=False
 Profiling=False
-Environment=["GB_NO_JIT=1"]
+Environment=[]
+RemoteEnvironment=[]
+Arguments=[]
 
 [DebugWindow]
 Count=0
@@ -106,7 +109,7 @@ Geometry=[2153,547,252,504]
 Geometry=[2716,479,252,504]
 
 [DebugWindow/MyMess]
-Geometry=[834,511,368,118]
+Geometry=[823,512,273,259]
 
 [DebugWindow/MyQueue]
 Geometry=[2449,543,480,508]
@@ -117,8 +120,14 @@ Geometry=[834,512,252,56]
 [DebugWindow/MyValue]
 Geometry=[834,455,537,231]
 
+[DebugWindow/MyVar]
+Geometry=[826,421,601,259]
+
+[DebugWindow/MyVar.Name]
+Geometry=[840,435,273,501]
+
 [DebugWindow/MyVarMem]
-Geometry=[834,542,252,58]
+Geometry=[834,542,273,259]
 
 [DebugWindow/NewElement]
 Geometry=[2203,217,252,56]
@@ -309,6 +318,9 @@ Geometry=[834,512,252,216]
 [DebugWindow/SymbolCache.Keys]
 Geometry=[848,526,252,276]
 
+[DebugWindow/SysMem]
+Geometry=[823,347,273,385]
+
 [DebugWindow/TaskQueueRemoved]
 Geometry=[2754,418,252,216]
 
@@ -332,6 +344,12 @@ Geometry=[834,445,503,231]
 
 [DebugWindow/ValueDef.Tag]
 Geometry=[848,459,252,504]
+
+[DebugWindow/VarEntryBlock]
+Geometry=[823,512,273,259]
+
+[DebugWindow/VarEntryBlock.Tag]
+Geometry=[837,391,273,501]
 
 [DebugWindow/VarExtended]
 Geometry=[834,388,252,276]
@@ -415,7 +433,7 @@ Geometry=[862,302,252,230]
 Geometry=[834,274,515,508]
 
 [DebugWindow/bValue]
-Geometry=[834,451,607,150]
+Geometry=[834,451,607,259]
 
 [DebugWindow/bValue[3]]
 Geometry=[848,465,252,150]
@@ -481,7 +499,7 @@ Geometry=[834,288,252,504]
 Geometry=[834,288,587,508]
 
 [DebugWindow/cValue]
-Geometry=[834,455,484,170]
+Geometry=[834,455,484,259]
 
 [DebugWindow/cValue.MemoryPool]
 Geometry=[848,469,252,150]
@@ -524,6 +542,9 @@ Geometry=[848,512,252,110]
 
 [DebugWindow/d[8]]
 Geometry=[848,385,252,90]
+
+[DebugWindow/dataptr]
+Geometry=[823,453,273,259]
 
 [DebugWindow/dimset]
 Geometry=[834,498,252,56]
@@ -757,7 +778,7 @@ Geometry=[1025,260,540,423]
 Geometry=[1039,274,252,504]
 
 [DebugWindow/tmpptr]
-Geometry=[834,512,252,56]
+Geometry=[834,512,511,259]
 
 [DebugWindow/tmpptr.Value]
 Geometry=[834,512,252,56]
@@ -850,12 +871,15 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Fix varptr calculation for most values and objects\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
+LastCommit="Added more debug info\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
 
 [OpenFile]
-Count=1
-File[1]=".src/Examples/vTestApps/AccessMethodExamples/GetDataPointer.module:16.20"
-Active=1
+Count=4
+File[1]=".src/ShmMem/ShmThread.class:28.47"
+Active=4
+File[2]=".src/ShmMem/shmMem.class:58.612"
+File[3]=".src/Examples/vTestApps/Executable_Shared_Segments/TestExecutableBlocks.module:0.25"
+File[4]=".src/ShmMem/ShmVarStorage.class:15.637"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

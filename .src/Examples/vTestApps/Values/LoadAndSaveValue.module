@@ -23,6 +23,8 @@ Public Sub main()
     cValue = New ShmValue(varfile)
     Close varfile
 
+    Print "After Write and read does new = old Correct answer is true ";; bvalue = cvalue
+
     mem.Close()
     mem = Null                                                          ' generate an error while loading
     Wait 0.1
@@ -30,7 +32,7 @@ Public Sub main()
     varfile = Open testfile For Read
     Try bValue = Read #varfile As Object
     If Error Then
-        Print Error.text
+        Print "After closing the SHared memorry and trying to read the variable should get an error\n"; Error.text
     Endif
     Close varfile
 

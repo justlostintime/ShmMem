@@ -21,6 +21,14 @@ Public Sub main()
     bValue = Read #varfile As Object
     Close varfile
 
+    For i = 0 To bValue.Max
+        If aValue[i].value = bValue[i].value Then
+            Print i;; aValue[i].value;; "=";; bValue[i].value
+        Else
+            Print i;; aValue[i].value;; "<>";; bValue[i].value
+        Endif
+    Next
+
     mem.PrintAllInfo()
 
     mem.close()

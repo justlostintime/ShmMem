@@ -32,20 +32,20 @@ Public Sub application_signal(signo As Integer)
 
     With Daemon
         Select Case signo
-            Case Signal.SIGHUP                   ' Hang up controlling terminal or  process
+            Case Signal.SIGHUP                      ' Hang up controlling terminal or  process
                 Error "SigHup";;
-                .$ServerRunning = False
-            Case Signal.SIGABRT                 ' Abnormal termination
+                .ServerRunning = False
+            Case Signal.SIGABRT                     ' Abnormal termination
                 Error "SIGABRT";;
-                .$ServerRunning = False
-            Case Signal.SIGTERM                ' Process termination
+                .ServerRunning = False
+            Case Signal.SIGTERM                     ' Process termination
                 Error "SIGTERM";;
-            Case Signal.SIGINT                    ' Interrupt from keyboard, Control-C
+            Case Signal.SIGINT                      ' Interrupt from keyboard, Control-C
                 Error "SIGINT";;
-                .$ServerRunning = False
-            Case Signal.SIGQUIT                ' Quit from keyboard, Control-\
+                .ServerRunning = False
+            Case Signal.SIGQUIT                     ' Quit from keyboard, Control-\
                 Error "SIGQIUIT";;
-                .$ServerRunning = False
+                .ServerRunning = False
             Default
                 Return
         End Select

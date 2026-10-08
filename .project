@@ -1,7 +1,7 @@
 # Gambas Project File 3.0
 Title=ShmMem
-Startup=GetDataPointer
-Version=2.2.6
+Startup=TestExecutableBlocks
+Version=2.2.7
 Component=gb.args
 Component=gb.dbus
 Component=gb.eval

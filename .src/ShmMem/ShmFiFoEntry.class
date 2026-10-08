@@ -7,7 +7,7 @@
 '  See project license file.
 
 Export
-'Fast Unsafe
+Fast Unsafe
 
 ''' Implements A First in first Out queue entry in shared memory
 

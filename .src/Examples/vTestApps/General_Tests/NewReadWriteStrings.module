@@ -1,6 +1,6 @@
 ' Gambas module file
 
-loops As Long = 10
+loops As Long = 1000
 
 Public Sub main()
 

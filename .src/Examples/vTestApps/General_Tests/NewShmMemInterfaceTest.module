@@ -6,7 +6,6 @@
 '   Type As Integer                      '' Type of memory
 '   Value As Integer                     '' The actual value for usage
 ' End Struct
-'Fast Unsafe
 
 smem As ShmMem
 loopcount As Integer = 1000000
@@ -18,20 +17,20 @@ Public Sub main()
 
     smem = New ShmMem(1280000, "test")
     smem!cats = 45
+    MyVar = smem.VarEntryPtr("cats")
+
     Dim result As Integer
     Dim StartTime As Float = Timer
     For i As Integer = 0 To loopcount
         smem!cats = 45
     Next
-    Print "Named write Lock/Unlock Value X " & loopcount & "   time :";; Timer - Starttime
+    Print "Named write Lock/Unlock Value X " & loopcount & "   time :";; Timer - Starttime, "Cats=";; smem!cats
 
     StartTime = Timer
     For i As Integer = 0 To loopcount
         result = smem!cats + 2
     Next
     Print "Named Read Lock/UnlockValue X " & loopcount & "     time :";; Timer - Starttime
-
-    MyVar = smem.VarPtr("cats")
 
     StartTime = Timer
     For i As Integer = 0 To loopcount
@@ -45,6 +44,7 @@ Public Sub main()
     Next
     Print "Named Pointer write Value X " & loopcount & "       time :";; Timer - Starttime
 
+    smem.Close()
     smem = New ShmMem
 
     smem!cats = 45

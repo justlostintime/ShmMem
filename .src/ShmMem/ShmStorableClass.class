@@ -1,7 +1,7 @@
 ' Gambas class file
 
 Export
-'Fast Unsafe
+Fast Unsafe
 ''' This class must be inherited by classes which will be shared between tasks/processes
 ''' If you do not use this class as the default then your non data usage class will fail
 ''' when you try to save of load from the shared memory database

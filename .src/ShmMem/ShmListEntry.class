@@ -9,7 +9,7 @@
 ''' Implements a list entry, this in inherited by all other list type entries
 
 Export
-'Fast Unsafe
+Fast Unsafe
 
 Public Struct AllocHeader           '' Standard header
     Length As Long                           '' Length including header

@@ -1,7 +1,5 @@
 ' Gambas module file
 
-' Fast Unsafe
-
 Public Sub main()
 
     Dim StartTime As Float = Timer

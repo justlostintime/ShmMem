@@ -18,6 +18,6 @@ Public Sub main() As String
     Return "BG says Completed test"
 
 Catch
-    Error Error.test, Error.where
+    Error Error.text, Error.where
 
 End

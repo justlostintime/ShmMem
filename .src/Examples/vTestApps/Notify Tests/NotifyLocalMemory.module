@@ -1,6 +1,5 @@
 ' Gambas module file
 
-'Fast Unsafe
 'Public Vars As ShmSymbolTable
 Public Vars As Shmmem
 

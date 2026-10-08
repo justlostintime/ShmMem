@@ -68,8 +68,6 @@ Public Sub Main()
         '  Wait 0.001
 
         ' mytask.Wait()
-        Stop
-
         .PrintAllInfo()
 
     End With

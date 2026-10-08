@@ -13,7 +13,7 @@ Export
 ''' This is called by the Symbol table manager or directly by the user to store a value into the shared memory\
 ''' Returns a virtual  pointer to the stored value.
 
-'Fast Unsafe
+Fast Unsafe
 
 Private varmem As ShmManage
 Private Storage As ShmMemBlock
@@ -299,12 +299,13 @@ Public Sub set(value As Variant, Optional VirtAddress As Pointer = 0) As Pointer
         If $bDebug Then Print Application.id, "set ShmVarStorage.release " & value & ":" & VirtAddress
     Else
         If $bDebug Then Print Application.id, "set ShmVarStorage.exclusive " & value & ":" & VirtAddress
-        MyVar = AllocSimpleVar()
+        MyVar = AllocSimpleVar()              '' allocate a simple variable structure
         Storage.Exclusive()
         _put(value, Myvar)
         Storage.Release()
         If $bDebug Then Print Application.id, "set ShmVarStorage.release " & value & ":" & VirtAddress
     Endif
+
     Return myvar
 
 End
@@ -332,7 +333,7 @@ Public Sub _getType(virtAddress As Pointer, type As Integer) As Variant
             Return svptr.value
     End Select
 
-    Return
+    Return Null    '' make error obvious
 
 End
 
@@ -344,6 +345,18 @@ Public Sub _get(virtAddress As Pointer) As Variant
     Return _getType(VirtAddress, vptr.type)
 
 End
+
+'' Return the block that handles the datatype with a value field
+Public Sub _getPtr(virtAddress As Pointer) As Variant
+
+    Dim vptr As AllocHeader = varmem.AllocPtr(VirtAddress)
+    Dim dataptr As Variant
+
+    dataptr = Getpointer(vptr.Type, vptr.address)
+    Return dataptr
+
+End
+
 
 '' Store a value as the specified virtual address, of the specified type
 Public Sub _puttype(value As Variant, VirtAddress As Pointer, mytype As Integer)
@@ -381,7 +394,7 @@ Public Sub _puttype(value As Variant, VirtAddress As Pointer, mytype As Integer)
 
 End
 
-'' Put a vlaue at the specified virtual address type determined by the
+'' Put a value at the specified virtual address type determined by the
 '' typeof the value
 Public Sub _put(value As Variant, VirtAddress As Pointer)
 
@@ -624,6 +637,8 @@ Public Sub {VarPtr}(VirtAddress As Pointer) As Variant
 
     svptr = Getpointer(vptr.type, VirtAddress)
     Return svptr
+Catch
+    Stop
 
 End
 
@@ -647,6 +662,8 @@ Public Sub Atptr(svptr As Variant) As Pointer
 
     End Select
     Return vptr
+Catch
+    Stop
 
 End
 
