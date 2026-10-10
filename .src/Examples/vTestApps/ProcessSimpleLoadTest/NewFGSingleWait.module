@@ -9,8 +9,10 @@ Public Sub main()
         Dim mytask As New NewBGSingleWait
         mytask.shm = shm                                          ' both use the same unnamed shared memory
         Wait 0
-        Wait 2.0
-        Print "Done task running = ";; mytask.running;; mytask.value
+        While mytask.Running
+            Wait 0.1
+        Wend
+        Print "Done task running = ";; Not mytask.running;; mytask.value
     End With
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"

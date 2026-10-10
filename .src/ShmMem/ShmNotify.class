@@ -270,12 +270,13 @@ Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
     Dim UserQueue As ShmList
     Dim Result As Integer
     Dim SymName As String = ""
+    Dim Pid As Integer
 
     If Sym.NotifyBlock = 0 Then Return
 
     PidQueue = New ShmList(VarMem, Sym.NotifyBlock)                                                           ' get the list of pids waiting for this variable to change
 
-    For Each Pid As Integer In PidQueue                                                                                            ' loop over each of the ids waiting a notification
+    For Each Pid In PidQueue                                                                                            ' loop over each of the ids waiting a notification
         SymName = sym.name.tostring()
         userqueue = New ShmList(VarMem, PidQueue.Key_ExtendedId)                                  ' get the notifyqueue for each task waiting for notification
         If symname[0] = "#" Then
@@ -288,7 +289,7 @@ Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
 
     Dim RemoveSet As New Pointer[]
 
-    For Each Pid As Integer In PidQueue
+    For Each Pid In PidQueue
 
         Result = sKill(Pid, ChangeSignal)                                                                                             ' try to send the signal to the other tasks
 

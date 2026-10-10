@@ -3,9 +3,12 @@
 Public Sub main()
 
     Dim Tasks As New NewBGLoader[]
-    Dim vmem As New ShmMem(1000000, "jiffy")
+    Dim vmem As ShmMem
     Dim tmp As NewBGLoader
     Dim Iterations As Integer = 10
+
+    shmMem.ForceDelete("jiffy")
+    vmem = New ShmMem(1000000, "jiffy")
 
     With vmem
         !Wiggle = 0
@@ -47,7 +50,7 @@ Public Sub main()
                     Print "Task Complete ";; i;; "Value="; Tasks[i].value
                 Endif
             Next
-            Wait 0.001
+            Wait 0.1
         Wend
 
         Print shmMem.GetObjectClass(Me).name;; "Completed"

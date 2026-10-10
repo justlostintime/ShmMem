@@ -6,6 +6,8 @@ Public Sub Main()
     Dim work As New ShmMem(4200000, "Work")
     Dim tag As String
     Dim theQ As SHmQueue
+    Dim qe As Variant
+    Dim g As Variant
 
     With work
         !TheQ = New ShmQueue(work, 0, True, "Queue Test one")
@@ -20,12 +22,12 @@ Public Sub Main()
         !TheQ.enqueue("S4-3", 3, "Tag this 3")
         !TheQ.enqueue("5-100", 100, "Tag this 100")
 
-        For Each qe As Variant In !TheQ
+        For Each qe In !TheQ
             tag = !TheQ.key_tag
             Print qe, !TheQ.key, Quote(!TheQ.key_tag)
         Next
 
-        For Each qe As Variant In TheQ
+        For Each qe In TheQ
             tag = TheQ.key_tag
             Print qe, TheQ.key, Quote(TheQ.key_tag)
         Next
@@ -33,7 +35,7 @@ Public Sub Main()
         .PrintTree()
 
         Print "Queue contains:"
-        For Each g As Variant In !TheQ
+        For Each g In !TheQ
             Print g
         Next
         Print "End Queue, Start Dqueue"
@@ -59,7 +61,7 @@ Public Sub Main()
         ' .PrintAllInfo()
 
         Print "Queue contains:"
-        For Each g As Variant In !TheQ
+        For Each g In !TheQ
             Print g, !TheQ.key, !TheQ.key_tag
         Next
 

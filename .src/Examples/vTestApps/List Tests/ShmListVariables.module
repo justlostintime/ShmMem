@@ -8,6 +8,7 @@ Public Sub main()
     Dim Elements As ShmList
     Dim otherElements As Shmlist
     Dim eList As ShmListEntry[]
+    Dim v As Variant
 
     vars.PrintAllInfo()
 
@@ -62,10 +63,10 @@ Public Sub main()
 
         Dim mylist As Shmlist = !dog
 
-        For Each v As Variant In mylist
+        For Each v In mylist
             Print v, MyList.key, MyList.Key_ExtendedId, MyList.key_tag
             Dim bork As Shmlist = MyList.Copy()                                               ' this only creates a new header, that points to the exsisting entries, be carefull
-            For Each v As Variant In bork
+            For Each v In bork
                 Print "\t";; v, bork.key, bork.Key_ExtendedId, bork.key_tag
             Next
             bork.Free(True)
@@ -78,13 +79,13 @@ Public Sub main()
         cat.Add("My Dirty Cat", 1, "MyDirty Cat")
         cat.Add("My Clean Mutt", 2, "Clean cat Too")
 
-        For Each v As Variant In cat
+        For Each v In cat
             Print v, cat.key, cat.Key_ExtendedId, cat.key_Tag
         Next
 
         cat.remove(0)
 
-        For Each v As Variant In cat
+        For Each v In cat
             Print v, cat.key, cat.Key_ExtendedId, cat.key_Tag
         Next
 

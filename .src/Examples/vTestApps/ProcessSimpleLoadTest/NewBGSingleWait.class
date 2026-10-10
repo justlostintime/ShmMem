@@ -15,7 +15,7 @@ Public Sub main() As String
 
     Print shmMem.GetObjectClass(Me).name;; "Completed"
 
-    Return "BG says Completed test"
+    Return "\nBG says Completed test"
 
 Catch
     Error Error.text, Error.where

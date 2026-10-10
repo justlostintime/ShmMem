@@ -255,6 +255,7 @@ Public Sub _read(Source As Stream)
     Dim Signature As String
     Dim iDimCount As Integer
     Dim VarInfo As Variant
+    Dim i As Integer
 
     Signature = Read #Source As String
     varinfo = shmMem.GetMemSegment(Signature)
@@ -265,7 +266,7 @@ Public Sub _read(Source As Stream)
 
     Dim lCount As Long = Read #Source As Long
     iDimCount = Read #Source As Integer
-    For i As Integer = 0 To iDimCount - 1
+    For i = 0 To iDimCount - 1
         ldim[i] = Read #Source As Long
     Next
 
@@ -275,7 +276,7 @@ Public Sub _read(Source As Stream)
 
     _Configure(VarInfo, ldim.Copy(0, idimcount), stag)
 
-    For i As Integer = 0 To lCount - 1
+    For i = 0 To lCount - 1
         vvalue = Read #Source As Variant
         _put(vvalue, i)
     Next
@@ -296,7 +297,7 @@ Public Sub _write(Dest As Stream)
     Write #Dest, DefaultValue As Variant
     Write #Dest, ArrayDef.Tag.ToString() As String
 
-    For i As Integer = 0 To ArrayDef.Count - 1
+    For i = 0 To ArrayDef.Count - 1
         value = _get(i)
         Write #Dest, value As Variant
     Next
@@ -563,18 +564,20 @@ Public Sub LinearToSubScript(Position As Long) As Long[]
 
     Dim result As New Long[arrayDef.DimCount]
     Dim factor As New Long[ArrayDef.dimCount]
+    Dim i As Integer
+
     ' calculate the factors first
     factor.first = 1
     '  Result.last = Position % factor.last
 
-    For i As Integer = 1 To factor.max
+    For i = 1 To factor.max
         factor[i] = ArrayDef.dimensions[i] * factor[i - 1]
     Next
 
     '                 position += factor * Dims[i]
     '                 factor *= ArrayDef.dimensions[i]
 
-    For i As Integer = factor.max DownTo 0
+    For i = factor.max DownTo 0
         result[i] = position \ factor[i]
         position -= (position \ factor[i]) * factor[i]
     Next
@@ -782,7 +785,7 @@ Public Sub {Export}() As String
     ' we only output value that have been defined
     Dim PhysAddr As Pointer
     PhysAddr = VarMem.RealDataAddress(ArrayDef.DataAddress)     ' Get a pointer to the real memory array of pointers
-    For i As Integer = 0 To ArrayDef.Count - 1
+    For i = 0 To ArrayDef.Count - 1
         Dim memptr As Pointer
         memptr = Pointer@(PhysAddr)                                ' get the Virtual address of the data
         If memptr <> Null Then

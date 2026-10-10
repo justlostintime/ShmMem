@@ -73,7 +73,7 @@ Public Sub Main()
 
         ' compare the list they all point to the same list so should be equal
         Print "###################### In order!b = Access list 'b' = fifo 'ba' ###############################"
-        For i As Integer = 0 To !b.max
+        For i = 0 To !b.max
             Print ((!b[i] = b[i]) And (!b[i] = ba[i]));; ba[i];; "=";; !b[i];; "=";; b[i]
         Next
         Print "====================== In order list and fifo ============================================="

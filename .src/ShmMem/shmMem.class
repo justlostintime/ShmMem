@@ -73,13 +73,13 @@ Static Public Sub ForceDelete(SharedName As String)
 
     Try shmMemBlock.ForceDelete(SharedName & "_Data")
     Try shmMemBlock.ForceDelete(SharedName & "_Symbols")
-    If objects.Exist(SharedName) Then
-        Dim tmpshm As Shmmem = objects[SharedName]
-        If tmpshm.signature = objects["default"].signature Then
-            objects.Remove("default")
-            Objects.Remove(tmpshm.signature)
-            If objects.count > 0 Then
-                objects["default"] = objects.first
+    If shmMem.objects.Exist(SharedName) Then
+        Dim tmpshm As Shmmem = shmMem.objects[SharedName]
+        If tmpshm.signature = shmMem.objects["default"].signature Then
+            shmMem.objects.Remove("default")
+            shmMem.Objects.Remove(tmpshm.signature)
+            If shmMem.objects.count > 0 Then
+                shmMem.objects["default"] = shmMem.objects.first
             Endif
         Endif
     Endif
@@ -96,15 +96,15 @@ Static Public Sub GetMemSegment(sSignature As String) As ShmMem
 
     Dim seg As Shmmem
 
-    If IsNull(Objects) Then Return Null
-    seg = Objects["Override"]
+    If IsNull(shmMem.Objects) Then Return Null
+    seg = shmMem.Objects["Override"]
     If seg <> Null Then
         Return seg
     Endif
 
-    Seg = objects[sSignature]
+    Seg = shmMem.objects[sSignature]
     If seg = Null Then
-        seg = objects["default"]
+        seg = shmMem.objects["default"]
         If seg <> Null Then
             Error "Shmmem Warning :"; sSignature;; "not found using default";; seg.Signature
         Endif
@@ -140,24 +140,24 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
 
         'Print "Define memory block step 4 remove already defined by class"
         'Flush
-        If Objects.Exist($Signature) Then
-            Dim OldShm As ShmMem = objects[$Signature]
-            Dim Default As ShmMem = objects[$Signature]
+        If shmMem.Objects.Exist($Signature) Then
+            Dim OldShm As ShmMem = shmMem.objects[$Signature]
+            Dim Default As ShmMem = shmMem.objects[$Signature]
 
             If default.Signature = OldShm.Signature Then
                 ' Print "Define memory block step 4 remove already defined by class removing"
                 'Flush
-                Objects.Remove("default")
-                Objects.Remove($Signature)
-                If Objects.count > 0 Then
-                    Objects.Add(Objects.last, "default")
+                shmMem.Objects.Remove("default")
+                shmMem.Objects.Remove($Signature)
+                If shmMem.Objects.count > 0 Then
+                    shmMem.Objects.Add(shmMem.Objects.last, "default")
                 Endif
                 'Print "Define memory block step 4 remove already defined by class removing  completed"
                 ' Flush
             Else
                 'Print "Define memory block step 4 remove already defined by class removing sig only"
                 'Flush
-                Objects.Remove($Signature)
+                shmMem.Objects.Remove($Signature)
             Endif
             'Print "Define memory block step 5 Seg named defined"
             'Flush

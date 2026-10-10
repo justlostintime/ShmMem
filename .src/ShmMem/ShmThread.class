@@ -132,12 +132,14 @@ Public Sub _put(Value As Variant, Optional index As Integer = 0)                
 End
 
 '' Read the program content and return it as a string
-Public Sub _get(Optional index As Integer) As Variant
+Public Sub _get(...) As Variant
 
     Dim ProgramLength As Integer
+    Dim program As String
 
     ProgramLength = $Call_Memory.VarMnge.DataLength($Function_VirtAddr)                 ' get the length of the area allocated for programs
-    Return Null
+    Program = String(1, String@($Function_address, ProgramLength))                      ' make a copy of the string
+    Return program
 
 End
 

@@ -17,9 +17,10 @@ Public Sub main()
     Dim StartTime As Float
     Dim LoopCount As Integer = 100
     Dim LongLoop As Long = 100
+    Dim i As Integer
 
     Starttime = Timer
-    For i As Integer = 0 To LoopCount
+    For i = 0 To LoopCount
         MyBlock = New ShmMemBlock(1100000)
         MyBlock = Null
         Wait
@@ -28,7 +29,7 @@ Public Sub main()
 
     Starttime = Timer
 
-    For i As Integer = 0 To LoopCount
+    For i = 0 To LoopCount
         MyNamedBlock = New ShmMemBlock(1234567, "MyMemory", True)
         MyNamedBlock = Null
         Wait
@@ -65,7 +66,7 @@ Public Sub main()
     mymem._PrintFreeList()
 
     Print "************************* Allocate 60 Blocks"
-    For i As Integer = 1 To 60
+    For i = 1 To 60
         memptr.Add(mymem.Alloc(i))
     Next
     mymem._Print()
@@ -102,31 +103,31 @@ Public Sub main()
     Print MyVars[var_x], MyVars[var_y], MyVars[var_z], MyVars[var_a]
 
     starttime = Timer
-    For i As Integer = 0 To longloop
+    For i = 0 To longloop
         MyVars[Var_y] = i
     Next
     Print "Write using ShmVarStorage                 time X "; longloop; " : "; Timer - starttime
 
     starttime = Timer
-    For i As Integer = 0 To longloop
+    For i = 0 To longloop
         MyVars._puttype(i, Var_y, gb.integer)
     Next
     Print "Write using ShmVarStorage force data type time X "; longloop; " : "; Timer - starttime
 
     starttime = Timer
-    For i As Integer = 0 To LongLoop
+    For i = 0 To LongLoop
         y = MyVars[Var_y]
     Next
     Print "Read using ShmVarStorage                  time X "; longloop; " : "; Timer - starttime
 
     starttime = Timer
-    For i As Integer = 0 To LongLoop
+    For i = 0 To LongLoop
         y = MyVars._getType(Var_y, gb.integer)
     Next
     Print "Read using ShmVarStorage Force data type  time X "; longloop; " : "; Timer - starttime
 
     starttime = Timer
-    For i As Integer = 0 To LongLoop
+    For i = 0 To LongLoop
         MyVars.Lock()
         y = MyVars._getType(Var_y, gb.integer)
         MyVars.Unlock()

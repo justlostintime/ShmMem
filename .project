@@ -1,6 +1,6 @@
 # Gambas Project File 3.0
 Title=ShmMem
-Startup=TestExecutableBlocks
+Startup=NewFGLoader
 Version=2.2.8
 Component=gb.args
 Component=gb.dbus

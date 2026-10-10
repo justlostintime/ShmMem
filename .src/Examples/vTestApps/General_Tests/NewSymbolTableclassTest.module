@@ -12,6 +12,7 @@ Public Sub main()
 
     Dim symStore As New ShmMemBlock(5000000)
     Dim vars As New ShmSymbolTable(symStore, MyVarMem, False)
+    Dim i As Integer
 
     Print "UseCache = "; vars.UseCache;; "' Length = "; Vars.MaxSymbols
 
@@ -22,7 +23,7 @@ Public Sub main()
     Print "The Dogs Value is ";; vars!dog
     Print "Assign/free  symbol begins for ";; loopcount;; "Loops"
     Dim starttime As Float = Timer
-    For i As Integer = 0 To LoopCount
+    For i = 0 To LoopCount
         vars!dog = i
         vars.Remove("dog")
     Next
@@ -108,14 +109,14 @@ Public Sub main()
     End With
 
     starttime = Timer
-    For i As Integer = 0 To LoopCount
+    For i = 0 To LoopCount
         vars!dog = 56
     Next
     Print "Assign Value to symbol "; loopcount; " Time :";; Timer - Starttime
 
     Dim result As Integer
     starttime = Timer
-    For i As Integer = 0 To LoopCount
+    For i = 0 To LoopCount
         result = vars!dog
     Next
     Print "Get Value from symbol "; Loopcount; "  Time :";; Timer - Starttime

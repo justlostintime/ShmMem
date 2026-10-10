@@ -2,18 +2,14 @@
 shmMem=[234]
 ShmNotifyEntry=[54]
 ShmValue=[88]
-NewShmMemInterfaceTest=[]
 
 [Debug]
-Breakpoints={"LoadAndSaveValue":[4,27,36]}
+Breakpoints={"LoadAndSaveValue":[4,27,36],"NewFGLoader":[9]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
 Remote=False
 Profiling=False
-Environment=[]
-RemoteEnvironment=[]
-Arguments=[]
 
 [DebugWindow]
 Count=0
@@ -874,7 +870,9 @@ Lock=False
 LastCommit="ACleanup after 2 pass compiler was deployed\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
 
 [OpenFile]
-Count=0
+Count=1
+Active=1
+File[1]=".src/Examples/vTestApps/ProcessSimpleLoadTest/NewFGLoader.module:0.14"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

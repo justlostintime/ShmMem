@@ -84,17 +84,18 @@ End
 Public Sub _Call() As String
 
     Dim retString As String = ""
+    Dim s As String
 
     retString &= "ThisString = \"" & ThisString & "\"\n"
     retString &= "ThisNumber = " & Str(thisnumber) & "\n"
     retString &= "ThisArray = ["
-    For Each s As String In ThisArray
+    For Each s In ThisArray
         retString &= "\"" & s & "\" "
     Next
     retString &= "]"
 
     retString &= "ReadString = ["
-    For Each s As String In ReadString
+    For Each s In ReadString
         retString &= "\"" & s & "\" "
     Next
     retString &= "]"

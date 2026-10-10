@@ -5,6 +5,7 @@ Public Sub main()
     Dim i As Integer
     Dim j As Integer
     Dim Bounds As Integer
+    Dim ty As Integer
 
     shmMem.ForceDelete("myseg")                                ' force remove the named segment in case crash leaves it over
     Dim mem As New Shmmem("myseg")                     ' using named memory, other apps can access Space
@@ -62,9 +63,8 @@ Public Sub main()
         Next
         Print
 
-        Dim ty As Integer = 0
         Dim iIndex As Integer = b.max
-        For ty As Integer = 0 To iIndex
+        For ty = 0 To iIndex
             Dim subs As Long[] = b.LinearToSubScript(ty)
             Print b.FormatDim(subs); "="; b[ty]
         Next

@@ -3,11 +3,14 @@
 Public Sub main()
 
     Dim myMem As New ShmMem(1500000)
+    Dim v As Variant
+    Dim j As Integer
+    Dim i As Integer
 
     With mymem
 
         Print "Test Priority Queues Repeat test 1000 times ***************************************************************"
-        For i As Integer = 0 To 1000
+        For i = 0 To 1000
 
             Dim qa As New ShmQueue(myMem, CPointer(0), False, "Queue_" & Str(i))
             qa.enqueue("This is even higher 201", 201, "Enqueued")
@@ -29,7 +32,7 @@ Public Sub main()
             qa.enqueue("This is very low 1", 1, "Enqueued")
 
             Print "For each loop over the queue begins ==========================================="
-            For Each v As Variant In qa
+            For Each v In qa
                 Print Left(v & Space(20), 25), qa.key, qa.Key_ExtendedId, qa.Key_Tag
             Next
             Print "For each loop ends ========================================================="
@@ -76,18 +79,17 @@ Public Sub main()
         a.add(4.2, 3, "3")
         a.add([1, 2, 3, 4, 5, 6], 4, "4")
 
-        For Each v As Variant In a
+        For Each v In a
             Print "Before Change :";; v, a.Key_ExtendedId, a.key
         Next
         a[1] = 1000
-        For Each v As Variant In a
+        For Each v In a
             Print " After Change ";; v, a.Key_ExtendedId, a.key
         Next
 
-        Dim j As Integer
         Print "Begin 1,000,000 Writes and reads from list ...... Please wait "
         Dim StartTime As Float = Timer
-        For I As Integer = 0 To 1000000
+        For I = 0 To 1000000
             a[1] = i
             j = a[1]
         Next
@@ -133,7 +135,7 @@ Public Sub main()
         y.Tag = "FiLo-y"
 
         !Banana = d
-        For Each v As Variant In y
+        For Each v In y
             Print v
         Next
 

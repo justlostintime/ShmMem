@@ -75,7 +75,7 @@ Public Sub _new(SymName As Symbol, CallObject As Object, CallFunc As String, Not
     If fTimeOut > 0 Then
         VarClock = New Timer As "VarTimeout"
         VarClock.Delay = fTimeout
-        VarClock.Enabled()
+        VarClock.Enabled = True
     Endif
 
 End
