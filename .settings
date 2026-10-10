@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={"LoadAndSaveValue":[4,27,36],"NewFGLoader":[9]}
+Breakpoints={"LoadAndSaveValue":[4,27,36]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -867,12 +867,15 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="ACleanup after 2 pass compiler was deployed\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
+LastCommit="More Cleanup after 2 pass compiler was deployed\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
 
 [OpenFile]
-Count=1
-Active=1
-File[1]=".src/Examples/vTestApps/ProcessSimpleLoadTest/NewFGLoader.module:0.14"
+Count=4
+Active=4
+File[1]=".src/ShmMem/shmMem.class:27.673"
+File[2]=".src/Examples/vTestApps/ProcessSimpleLoadTest/NewFGSingleWait.module:41.14"
+File[3]=".src/Examples/vTestApps/ProcessSimpleLoadTest/NewBGSingleWait.class:14.17"
+File[4]=".src/Examples/vTestApps/ProcessSimpleLoadTest/NewFGLoader.module:0.4"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

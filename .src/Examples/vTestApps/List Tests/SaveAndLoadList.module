@@ -28,6 +28,12 @@ Public Sub main()
     cList = New ShmList(varfile)
     Close varfile
 
+    If clist = blist Then
+        Print "Saved and Loaded lists match"
+    Else
+        Print "Saved and Loaded lists don't match : Danger will robinson!"
+    Endif
+
     mem.Close()
     Quit 0
 

@@ -979,7 +979,7 @@ Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
             Return False
         Endif
 
-        Wait 0
+        Wait 0.001
 
     Wend
 
@@ -995,7 +995,7 @@ Public Sub WaitForValue(SymName As String, Value As Variant, Optional timeout As
     If WaitFor(SymName, timeout) = False Then Return False
 
     While Me[symname] <> Value
-        Wait 0
+        Wait 0.001
         If timeout > 0 And If Timer - starttime >= timeout Then
             Return False
         Endif
@@ -1010,13 +1010,13 @@ Public Sub WaitValueChange(SymName As String, Value As Variant, Optional timeout
 
     Dim starttime As Float = Timer
 
-    If WaitFor(SymName, timeout) = False Then Return False
+    If WaitFor(SymName, timeout) = False Then Return False  ' wait for variable to be created
 
     While Me[symname] = Value
         If timeout > 0 And If Timer - starttime >= timeout Then
             Return False
         Endif
-        Wait 0
+        Wait 0.001
     Wend
 
     Return True

@@ -21,7 +21,8 @@ Public Sub main()
     Close varfile
 
     While bList.count > 0
-        Print bList.Pop();;
+        Print bList.Pop(); ",";;
+        If bList.count % 5 = 0 Then Print
     Wend
 
     mem.Close()

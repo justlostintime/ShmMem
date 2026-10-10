@@ -33,7 +33,6 @@ Public Sub main()
             If counter = Iterations Then
                 Print "Sending termination to all Tasks"
                 !AllDone = "Yes"
-                Wait 1
             Endif
             Inc counter
         Wend
@@ -43,11 +42,12 @@ Public Sub main()
         While tasksRunning
             tasksRunning = False
             For i = 0 To 100
-                If Tasks[i].Running Then
+                If tasks[i] <> Null And If Tasks[i].Running Then
                     tasksRunning = True
-                    Print "Task :";; i;; "Still running";; "Value="; Tasks[i].value
-                Else
+                    'Print "Task :";; i;; "Still running";; "Value="; Tasks[i].value
+                Else If Tasks[i] <> Null
                     Print "Task Complete ";; i;; "Value="; Tasks[i].value
+                    Tasks[i] = Null
                 Endif
             Next
             Wait 0.1
