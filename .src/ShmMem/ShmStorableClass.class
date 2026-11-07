@@ -42,8 +42,8 @@ Public Sub _new(Optional LoadFrom As Variant = Null)
 
     '' If the types are the same and the object is of a sharedclass parent
     '' Copy all fields with matching names and types
-    '' will fail if property types dont match, will ignore any extra fields in the
-    '' otherobject. So be carefull in how you use this for objects
+    '' will fail if property types don't match, will ignore any extra fields in the
+    '' otherobject. So be careful in how you use this for objects
 
     If TypeOf(LoadFrom) = gb.object Then ' verify if some parent of load from is SharedClass
         If Object.Is(LoadFrom, "Sharedclass") Then

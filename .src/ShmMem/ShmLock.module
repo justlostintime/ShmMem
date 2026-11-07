@@ -1,0 +1,124 @@
+' Gambas module file
+
+' Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+''' Process shared, robust, recursive mutexes for the locks of ShmMemBlock and ShmList.
+''' Robust: when the process holding the lock dies, the next one to lock takes it over (EOWNERDEAD) instead of
+''' waiting for ever, as it did with the semaphores used before. Recursive: the thread holding it may lock again.
+''' A mutex takes 40 bytes and must be 8 byte aligned: Init, Take and Give round the address up, so a caller
+''' reserves 64 bytes at any address (VarMem.Alloc gives odd ones, an unaligned mutex crashed in unlock).
+''' Fast: nothing here raises an error, Take returns -1 and the caller raises (an error raised in compiled code
+''' and caught in compiled code crashed the JIT). Interpreted, each lock and unlock cost 2 to 36 us more.
+
+Fast Unsafe
+
+Extern pthread_mutexattr_init(attr As Pointer) As Integer In "libc:6"
+Extern pthread_mutexattr_setpshared(attr As Pointer, pshared As Integer) As Integer In "libc:6"
+Extern pthread_mutexattr_setrobust(attr As Pointer, robust As Integer) As Integer In "libc:6"
+Extern pthread_mutexattr_settype(attr As Pointer, kind As Integer) As Integer In "libc:6"
+Extern pthread_mutexattr_destroy(attr As Pointer) As Integer In "libc:6"
+Extern pthread_mutex_init(mutex As Pointer, attr As Pointer) As Integer In "libc:6"
+Extern pthread_mutex_trylock(mutex As Pointer) As Integer In "libc:6"
+Extern pthread_mutex_timedlock(mutex As Pointer, abstime As Pointer) As Integer In "libc:6"
+Extern pthread_mutex_unlock(mutex As Pointer) As Integer In "libc:6"
+Extern pthread_mutex_consistent(mutex As Pointer) As Integer In "libc:6"
+Extern clock_gettime(clockid As Integer, tp As Pointer) As Integer In "libc:6"
+Extern memset(dest As Pointer, c As Integer, n As Integer) As Pointer In "libc:6"
+
+Private Const EINTR As Integer = 4
+Private Const EBUSY As Integer = 16
+Private Const ETIMEDOUT As Integer = 110
+Private Const EOWNERDEAD As Integer = 130
+Private Const CLOCK_REALTIME As Integer = 0
+Private Const PTHREAD_PROCESS_SHARED As Integer = 1
+Private Const PTHREAD_MUTEX_ROBUST As Integer = 1
+Private Const PTHREAD_MUTEX_RECURSIVE As Integer = 1
+Private Const SpinTries As Integer = 100                     '' trylock first: a holder keeps the lock a few microseconds
+
+'' Why the last Init or Take failed
+Public LastError As String = ""
+
+Private $aDeadline As New Long[2]                           '' timespec for pthread_mutex_timedlock, tv_sec then tv_nsec
+
+'' The mutex of the 64 bytes reserved at pReserved: the first 8 byte aligned address in them
+Public Sub Aligned(pReserved As Pointer) As Pointer
+
+  Return CPointer((CLong(pReserved) + 7) And Not 7)
+
+End
+
+'' Make the mutex in the 64 bytes reserved at pReserved. False when it fails, LastError says why
+Public Sub Init(pReserved As Pointer) As Boolean
+
+  Dim pAttr As Pointer = Alloc(64)
+  Dim iRet As Integer
+  Dim pMutex As Pointer = Aligned(pReserved)
+
+  memset(pMutex, 0, 40)
+  pthread_mutexattr_init(pAttr)
+  pthread_mutexattr_setpshared(pAttr, PTHREAD_PROCESS_SHARED)
+  pthread_mutexattr_setrobust(pAttr, PTHREAD_MUTEX_ROBUST)
+  pthread_mutexattr_settype(pAttr, PTHREAD_MUTEX_RECURSIVE)
+  iRet = pthread_mutex_init(pMutex, pAttr)
+  pthread_mutexattr_destroy(pAttr)
+  Free(pAttr)
+  If iRet = 0 Then Return True
+  LastError = "unable to create the lock, error " & CStr(iRet)
+  Return False
+
+End
+
+'' Take the mutex in the 64 bytes reserved at pReserved, waiting up to fSeconds for a live holder. 0 when locked, 1 when locked after its
+'' holder died (what it was changing may be half done), -1 when it was not locked, LastError says why.
+'' A busy lock is waited for in pthread_mutex_timedlock: the kernel queues the waiters and wakes one at each
+'' unlock, nothing is spent spinning
+Public Sub Take(pReserved As Pointer, fSeconds As Float, sWhat As String) As Integer
+
+  Dim iRet As Integer
+  Dim iSpin As Integer
+  Dim pMutex As Pointer = Aligned(pReserved)
+
+  iRet = pthread_mutex_trylock(pMutex)
+  While iRet = EBUSY And iSpin < SpinTries
+    Inc iSpin
+    iRet = pthread_mutex_trylock(pMutex)
+  Wend
+  If iRet = EBUSY Then
+    clock_gettime(CLOCK_REALTIME, $aDeadline.Data)
+    $aDeadline[0] += CLong(Int(fSeconds))
+    $aDeadline[1] += CLong(Frac(fSeconds) * 1000000000)
+    If $aDeadline[1] >= 1000000000 Then
+      $aDeadline[1] -= 1000000000
+      Inc $aDeadline[0]
+    Endif
+    Repeat
+      iRet = pthread_mutex_timedlock(pMutex, $aDeadline.Data)
+    Until iRet <> EINTR                                    ' a signal came in, keep waiting
+  Endif
+  Select iRet
+    Case 0
+      Return 0
+    Case EOWNERDEAD
+      pthread_mutex_consistent(pMutex)
+      Print #File.Err, "ShmMem: a process ended while it held the lock of "; sWhat; ", recovered"
+      Return 1
+    Case ETIMEDOUT
+      LastError = "Mutex race condition !!! : " & sWhat & ", another process held the lock for " & CStr(fSeconds) & " s"
+      Return -1
+    Case Else
+      LastError = "ShmMem lock error " & CStr(iRet) & " for " & sWhat
+      Return -1
+  End Select
+
+End
+
+'' Release the mutex in the 64 bytes reserved at pReserved
+Public Sub Give(pReserved As Pointer)
+
+  pthread_mutex_unlock(Aligned(pReserved))
+
+End

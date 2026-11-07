@@ -2,7 +2,7 @@
 
 ''' This class is used to start a native c or asm code thread
 ''' within the current gambas application. this is not a gambas thread
-''' do not use this unless ununderstand what you are doing.
+''' do not use this unless you understand what you are doing.
 
 Export
 
@@ -31,7 +31,7 @@ Property Read Thread As Pointer Use $Thread = Null
 Property Read Attribute As Pointer Use $Attribute = Null
 Property Read Function_Address As Pointer Use $Function_Address = Null           ' The real physical address of the function
 Property Read Function_VirtAddr As Pointer Use $Function_VirtAddr = Null            ' used when magic alloc internally happens
-Property Read Call_Memory As ShmMem Use $Call_Memory = Null                            ' The physical refrence to be used
+Property Read Call_Memory As ShmMem Use $Call_Memory = Null                            ' The physical reference to be used
 Property Read Call_Args As Pointer Use $Call_Args = Null
 Property Read result As Long Use $result = 4
 Property Read Auto As Boolean Use $Auto = False   ' set if the Program Memory is created by New
@@ -61,8 +61,6 @@ Public Sub _new(SysMem As ShmMem, Ident As Variant, Optional ProgramLength As In
     $Function_address = ident                                                 ' set the real address of the function to call
     $Call_memory = SysMem                                                     ' set the base segment information
     '  SysMem.Dump($Function_Address, 200)
-Catch
-    Stop
 
 End
 
@@ -70,7 +68,7 @@ Public Sub execute(Optional arg As Pointer = Null, WaitToComplete As Boolean = T
 
     Dim result As Integer
 
-    $Call_Args = VarPtr(arg)                                                                                               ' Save the args for later refrence
+    $Call_Args = VarPtr(arg)                                                                                               ' Save the args for later reference
     '$Call_memory.Dump(arg, 200)                                                                                  ' Dump struct to file for debug
     result = pthread_create(VarPtr($Thread), Null, $Function_Address, arg)
     'Debug "pthread_create result=";; result

@@ -40,12 +40,12 @@ Public NotifyFunc As String                                    '' Name of the fu
 Public NotifyTimeout As Integer                          '' Number of  ticks when waiting for a notification
 Public NotifyVar As Symbol                                   '' The variable symbol table entry  we are waiting for a change
 Public VarName As String                                      '' text name of the variable we are waiting to change
-Public VarMemory As ShmVarStorage              '' The memory that containg the variable values
+Public VarMemory As ShmVarStorage              '' The memory that containing the variable values
 Public SymTable As ShmSymbolTable               '' the symbol table associated with the entry we are waiting for
-Public Tag As String                                                 '' a tag for uniqueue identification of an entry
-Public StartTime As Float                                       '' time swe started waiting
+Public Tag As String                                                 '' a tag for unique identification of an entry
+Public StartTime As Float                                       '' time we started waiting
 Private VarClock As Timer                                    '' the timer associated with this variable
-Private OneShot As Boolean = False                 '' Wait just once for a change, then delete the notify rerquest
+Private OneShot As Boolean = False                 '' Wait just once for a change, then delete the notify request
 ' Private OneShot As Boolean
 
 Event VarSpecial(VarDef As ShmNotifyEntry, Info As Variant[])                     '' sent when a new variable is created

@@ -8,7 +8,7 @@ Public Sub main()
     Dim varfile As File
 
     With mem
-        ' Now set values in a linear fasion, could use subscripts, but this is faster
+        ' Now set values in a linear fashion, could use subscripts, but this is faster
         For i As Integer = 0 To a.max
             a[i] = "Test Value" & i
         Next

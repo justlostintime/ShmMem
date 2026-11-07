@@ -31,11 +31,11 @@ Public Struct dList                         '' A defined entry in list of object
     Type As Integer                         '' Type of memory
     {Next} As Pointer                      '' Next in list or head of pool
     Prev As Pointer                          '' previous in list or end of pool
-    sema As Pointer                         '' The locking semephor for each list
+    sema As Pointer                         '' The locking semaphore for each list
     Global As Integer                       '' Defines if this is a global memory object or not
     bDebug As Boolean                  '' turns on or off the debug control
     Tag[64] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
-    RefCount As Long                      '' Number of refrences to this element
+    RefCount As Long                      '' Number of references to this element
     Priority As Long                           '' in a queue this is the priority of this element or the Extended Id of a list
     UsePriority As Boolean             '' Enable the use of priority ordering in the list
     Value As Pointer                         '' Value of entry or count if pool
@@ -46,7 +46,7 @@ Private Entry As DList                                                     '' Th
 Property Value As Variant                                            '' The actual value of the entry
 Property Read Address As Pointer                            '' The virtual address of the entry
 Property Read Type As Integer                                   '' The Type of this block
-Property Read RefCount As Long                               '' The Number of refrences
+Property Read RefCount As Long                               '' The Number of references
 Property Priority As Long                                               '' The priority of this element
 Property Debug As Boolean Use $bDebug             '' Turn on or off debugging for this entry
 Property Tag As String                                                  '' user defined tag for this entry
@@ -251,7 +251,7 @@ Private Sub Priority_Write(Value As Long)
 
 End
 
-'' Retruns a pointer to the actual control sructure
+'' Returns a pointer to the actual control structure
 Private Function dlist_read() As DList
 
     If entry = Null Then
@@ -271,7 +271,7 @@ Private Function next_Read() As Pointer
 
 End
 
-'' Retruens the virtual address of the previous entry in the list/queue
+'' Returns the virtual address of the previous entry in the list/queue
 Private Function prev_Read() As Pointer
 
     If entry = Null Then

@@ -9,7 +9,7 @@
 Export
 Fast Unsafe
 
-''' Implenets the entry for A queue
+''' Implements the entry for A queue
 
 Inherits ShmListEntry
 

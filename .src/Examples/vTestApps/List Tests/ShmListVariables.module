@@ -65,7 +65,7 @@ Public Sub main()
 
         For Each v In mylist
             Print v, MyList.key, MyList.Key_ExtendedId, MyList.key_tag
-            Dim bork As Shmlist = MyList.Copy()                                               ' this only creates a new header, that points to the exsisting entries, be carefull
+            Dim bork As Shmlist = MyList.Copy()                                               ' this only creates a new header, that points to the existing entries, be careful
             For Each v In bork
                 Print "\t";; v, bork.key, bork.Key_ExtendedId, bork.key_tag
             Next

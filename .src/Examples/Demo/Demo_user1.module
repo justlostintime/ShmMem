@@ -1,7 +1,7 @@
 ' Gambas module file
 
 Use "gb.eval"
-''' Each of the User1-3 should be executed as seperate application
+''' Each of the User1-3 should be executed as separate application
 ''' They give an example of sharing data between application.
 ''' Notifications are used to signal the apps as data changes
 Public MyShare As ShmMem

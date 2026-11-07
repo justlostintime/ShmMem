@@ -27,18 +27,18 @@ Public Struct dPointer
     Value As Pointer                            '' The actual value for usage
 End Struct
 
-'' Thi is the structure used to manage lists in shared memory
+'' This is the structure used to manage lists in shared memory
 Public Struct dList                             '' A defined entry in list of objects
     Length As Long                              '' Length including header
     Address As Pointer                      '' The virtual address of this block, speed pointer conversion
     Type As Integer                             '' Type of memory
     {Next} As Pointer                          '' Next in list or head of pool
     Prev As Pointer                              '' previous in list or end of pool
-    sema As Pointer                             '' The locking semephor for each list
+    sema As Pointer                             '' The locking semaphore for each list
     Global As Integer                           '' Defines if this is a global memory object or not
     bDebug As Boolean                      '' turns on or off the debug control
     Tag[64] As Byte                              '' a user text tag for this list, can be used to identify nameless queues
-    RefCount As Long                          '' Number of refrences to this element
+    RefCount As Long                          '' Number of references to this element
     Priority As Long                              '' in a queue this is the priority of this element
     UsePriority As Boolean                '' Enable the use of priority ordering in the list
     Value As Pointer                            '' Value of entry or count if pool
@@ -50,23 +50,20 @@ Static Public cShmListEntry As Integer = 21        '' The entry in a ShmList obj
 ' Extern DListPtr(dest As Pointer, src As Pointer, Len As Integer) As DList In "libc:6" Exec "memcpy"
 ' Extern memcpy(dest As Dlist, src As Dlist, Len As Integer) As Integer In "libc:6"
 
-Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
-'Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
-Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
-Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
-Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
-Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
 Extern sched_yield() As Integer In "libpthread:0"
 
 Private VirtualAddress As Pointer = 0              '' Pointer to the head of the list
 Public ListHead As DList                                         '' Pointer to the actual list
 Public VarMem As ShmVarStorage                    '' The storage pool to used or referenced
+Private $iOwnerPid As Integer = 0                        '' the process that made this object, a forked Task does not count it in or out
+Private $iLockDepth As Integer = 0                       '' how many times this process holds the list lock through this object
+Private $iLockPid As Integer = 0                         '' the process $iLockDepth belongs to, a forked Task starts at 0
 Public SemAddress As Pointer                             '' real pointer to the locking sem used by this list
 Private Keys As NextInfo = Null                            '' Information about the last iteration
 
 Property Read Key As Long                                   '' During iterations this will be the item count
 Property Read Key_dlist As Dlist                          '' During iteration this contains the current dlist entry
-Property Read Key_ExtendedId As Long           '' ExtendedId of the entry being proessed by Next
+Property Read Key_ExtendedId As Long           '' ExtendedId of the entry being processed by Next
 Property Read Key_Tag As String                       '' The content of the entry tag field
 
 Property Read max As Long                                '' max count for iteration
@@ -85,7 +82,7 @@ Property Read Next As Variant                           '' The actual list struc
 Property Read Prev As Variant                            '' The actual list structure entry, Not Value
 Property Read First As Variant                            '' first entry in the list
 Property Read Last As Variant                             '' Last entry in the list
-Property Read RefCount As Variant                   '' Get number of refrences
+Property Read RefCount As Variant                   '' Get number of references
 Property Read MemoryPool As ShmVarStorage      '' Get the Memory pool this list belongs to
 Property Read Global As Boolean                         '' is this list a global, ie never deleted
 Property Read UsePriority As Boolean                '' If queue use priority
@@ -100,14 +97,14 @@ Static Public Sub _init()
 
 End
 
-'' Returns a new allocated list if address is 0, else returns the exsisting list at the specified address
+'' Returns a new allocated list if address is 0, else returns the existing list at the specified address
 '' VarStorage is the pointer to the address to allocate the list from
-'' VirtAddress is the address of an exsiting list, which is returned as a listObject type
+'' VirtAddress is the address of an existing list, which is returned as a listObject type
 '' it is also possible to pass a tag name to locate the correct list/queue
 '' GlobalValue is used to allow this list to be private or a global value
 '' Returns the list as a list
 '' Increments the reference counter for this list
-'' list may be accessed or created, VirtAddressOrTag = 0 then creat new list
+'' list may be accessed or created, VirtAddressOrTag = 0 then create new list
 ''                                                                VirtAddressOrTag = "tagname" then lookfor and return list with this tag
 ''                                                                VirtAddressOrTag > 0 then return list at this virtual address
 ''                                                                 VarStorage is type stream then initialize from a stream
@@ -152,6 +149,7 @@ Public Sub _configure(Optional VarStorage As Variant = Null, VirtAddressOrTag As
     SetHeadType = ShmVarStorage.UserClassByName[Object.Type(Me)]
     SetEntryType = SetHeadType + 1
 
+    $iOwnerPid = Application.Id
     If VirtAddress = 0 Then
         ListHead = NewEntry()
         VirtualAddress = ListHead.Address
@@ -162,7 +160,7 @@ Public Sub _configure(Optional VarStorage As Variant = Null, VirtAddressOrTag As
         ListHead.Value = 0
         ListHead.tag = Byte[].FromString(tag)
         SemAddress = varmem.RealDataAddress(ListHead.sema)
-        result = sem_init(SemAddress, 1, 0)
+        If Not ShmLock.Init(SemAddress) Then Error.Raise("ShmList: " & ShmLock.LastError)
     Else
         RealPtr = VarMem.RealAddress(VirtAddress)
         ListHead = RealPtr
@@ -298,7 +296,7 @@ Public Sub locateByAddress(Virt As Pointer) As Pointer
 
 End
 
-'' Free the entrie list, ignores refcount and global flags
+'' Free the entire list, ignores refcount and global flags
 Public Sub {Free}(Optional OverRideGlobal As Boolean = False)           '' Free the entire list
 
     If Varmem = Null Or If listhead = Null Then Return                                   ' if the listhead is valid then continue
@@ -309,8 +307,11 @@ Public Sub {Free}(Optional OverRideGlobal As Boolean = False)           '' Free 
 
     Me.Clear()                                                                                                                 ' remove and delete all the elements in the list
 
+    If $iLockDepth > 0 And If $iLockPid = Application.Id And If ListHead.sema <> Null Then   ' release it before its memory goes
+        ShmLock.Give(SemAddress)
+        $iLockDepth = 0
+    Endif
     If ListHead.sema <> Null Then                                                                          ' Delete the semaphore
-        sem_destroy(VarMem.RealDataAddress(ListHead.sema))
         VarMem.Free(ListHead.sema)                                                                     ' Release the memory pointer
         ListHead.sema = Null
     Endif
@@ -326,6 +327,7 @@ Public Sub _free()
     'Print Application.id, "_free Begin for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address
     If varmem = Null Then Return
     If ListHead = Null Then Return
+    If $iOwnerPid <> Application.Id Then Return                 ' a forked Task inherited this object, the reference is its parent's
     If varmem.IsValid Then
         '   Print Application.id, "_free Doing for ";; ShmVarStorage.GetTextType(listhead.type);; "Address =";; listhead.Address;; "RefCount =";; listhead.refcount
         Me.lock()
@@ -419,8 +421,8 @@ Public Sub NewEntry(Optional Value As Variant = Null) As DList
 
     If NewVar > 0 Then
         chkval = VarMem.Getpointer(itype, newvar)
-        If chkval.address <> newvar Then                                 ''' here until debugged
-            Stop
+        If chkval.address <> newvar Then
+            Error.Raise("ShmList: internal error, the value at " & CStr(newvar) & " says it is at " & CStr(chkval.address))
         Endif
     Endif
 
@@ -430,41 +432,35 @@ Public Sub NewEntry(Optional Value As Variant = Null) As DList
 End
 
 ''  Lock the list/queue  while processing the request
-'' This is not automatic, the user must do this if required
-Public Sub {lock}(Optional Wait_Time As Float = 0.001, Auto_Recovery As Boolean = False) As Boolean
-
-    Dim result As Integer = -1
-    Dim retry As Boolean = Auto_recovery
+'' This is not automatic, the user must do this if required.
+'' Waits up to Wait_Time seconds for a live holder, then raises an error; a holder that died is taken over.
+'' Auto_Recovery does nothing any more: it forced the lock open after 1 ms, even under a live holder.
+'' Nested locks by the same process only count
+Public Sub {lock}(Optional Wait_Time As Float = 30.0, Auto_Recovery As Boolean = False) As Boolean
 
     If listhead = Null Then
         Error.Raise("List/Queue - invald listhead")
     Endif
 
-    Dim end_time As Float = Timer + Wait_time
-    While result <> 0
-        result = sem_trywait(SemAddress)
-        If result <> 0 Then
-            sched_yield()
-            If end_time > Timer Then Continue
-            If retry Then
-                If ListHead.bDebug Then Print Application.id, "ShmList Locking Race condition attempting fix...."
-                retry = False
-                Me.unlock()
-            Else
-                Break
-            Endif
-        Else
-            Return True
-        Endif
-    Wend
-    If ListHead.bDebug Then Print Application.id, "ShmList Locking Race condition attempted";; IIf(Auto_Recovery, "Recovery Failed", "No Recovery Attempted")
-    Return False
+    If $iLockPid <> Application.Id Then                         ' a forked Task: the depth is its parent's
+        $iLockDepth = 0
+        $iLockPid = Application.Id
+    Endif
+    If $iLockDepth > 0 Then
+        Inc $iLockDepth
+        Return True
+    Endif
+    If ListHead.sema = Null Then Error.Raise("List/Queue - the list was freed")
+    ' SemAddress is set when the object is made: the memory never moves (ShmMemBlock.AllocChunk is not used),
+    ' looking it up at every lock cost 10%. Look it up here again if the memory is ever made to grow
+    If ShmLock.Take(SemAddress, Wait_Time, "a list") < 0 Then Error.Raise(ShmLock.LastError & " (list " & ListHead.Tag.ToString() & ")")   ' the name only when it fails, building it at every lock cost 15%
+    $iLockDepth = 1
+    Return True
 
 End
 
 ''  Release the lock on the list/queue
-'' Returns false if the lock was not 0, locked
-'' be careful as this can be posted anywhere
+'' Returns False when this process did not hold it: a release without a lock is ignored
 
 Public Sub {unlock}() As Boolean
 
@@ -472,16 +468,10 @@ Public Sub {unlock}() As Boolean
         Error.Raise("List/Queue - invalid listhead")
     Endif
 
-    Dim value As Integer = 0
-    Dim iptr As Pointer = VarPtr(value)
-
-    If sem_getvalue(SemAddress, iptr) = 0 Then
-        If value = 0 Then
-            sem_post(SemAddress)
-            Return True
-        Endif
-    Endif
-    Return False
+    If $iLockPid <> Application.Id Or If $iLockDepth <= 0 Then Return False
+    Dec $iLockDepth
+    If $iLockDepth = 0 And If ListHead.sema <> Null Then ShmLock.Give(SemAddress)   ' freed meanwhile: nothing to release
+    Return True
 
 End
 
@@ -537,7 +527,7 @@ Public Sub _Assign(VEntry As DPointer)
     If listhead = Null Then
         vEntry.value = Null                     ' if the listhead is valid then continue
     Else
-        Inc ListHead.RefCount                                                         '  represents the number of refrences to this entry
+        Inc ListHead.RefCount                                                         '  represents the number of references to this entry
         vEntry.Value = ListHead.Address                                     '  Assign this to the variable
     Endif
 
@@ -559,7 +549,7 @@ Public Sub Clear()
 End
 
 '' Return a simple list of all the elements in a list/queue
-'' these are pointers to the actual memory, so be carefull
+'' these are pointers to the actual memory, so be careful
 '' any changes
 Public Sub AsDlistList() As DList[]
 
@@ -570,8 +560,7 @@ Public Sub AsDlistList() As DList[]
     Dim pList As New DList[]
     Dim Source As Dlist = EntryPtr(ListHead.next)
 
-    If source = Null Or If Source.next = Source.address Then
-        Stop
+    If source = Null Or If Source.next = Source.address Then    ' an empty list
         Return plist
     Endif
 
@@ -638,7 +627,7 @@ Catch
 
 End
 
-'' Put a value into an exsisting element based upon the index
+'' Put a value into an existing element based upon the index
 Public Sub _put(Value As Variant, Index As Integer)
 
     Dim dPtr As Dlist
@@ -773,7 +762,7 @@ Private Sub SeekRec(Index As Integer) As DList
     Wend
 
     If current = Null Then
-        Stop
+        Error.Raise("Out Of Bounds")
     Endif
 
     Return Current
@@ -804,7 +793,7 @@ Private Sub _remove(CurrentItem As Dlist, Optional WithValue As Boolean = True) 
         Else
             ptrnext = EntryPtr(ListHead.next)                        ' check if just one item on the queue
             If ptrnext.Next = Null Then                                     ' If it is then
-                ListHead.Prev = ListHead.Next                          ' it also becoms the previous item
+                ListHead.Prev = ListHead.Next                          ' it also becomes the previous item
             Endif
         Endif
     Else If addr = ListHead.prev Then                                ' if the address matches the end of the queue
@@ -812,8 +801,8 @@ Private Sub _remove(CurrentItem As Dlist, Optional WithValue As Boolean = True) 
         PtrPrev = EntryPtr(CurrentItem.prev)                    ' get the physical address of the previous entry
         ptrPrev.next = Null                                                       ' Since we are at the end of the list just set it to null
     Else
-        ptrnext = EntryPtr(currentItem.next)                     ' Well we must be in the list then Get Pysical address of next item
-        ptrprev = EntryPtr(CurrentItem.prev)                    ' get the pysical address of the previous item
+        ptrnext = EntryPtr(currentItem.next)                     ' Well we must be in the list then Get Physical address of next item
+        ptrprev = EntryPtr(CurrentItem.prev)                    ' get the physical address of the previous item
         ptrnext.prev = ptrprev.address                              ' Point the next items previous to current item previous
         ptrprev.next = ptrnext.address                              ' Point the previous items next to the current items next
     Endif
@@ -1043,8 +1032,6 @@ Finally
     Me.unlock()
 
 Catch
-    Print Error.text, Error.Where
-    Stop
     Error.Propagate()
 
 End
@@ -1070,7 +1057,7 @@ Public Sub RemoveByValue(vValue As Variant) As Variant
 
     CurrentItem = EntryPtr(ListHead.next)
     If CurrentItem.Address = ListHead.Address Then
-        Stop
+        Error.Raise("Empty List - Value Not Found : " & Str(vValue))
     Endif
 
     While CurrentItem <> Null
@@ -1122,10 +1109,8 @@ Public Sub RemoveByVirt(VirtAddress As Pointer) As Variant
     Dim Value As Variant
 
     CurrentItem = EntryPtr(ListHead.next)
-
-    CurrentItem = EntryPtr(ListHead.next)
     If CurrentItem.Address = ListHead.Address Then
-        Stop
+        Error.Raise("Empty List")
     Endif
 
     While CurrentItem <> Null
@@ -1218,7 +1203,7 @@ Private Function Key_ExtendedId_read() As Long
 
 End
 
-'' Iteration throught the list
+'' Iteration through the list
 Public Sub _next() As Variant
 
     Dim enumEntry As NextInfo
@@ -1485,9 +1470,9 @@ Private Function AllLists_Read() As Variant[]
 End
 
 '' returns an array of elements for all list type classes
-'' Entries in this list point to the underlaying shared values
+'' Entries in this list point to the underlying shared values
 '' if you change anything in this list it will affect every other
-'' refrence to this list
+'' reference to this list
 Private Function AllEntries_read() As Variant[]
 
     Return _allEntries()
@@ -1633,7 +1618,7 @@ Private Function Last_Read() As Variant
 
 End
 
-'' returns the refrence count of this list
+'' returns the reference count of this list
 Private Function RefCount_Read() As Variant
 
     If varmem = Null Or If listhead = Null Then Return 0

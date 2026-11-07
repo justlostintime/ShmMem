@@ -41,7 +41,7 @@ End Struct
 '' but this does not define the actual size or count when allocated. See shmmem  MaxSymbolsDefault
 '' for the actual size of the table when it is created.
 Public Struct tableLayout
-    Table[80000] As Struct Symbol           '' fake number entries but does limit max number of symbols that can be defined in the sysmbol table during creation
+    Table[80000] As Struct Symbol           '' fake number entries but does limit max number of symbols that can be defined in the symbol table during creation
 End Struct
 
 '' Used as a pointer to strings inside shared memory
@@ -83,8 +83,8 @@ Property Read MaxSymbols As Integer                                '' The Max nu
 Property Read Collisions As Integer                                       '' The number of time the Hash Function Collided with used entry
 Property Read MaxUsedSymbols As Integer                       '' Highest Number Of Symbols ever used
 Property Debug As Boolean Use $bDebug                          '' Turn on off the debug messages for this object
-Property UseCache As Boolean Use $UseCache = True    '' Trun on or off the use of the Cache for variables in local app
-Property Signature As String Use $signature                        '' uniqueue id for this object
+Property UseCache As Boolean Use $UseCache = True    '' Turn on or off the use of the Cache for variables in local app
+Property Signature As String Use $signature                        '' unique id for this object
 
 '' Save the contents of the symbol table to a file, The actual value of the symbol is also saved
 '' Saves only the table entries that have an active symbol entry.
@@ -228,7 +228,7 @@ Static Public Sub InfoLength() As Integer
 End
 
 '' Create a new symbol table, provide the symbol table memory and
-'' the Variable storgage information
+'' the Variable storage information
 Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional ActivateCache As Boolean = False)
 
     ' $bDebug = True
@@ -264,7 +264,7 @@ Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional Acti
 
     If Not Me.Exist("#onnew") Then
         Me["#onnew"] = "Holding Queue for new symbol creation"
-        SymInfo.NotifyOnNew = 0                                                        '' no nitification requested on symbol table changes
+        SymInfo.NotifyOnNew = 0                                                        '' no notification requested on symbol table changes
         Dim index As Long = GetSymbol("#onnew")
         Dim sym As Symbol = SymMem.Table[index]
         Dim NotList As New ShmList(Varmem, 0, True, "On New Queue")
@@ -273,7 +273,7 @@ Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional Acti
 
     If Not Me.Exist("#onremove") Then
         Me["#onremove"] = "Holding Queue for symbol removal"
-        SymInfo.NotifyOnDelete = 0                                                        '' no nitification requested on symbol table changes
+        SymInfo.NotifyOnDelete = 0                                                        '' no notification requested on symbol table changes
         index = GetSymbol("#onremove")
         sym = SymMem.Table[index]
         NotList = New ShmList(Varmem, 0, True, "On Remove Queue")
@@ -282,7 +282,7 @@ Public Sub _new(MemBlock As ShmMemBlock, DataMem As ShmVarStorage, Optional Acti
 
     If Not Me.Exist("#onany") Then
         Me["#onany"] = "Holding Queue for any symbol changed"
-        SymInfo.NotifyOnAny = 0                                                        '' no nitification requested on symbol table changes
+        SymInfo.NotifyOnAny = 0                                                        '' no notification requested on symbol table changes
         index = GetSymbol("#onany")
         sym = SymMem.Table[index]
         NotList = New ShmList(Varmem, 0, True, "On Any Queue")
@@ -306,9 +306,7 @@ End
 '' update the apps/tasks copy of the symbol table
 Private Sub UpdateCache()
 
-    If Not $UseCache Then
-        Stop
-    Endif
+    If Not $UseCache Then Return                                 ' nothing to update without a cache
 
     If LastUpdated = SymInfo.LastUpdate Then Return
 
@@ -383,7 +381,7 @@ Private Sub FindHash(HashValue As Pointer, SymName As String) As Pointer
 
     SymName = Lower(SymName)
 
-    If SymMem.Table[index].Hash = hashValue Then                                                        '' if the hash values match then check actual name incase of collision
+    If SymMem.Table[index].Hash = hashValue Then                                                        '' if the hash values match then check actual name in case of collision
         While True
             Dim NameLen As Integer = SymMem.Table[index].NameLength
             If NameLen = SymName.len Then
@@ -421,7 +419,7 @@ Private Sub FindEmpty(HashValue As Pointer) As Pointer       '' Returns the next
 
 End
 
-'' insert the hased symbol into a hash bucket
+'' insert the hashed symbol into a hash bucket
 Private Sub InsertHash(rootHash As Long, newElement As Long)
 
     Dim index As Long = rootHash
@@ -557,7 +555,7 @@ Public Sub Remove(SymName As String)
     SymTblMem.Exclusive()
 
     freeData = SymMem.Table[index].Address                       ' the address of the data to be freed
-    SymMem.Table[index].Address = NoEntry                        ' mark adress as unused
+    SymMem.Table[index].Address = NoEntry                        ' mark address as unused
     SymMem.Table[index].Used = False                                    ' mark entry as not used
 
     If SymMem.Table[index].next <> -1 Then                           ' we have a chain
@@ -649,7 +647,7 @@ Public Sub _put(value As Variant, SymName As String)
     If NotifyVars <> Null Then NotifyVars.CheckNotify()          ' events waiting for us first, they read the values as they are now
 
     If $UseCache Then
-        UpdateCache() ' upated
+        UpdateCache() ' updated
 
         If Not SymbolCache.Exist(SymName) Then 'updated
             Add(SymName, Value)
@@ -719,7 +717,7 @@ Public Sub NotifyQ(symname As String) As ShmList
 
 End
 
-'' We need to determine if the object is a class=module or object=class instanciated object
+'' We need to determine if the object is a class=module or object=class instantiated object
 Public Sub GetObjectClass(BasicObject As Object) As Class
 
     Dim result As Class = Object.Class(BasicObject)
@@ -816,7 +814,7 @@ Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional F
 
 End
 
-'' create a notification request for the specified sysmbol
+'' create a notification request for the specified symbol
 Public Sub Notify(SymName As String, CallBack As Object, Optional FuncName As String = "", Timeout As Long = 0, Tag As String = "")
 
     Dim ObjClass As Class = Null
@@ -891,9 +889,6 @@ Public Sub {VarPtr}(SymName As String) As Variant
 
     value = VarMem.varptr(SymMem.Table[index].Address)
     Return VarMem.atptr(value)
-Catch
-    Error Error.Where;; Error.Text
-    Stop
 
 End
 
@@ -925,7 +920,7 @@ End
 
 '' Returns a text block containing a report on the symbol table stats
 '' length, free slots, used slots, Collisions, retry after collisions, Last Updated
-'' Pysical address of the table
+'' Physical address of the table
 Private Sub TextSummary_Read() As String
 
     Dim Result As String = ""
@@ -974,6 +969,7 @@ End
 Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
 
     Dim starttime As Float = Timer
+    Dim fPause As Float = 0.001                                 ' not a busy wait: the pause doubles up to 50 ms
 
     While True
 
@@ -988,7 +984,8 @@ Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
             Return False
         Endif
 
-        Wait 0.001
+        Wait fPause
+        If fPause < 0.05 Then fPause *= 2                          ' checked often at first, then 20 times a second
 
     Wend
 
@@ -1000,11 +997,13 @@ End
 Public Sub WaitForValue(SymName As String, Value As Variant, Optional timeout As Float = 0) As Boolean
 
     Dim starttime As Float = Timer
+    Dim fPause As Float = 0.001                                 ' not a busy wait: the pause doubles up to 50 ms
 
     If WaitFor(SymName, timeout) = False Then Return False
 
     While Me[symname] <> Value
-        Wait 0.001
+        Wait fPause
+        If fPause < 0.05 Then fPause *= 2                          ' checked often at first, then 20 times a second
         If timeout > 0 And If Timer - starttime >= timeout Then
             Return False
         Endif
@@ -1018,6 +1017,7 @@ End
 Public Sub WaitValueChange(SymName As String, Value As Variant, Optional timeout As Float = 0) As Boolean
 
     Dim starttime As Float = Timer
+    Dim fPause As Float = 0.001                                 ' not a busy wait: the pause doubles up to 50 ms
 
     If WaitFor(SymName, timeout) = False Then Return False  ' wait for variable to be created
 
@@ -1025,7 +1025,8 @@ Public Sub WaitValueChange(SymName As String, Value As Variant, Optional timeout
         If timeout > 0 And If Timer - starttime >= timeout Then
             Return False
         Endif
-        Wait 0.001
+        Wait fPause
+        If fPause < 0.05 Then fPause *= 2                          ' checked often at first, then 20 times a second
     Wend
 
     Return True
@@ -1108,14 +1109,14 @@ Private Function Length_Read() As Integer
 
 End
 
-'' the name of the symbol durling for each loop
+'' the name of the symbol during for each loop
 Private Function Key_Read() As String
 
     Return $sKey
 
 End
 
-'' The index of the symbol in the symbol table during for ech loop
+'' The index of the symbol in the symbol table during for each loop
 Private Function KeyIndex_read() As Long
 
     Return $iKeyIndex
@@ -1150,7 +1151,7 @@ Private Function Collisions_Read() As Integer
 
 End
 
-'' return the highest number of sysmbols at any one time
+'' return the highest number of symbols at any one time
 Private Function MaxUsedSymbols_Read() As Integer
 
     Return SymInfo.MaxCount

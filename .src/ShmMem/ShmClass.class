@@ -30,11 +30,11 @@ Public Struct dNativeClass             '' A defined entry in list of objects
     Length As Long                              '' Length including header
     Address As Pointer                      '' The virtual address of this block, speed pointer conversion
     Type As Integer                             '' Type of memory
-    sema[16] As Byte                            '' The locking semephor for this object
+    sema[16] As Byte                            '' The locking semaphore for this object
     Global As Integer                           '' Defines if this is a global memory object or not
     bDebug As Boolean                      '' turns on or off the debug control
     Tag[64] As Byte                              '' a user text tag for this list, can be used to identify nameless queues
-    RefCount As Long                          '' Number of refrences to this element
+    RefCount As Long                          '' Number of references to this element
     enum_counter As Long                '' Used when enumerating a list structure
     enum_listitem As DNativeClass '' pointer to dlist
     Value As Pointer                            '' Value .. this is the first user defined field of this native object

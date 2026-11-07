@@ -17,11 +17,11 @@ Public Struct dList                         '' A defined entry in list of object
     Type As Integer                         '' Type of memory
     {Next} As Pointer                      '' Next in list or head of pool
     Prev As Pointer                          '' previous in list or end of pool
-    sema As Pointer                         '' The locking semephor for each list
+    sema As Pointer                         '' The locking semaphore for each list
     Global As Integer                       '' Defines if this is a global memory object or not
     bDebug As Boolean                  '' turns on or off the debug control
     Tag[64] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
-    RefCount As Long                      '' Number of refrences to this element
+    RefCount As Long                      '' Number of references to this element
     Priority As Long                           '' Priority/Extended ID of a list element
     UsePriority As Boolean             '' Enable the use of priority ordering in the queue
     Value As Pointer                          '' Value of entry or count if pool
@@ -54,7 +54,7 @@ Public Sub Push(Value As Variant, Optional Priority As Long = 0, TagInfo As Stri
 
 End
 
-'' remove the highest prority element from the queue
+'' remove the highest priority element from the queue
 Public Sub Pop() As Variant
 
     Return DeQueue()                    ' if no priority then take from top of the queue
@@ -172,10 +172,6 @@ Public Sub _next() As Variant
     Endif
 
     Return Super.VarMem[ListItem.value]
-
-Catch
-    Print "ShmQueue Next error ";; Error.text;; Error.where
-    Print Hex(listitem.Address)
 
 End
 

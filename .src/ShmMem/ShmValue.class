@@ -32,11 +32,12 @@ Public Struct dValue
     {Next} As Pointer                                         '' never really used except if free block
     bDebug As Boolean                                         '' debug flag for this datatype
     Tag[64] As Byte                                           '' Tag id of Value
-    RefCount As Integer                                       '' Refrence counter to this value
+    RefCount As Integer                                       '' Reference counter to this value
     DataAddress As Pointer                                    '' Pointer to where the memory is located
 End Struct
 
 ValueDef As DValue = Null                                     '' the actual memory info
+Private $iOwnerPid As Integer = 0                             '' the process that made this object, a forked Task does not count it out
 Private VarMem As ShmVarStorage                               '' The storage pool to used or referenced
 
 Property Read VirtAddress As Pointer                          '' where the value header is stored
@@ -101,6 +102,7 @@ Public Sub _new(Optional VarStorage As Variant = Null, VirtAddressOrTag As Varia
 
     Dim pType As Integer = TypeOf(VarStorage)
 
+    $iOwnerPid = Application.Id
     If varstorage = Null Then
         Return
     Else If ptype = gb.object And If VarStorage Is Stream Then
@@ -227,6 +229,7 @@ End
 '' system free
 Public Sub _free()
 
+    If $iOwnerPid <> Application.Id Then Return                 ' a forked Task inherited this object, the reference is its parent's
     Me.free()
 
 End

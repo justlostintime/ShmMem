@@ -7,7 +7,7 @@ Export
 ''' or by the name provided on the command line when invoked. This will not spin off into BG
 ''' by default but should be started as a background task by the user, from command line
 ''' or the users application. User must specify which variables they wish to keep
-''' synconized across hosts.
+''' synchronized across hosts.
 '''
 ''' It waits on the command port for commands to manage the shared memory segment
 ''' Commands :
@@ -30,7 +30,7 @@ Export
 '''
 ''' SaveImage <MemName> <ImageName>   \n       'Saves a memory segment to an image file
 '''
-''' The next section covers keeping variables synconized across
+''' The next section covers keeping variables synchronized across
 ''' Sync methods:
 '''      Write :    The updated values are written to remote hosts, the remote host using the value does not need to do anything
 '''                        special just use the named database as usual.
@@ -38,8 +38,8 @@ Export
 '''                        on this daemon's side.
 '''      Both:        The daemon will both send and read updates from remote hosts, attempt to merge/ arbitrate changes
 '''                         The daemon will attempt to arbitrate array and complex data sets.... not the best idea to sync BOTH for these
-''' var <variable name>  <Write | read | Both>                          ' add this variable to list of variable to keep syncronized
-''' delvar < Variable name>                                             ' remove this variable from list to keep syncronized
+''' var <variable name>  <Write | read | Both>                          ' add this variable to list of variable to keep synchronized
+''' delvar < Variable name>                                             ' remove this variable from list to keep synchronized
 
 Property SystemPort As Integer Use $SystemPort = 5678
 Property MemAutoSize As Integer Use $MemAutoSize = 10000000                    ' default to 10 meg data space

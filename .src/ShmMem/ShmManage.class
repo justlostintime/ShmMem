@@ -21,7 +21,7 @@ End Struct
 Public Struct InfoHeader
     Length As Long                                   '' Length of this data
     StartOfMem As Pointer                   '' Start of first block of memory
-    EndOfMem As Pointer                     '' End of memory so we dont have to keep calculating it
+    EndOfMem As Pointer                     '' End of memory so we don't have to keep calculating it
     BlockCount As Long                         '' Number of actual blocks allocated, including free blocks, never less than one
     LastChanged As Float                      '' When the collection last changed
     FreeList As Pointer                           '' First element in the free list chain
@@ -37,7 +37,7 @@ Extern memset(Dest As Pointer, value As Integer, length As Integer) As Pointer I
 ' Extern AllocInfo(dest As Pointer, src As Pointer, Len As Integer) As AllocHeader In "libc:6" Exec "memcpy"
 ' Extern InfoInfo(dest As Pointer, src As Pointer, Len As Integer) As InfoHeader In "libc:6" Exec "memcpy"
 Extern rWrite(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "write"
-' Extern rRead(handel As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
+' Extern rRead(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
 ' Extern rClose(Handle As Integer) As Integer In "libc:6" Exec "close"
 
 Enum memfree = -1, membinary = 0                               '' type of free, or binary memory
@@ -49,9 +49,9 @@ Property Read Count As Long                                        '' Number of 
 Property Read Length As Long                                      '' Number of blocks free/allocated being managed
 Property Read MAX As Long                                          '' Highest valid index
 Private $lKey As String
-Property Read Key As String                                         '' The index of the current iten in for each loop
+Property Read Key As String                                         '' The index of the current item in for each loop
 Property Debug As Boolean Use $bDebug               '' Turn on or off debugging messages
-Property Signature As String Use $Signature             '' Uniqueue signature for this object
+Property Signature As String Use $Signature             '' Unique signature for this object
 
 Public Sub _new(MemBlock As ShmMemBlock, Optional CreateManagement As Boolean = True)
 
@@ -182,7 +182,7 @@ Private Sub RemoveFree(VirtAddr As Pointer)
 End
 
 '' Get Length of data portion of the allocated memory block
-Public Sub DataLength(VirtAddr As Pointer) As Long    ' virt address pointes to the data area, not the actual header
+Public Sub DataLength(VirtAddr As Pointer) As Long    ' virt address points to the data area, not the actual header
 
     Dim virt As Allocheader
     Dim ClearLength As Long
@@ -367,20 +367,14 @@ Public Sub Alloc(dataLen As Long) As Pointer                       '' returns a 
 
     BlkPtr = BestFit(dataLen)                                     '' get the block with the best fit for this allocation
     If BlkPtr = Null Or If BlkPtr.length < datalen Then
-        Stop
-        _Print()
+        Storage.Release()                                         '' not kept locked by an error
         Error.Raise("Out Of Variable Memory")
     Endif
 
     ManagedInfo.LastChanged = Timer
-    If Not BlkPtr Then
-        Storage.Release()
-        If $bDebug Then Print Application.id, "Alloc ShmManage.release " & datalen
-        Return 0
-    Endif
 
     MyBlock = blkptr.address
-    If blkptr.length <= (dataLen + 512) Then                      '' we dont want To fragment too much
+    If blkptr.length <= (dataLen + 512) Then                      '' we don't want To fragment too much
         RemoveFree(MyBlock)
         BlkPtr.next = 0
         BlkPtr.type = membinary
@@ -388,8 +382,9 @@ Public Sub Alloc(dataLen As Long) As Pointer                       '' returns a 
         RemoveFree(MyBlock)
         Dim extraBlock As AllocHeader = AllocPtr(MyBlock + DataLen)
         extraBlock.length = BlkPtr.length - datalen
-        If extraBlock.length = 0 Then
-            Stop
+        If extraBlock.length <= 0 Then                            '' cannot be: the block is more than 512 bytes larger
+            Storage.Release()
+            Error.Raise("ShmManage: internal error, a free block of length " & CStr(extraBlock.length) & " at " & CStr(MyBlock + DataLen))
         Endif
         extraBlock.Address = MyBlock + DataLen
         extraBlock.next = 0
@@ -402,11 +397,10 @@ Public Sub Alloc(dataLen As Long) As Pointer                       '' returns a 
     If $bDebug Then Print Application.id, "Alloc ShmManage.release " & datalen
 
     If MyBlock <> blkptr.address Then
-        Stop
+        Error.Raise("ShmManage: internal error, the block at " & CStr(MyBlock) & " says it is at " & CStr(blkptr.address))
     Endif
 
     If myBlock >= ManagedInfo.EndOfMem Or MyBlock < ManagedInfo.StartOfMem Then
-        Stop
         Error.Raise("Alloc Address Out Of Bounds : " & MyBlock)
     Endif
 
@@ -415,7 +409,7 @@ Public Sub Alloc(dataLen As Long) As Pointer                       '' returns a 
 
 End
 
-'' Retrun / merge a block Of Memory into the free list
+'' Return / merge a block Of Memory into the free list
 Public Sub free(VirtAddress As Pointer)
 
     If $bDebug Then Print Application.id, "Free ShmManage.exclusive " & VirtAddress

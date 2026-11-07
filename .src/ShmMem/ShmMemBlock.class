@@ -18,15 +18,9 @@ Extern mremap(MapPoint As Pointer, MapLength As Integer, NewMapLength As Integer
 Extern strerror(err As Integer) As Pointer In "libc:6"
 
 'Extern rWrite(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "write"
-'Extern rRead(handel As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
+'Extern rRead(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
 Extern rClose(Handle As Integer) As Integer In "libc:6" Exec "close"
 
-Extern sem_init(mutex As Pointer, shared As Integer, Value As Integer) As Integer In "libpthread:0"
-Extern sem_wait(mutex As Pointer) As Integer In "libpthread:0"
-Extern sem_post(mutex As Pointer) As Integer In "libpthread:0"
-'Extern sem_getvalue(mutex As Pointer, Ivalue As Pointer) As Integer In "libpthread:0"
-Extern sem_trywait(mutex As Pointer) As Integer In "libpthread:0"
-Extern sem_destroy(mutex As Pointer) As Integer In "libpthread:0"
 Extern sched_yield() As Integer In "libpthread:0"
 
 Static Private Const PROT_READ As Integer = &H01
@@ -48,13 +42,13 @@ Static Private Const SetExecutable As Integer = &O110
 
 '' The managed header for the block of real shared memory
 Public Struct MemBlockHeader                            '' Memory block header
-    SemLock[64] As Byte                                            '' Semaphor used to lock this memory when sharing
+    SemLock[64] As Byte                                            '' the robust mutex locking this memory, ShmLock
     InUseCounter As Integer                                     '' the number of applications using this Memory
     MemoryLength As Long                                      '' length of the shared memory
     MemoryBlockSize As Long                                '' How much to add each time memory is extended
     LockTimeOut As Float                                        '' How long to wait for a timeout on wait sem call
     DataAddress As Pointer                                     '' Address usable by application
-    DataLength As Long                                            '' length of data portion of the the block
+    DataLength As Long                                            '' length of data portion of the block
 End Struct
 
 ' Extern SetBlockInfo(dest As Pointer, src As Pointer, Len As Integer) As MemBlockHeader In "libc:6" Exec "memcpy"
@@ -67,20 +61,20 @@ Public Name As String = ""                                                    ''
 
 Public MemoryLength As Long                                            '' Length of actual allocated memory
 Public MemoryBlockSize As Long                                      '' The size of memory used to extend this if needed
-Private SemLock As Pointer = Null                                    '' Address of the semephore for this memory segment
+Private SemLock As Pointer = Null                                    '' Address of the mutex for this memory segment
 Public DataAddress As Pointer                                           '' The address of memory usable by the application
-Public DataLength As Long                                                   '' Length of user accessable area
+Public DataLength As Long                                                   '' Length of user accessible area
 Public LockTimeout As Float = 0                                         '' The length of time before reporting race condition
 
 Public BlockInfo As MemBlockHeader                               '' The information stored in the header of the memory
 
 Private NewMemoryBlock As Boolean = True                '' Used to indicate if we are accessing an already created named block
-Private MyAppId As Long = 0                                              '' The app used if we spawn a task that requires the sem lock
+Private MyAppId As Long = 0                                              '' The process that opened the block and counted itself in InUseCounter
 
 Property Read length As Long                                            '' Length of user space
 Property Read address As Pointer                                   '' address of user space
 Property Debug As Boolean Use $bDebug = False      '' Turn on or off debug messages
-Property Signature As String Use $Signature               ''  the uniqueue signatire for this class
+Property Signature As String Use $Signature               ''  the unique signature for this class
 
 '' P print all information regarding the shared memory segment
 Public Sub _print()
@@ -99,7 +93,7 @@ Public Sub _print()
 
 End
 
-'' Force delete a named memory segment, Be carefull with this
+'' Force delete a named memory segment, Be careful with this
 Static Public Sub ForceDelete(SharedName As String)
 
     Try shm_unlink(SharedName)
@@ -129,13 +123,13 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
 
         SemLock = MemoryAddress
 
-        If sem_init(SemLock, 1, 0) Then
+        If Not ShmLock.Init(SemLock) Then
             Try munmap(MemoryAddress, MemoryLength)
             If name <> "" Then
                 Try shm_unlink(Name)
                 Try rClose(MemoryHandle)
             Endif
-            Error.Raise("Failed to create Lock for :" & Name & System.Error & " : " & String@(strerror(System.Error)))
+            Error.Raise("Failed to create Lock for :" & Name & " : " & ShmLock.LastError)
         Endif
 
         If $bDebug Then Print Object.Class(Me).Name;; " Initial Lock of block"
@@ -143,7 +137,6 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
         ' BlockInfo = SetBlockInfo(MemoryAddress, MemoryAddress, 0)
         BlockInfo = MemoryAddress
 
-        BlockInfo.InUseCounter = 1
         BlockInfo.MemoryLength = MemoryLength
         BlockInfo.MemoryBlockSize = SharedLength
         MemoryBlockSize = SharedLength
@@ -156,31 +149,23 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
 
         If $bDebug Then Print Object.Class(Me).Name;; " Block initialization Completed"
 
-        sem_post(SemLock)
-
+        BlockInfo.InUseCounter = 1                              ' last: an opener waits for it, the header and the lock are ready
     Else
 
         If $bDebug Then Print Object.Class(Me).Name;; " Open Existing mem block"
         ' BlockInfo = SetBlockInfo(MemoryAddress, MemoryAddress, 0)
         BlockInfo = MemoryAddress
 
-        If BlockInfo.InUseCounter > 0 Then
-            SemLock = MemoryAddress
-            For I As Integer = 0 To 10
-                If sem_trywait(SemLock) = -1 Then
-                    Wait 0.001
-                Else
-                    i = 0
-                    Break
-                Endif
-            Next
-            If I > 0 Then
-                sem_init(SemLock, 1, 0)
-            Endif
-        Else
-            sem_init(SemLock, 1, 0)
+        SemLock = MemoryAddress
+        Dim fReady As Float = Timer
+        While BlockInfo.InUseCounter <= 0 And Timer - fReady < 1.0  ' its creator may be setting it up now
+            Wait 0.001
+        Wend
+        If BlockInfo.InUseCounter <= 0 Then                     ' nobody uses it: left by a creator that died, make the lock again
+            If Not ShmLock.Init(SemLock) Then Error.Raise("Failed to create Lock for :" & Name & " : " & ShmLock.LastError)
+            BlockInfo.InUseCounter = 0
         Endif
-
+        Exclusive()                                             ' never made again while somebody may hold it
         Inc BlockInfo.InUseCounter
         MemoryBlockSize = BlockInfo.MemoryBlockSize
         DataAddress = SemLock + BlockInfo.DataAddress
@@ -192,7 +177,7 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
         Else If MemoryLength <= BlockInfo.MemoryLength Then
             MemoryLength = BlockInfo.MemoryLength
         Endif
-        sem_post(SemLock)
+        Release()
     Endif
 
     MyAppId = Application.id
@@ -201,25 +186,29 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
 
 End
 
-'' free when refrence counter is 0
+'' free when reference counter is 0
 Public Sub _free()
 
     If blockInfo <> Null Then
         If name <> "" Then
             'Debug "Del named block";; Name
-            Dec BlockInfo.InUseCounter
+            Dim bLast As Boolean
+            If MyAppId = Application.Id Then                    ' a forked Task did not count itself in, it does not count itself out
+                Try Exclusive()
+                Dec BlockInfo.InUseCounter
+                bLast = BlockInfo.InUseCounter <= 0
+                Try Release()
+            Endif
             Try rClose(MemoryHandle)
-            If BlockInfo.InUseCounter = 0 Then
+            If bLast Then
                 'Debug "remove unlink named memory block"
-                Try shm_unlink(Name)
-                Try sem_destroy(SemLock)
+                Try shm_unlink(Name)                                ' the mutex is not destroyed: another process may still map it
             Endif
             ' Debug "Unmap named memory from application"
             Try munmap(MemoryAddress, MemoryLength)
         Else
             ' Debug "Delete un- named memory blocks"
-            Try sem_destroy(SemLock)
-            Try munmap(MemoryAddress, MemoryLength)
+            Try munmap(MemoryAddress, MemoryLength)                 ' the mutex stays: forked tasks may still use it
         Endif
         BlockInfo = Null
     Endif
@@ -234,7 +223,7 @@ Public Sub MapMemory(BlockSize As Long, Optional isExecutable As Boolean = False
     Dim MemPointer As Pointer
     Dim Protect As Integer = (PROT_READ Or PROT_WRITE Or IIf(isExecutable, PROT_EXEC, 0))
 
-    If MemoryHandle = -1 Then                                      ' Check if it is a named memory segmet or not
+    If MemoryHandle = -1 Then                                      ' Check if it is a named memory segment or not
         MemPointer = mmap(Null, BlockSize, Protect, (MAP_SHARED Or MAP_ANONYMOUS), MemoryHandle, 0) ' Not named memory Or MAP_ANONYMOUS
     Else
         MemPointer = mmap(Null, BlockSize, Protect, MAP_SHARED, MemoryHandle, 0) ' Named memory Or MAP_ANONYMOUS
@@ -248,9 +237,7 @@ Public Sub MapMemory(BlockSize As Long, Optional isExecutable As Boolean = False
             Endif
         Endif
 
-        Debug MemPointer, System.Error, String@(strerror(System.Error))
-        Stop
-        Error.Raise("System Error:" & System.Error & " : " & String@(strerror(System.Error)))
+        Error.Raise("ShmMemBlock: unable to map the memory, system error " & System.Error & " : " & String@(strerror(System.Error)))
     Endif
 
     Return MemPointer
@@ -302,63 +289,54 @@ Public Sub RemapNamed(NewLength As Long)
     P = mremap(MemoryAddress, MemoryLength, NewLength, 0)           '' resize but don't allow to move
     Dim syserror As Integer = System.Error
     If p = -1 Or p <> MemoryAddress Then
-        Print "System Error #";; syserror
-        Stop
+        Error.Raise("ShmMemBlock: unable to resize " & Name & " to " & CStr(NewLength) & " bytes in place, system error " & CStr(syserror) & " : " & String@(strerror(syserror)))
     Endif
 
 End
 
-Private InLock As Integer = 0
+Private $iLockDepth As Integer = 0                              '' how many times this process holds the lock through this object
+Private $iLockPid As Integer = 0                                '' the process $iLockDepth belongs to, a forked Task starts at 0
+Private Const ExclusiveSeconds As Float = 30.0                  '' Exclusive waits this long for a live holder, then raises
 
-'' Take exclusive control of the shared block of memory
+'' Take exclusive control of the shared block of memory. Waits up to 30 s for a live holder, a holder that died
+'' is taken over. Nested calls by the same process only count
 Public Sub Exclusive()
 
-    If InLock Then
-        If $bDebug Then Print Application.id;; " In Lock no wait ";; InLock;; Blockinfo.DataLength
-        Inc InLock
-        Return
-    Endif
-
-    If $bDebug Then Print Application.id;; "Real Wait  ";; InLock;; Blockinfo.DataLength
-    Inc InLock
-    sem_wait(SemLock)
+    TakeLock(ExclusiveSeconds)
 
 End
 
-'' Take exclisive control of the shared memory block, but timeout if not able
+'' Take exclusive control of the shared memory block, raising an error after LockTimeout seconds
 Public Sub ExclusiveTimeout()
 
-    If InLock Then
-        If $bDebug Then Print Application.id;; " In Lock Timeout no wait ";; InLock;; Blockinfo.DataLength
-        Inc InLock
-        Return
-    Endif
-
-    Dim counter As Float = Timer
-    While sem_trywait(SemLock)
-        sched_yield()
-        If Timer - counter > LockTimeout Then
-            Error.Raise("Mutex race condition !!! :" & IIf(name = "", "Anonymous", name))
-        Endif
-    Wend
-    If $bDebug Then Print Application.id;; " In Lock Timeout wait ";; InLock;; Blockinfo.DataLength
-    Inc InLock
+    TakeLock(LockTimeout)
 
 End
 
-'' Release the lock on the shared memory
-Public Sub Release()
+Private Sub TakeLock(fSeconds As Float)
 
-    If inlock > 1 Then
-        If $bDebug Then Print Application.id;; "In Lock Release ";; InLock;; Blockinfo.DataLength
-        Dec Inlock
+    If $iLockPid <> Application.Id Then                         ' a forked Task: the depth is its parent's
+        $iLockDepth = 0
+        $iLockPid = Application.Id
+    Endif
+    If $iLockDepth > 0 Then
+        Inc $iLockDepth
         Return
     Endif
+    If $bDebug Then Print Application.id;; "Real Wait  ";; Blockinfo.DataLength
+    If ShmLock.Take(SemLock, fSeconds, IIf(Name = "", "Anonymous", Name)) < 0 Then Error.Raise(ShmLock.LastError)
+    $iLockDepth = 1
 
-    If $bDebug Then Print Application.id;; "Release memory";; InLock;; Blockinfo.DataLength
-    Dec InLock
-    sem_post(SemLock)
-    sched_yield()
+End
+
+'' Release the lock on the shared memory. A release without a lock held is ignored
+Public Sub Release()
+
+    If $iLockPid <> Application.Id Or If $iLockDepth <= 0 Then Return
+    Dec $iLockDepth
+    If $iLockDepth > 0 Then Return
+    If $bDebug Then Print Application.id;; "Release memory";; Blockinfo.DataLength
+    ShmLock.Give(SemLock)
 
 End
 
@@ -391,8 +369,7 @@ Public Sub AllocChunk()
     _print()
 
 Catch
-    Error Error.text, Error.where
-    Stop
+    Error.Propagate()
 
 End
 
@@ -403,7 +380,7 @@ Private Function length_Read() As Long
 
 End
 
-'' Retrun the physical address of the shared memory segment
+'' Return the physical address of the shared memory segment
 Private Function address_Read() As Pointer
 
     Return BlockInfo.DataAddress

@@ -67,6 +67,7 @@ End
 Public Sub _free()
 
     CloseNotifyPipe()
+    If MyAppId <> Application.Id Then NotifyQueue = Null        ' a forked Task: the queue is its parent's, it must not free it
     For Each hPipe As File In $cPipes                       ' the write ends of the other processes' pipes
         Try Close hPipe
     Next
@@ -109,7 +110,7 @@ Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String,
         ' PidQueue.Debug = True
         SymEntry.NotifyBlock = PidQueue.Address                          ' Put the Address of the PID queue into the symbol Table
     Else
-        PidQueue = New ShmList(VarMem, SymEntry.NotifyBlock)             ' Get the address to the exsisting queue
+        PidQueue = New ShmList(VarMem, SymEntry.NotifyBlock)             ' Get the address to the existing queue
     Endif
 
     If NotifyQueue = Null Then
@@ -128,7 +129,7 @@ Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String,
 
     '' Update the local list of variables waiting for dispatch notification
     If tag = "" Then
-        ' We need to differenciate between being called from a module or from a class
+        ' We need to differentiate between being called from a module or from a class
         Dim ClassName As String = GetClassName(CallObject)
         Try tag = SymName & "_" & CallFunc & "_" & ClassName
     Endif
@@ -147,9 +148,6 @@ Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String,
     '    Endif
 
     NotifyVars[SymName].add(VarInfo, tag)                ' add the entry for this request
-
-Catch
-    Print Error.text, Error.where
 
 End
 
@@ -187,7 +185,7 @@ Public Sub GetClassName(BaseObject As Variant) As String
 
 End
 
-'' Stop notification of varable change
+'' Stop notification of variable change
 Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Optional CallFunc As String = "", Optional tag As String = "")
 
     Dim PidQueue As ShmList
@@ -200,7 +198,7 @@ Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Optional CallFun
 
     SymName = SymEntry.Name.tostring()
 
-    ' We need to differenciate between being called from a module or from a class
+    ' We need to differentiate between being called from a module or from a class
     Dim name As String = GetClassName(CallObject)
 
     If tag = "" Then
@@ -208,7 +206,7 @@ Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Optional CallFun
     Endif
 
     If NotifyVars.Exist(SymName) Then                                                                    ' remove the variable info from the local dictionary
-        Dim todoList As Collection = NotifyVars[Symname]                                  ' get list of func waitin for var to change
+        Dim todoList As Collection = NotifyVars[Symname]                                  ' get list of func waiting for var to change
         Try todoList.remove(tag)                                                                                    ' try to remove it
         If Error Then
             Error.Raise("NotifyStop : Entry Not found for : Symbol=" & SymName & ", Class=" & Name & ",Function=" & CallFunc)
@@ -232,7 +230,7 @@ Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Optional CallFun
             Endif
         Endif
     Else
-        Stop
+        Error.Raise("NotifyStop : no notify request for Symbol=" & SymName & ", Class=" & Name)
     Endif
 
 End

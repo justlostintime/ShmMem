@@ -16,8 +16,8 @@ Const VarMemDefault As Long = 2000000                                '' default 
 Const MaxSymbolsDefault As Integer = 8000                          '' default variable memory space 8000 entries
 Const TimeOutDefault As Float = 0.1                                          '' Default sem timeout
 
-Public VarStore As ShmMemBlock                                                    '' the pysical memory segment being shared
-Public VarMnge As ShmManage                                                       '' the Object resposible to managing the raw memory
+Public VarStore As ShmMemBlock                                                    '' the physical memory segment being shared
+Public VarMnge As ShmManage                                                       '' the Object responsible to managing the raw memory
 Public MyVarMem As ShmVarStorage                                                  '' manages the actual values stored into the shared memory
 Public VarStoreName As String                                                     '' The name for named memory
 
@@ -25,7 +25,7 @@ Public SymStore As ShmMemBlock                                                  
 Public Vars As ShmSymbolTable                                                     '' the object which will manage symbol table
 Public SymStoreName As String                                                     '' the name of the symbol table for the named memory
 Static Public PID As Integer = 0                                                  '' The pid of the application using this class
-Private Local_PID As Integer = 0                                                  '' pid of the app/task class instaciating this as object
+Private Local_PID As Integer = 0                                                  '' pid of the app/task class instantiating this as object
 
 Property Read Version As String Use $Version = Application.Version              '' get the library version
 Property Read Count As Integer                                                     '' number of symbols
@@ -34,13 +34,13 @@ Property Read Length As Integer                                                 
 Private $sKey As String                                                            '' text key
 Property Read Key As String                                                        '' returns the index of the current entry in for next
 Property Debug As Boolean Use $bDebug                                              '' Turns on and off the Debug messages
-Property DefaultDirectory As String Use $sDefaultDirectory                         '' the default directiry used to save and load Images and variables
+Property DefaultDirectory As String Use $sDefaultDirectory                         '' the default directory used to save and load Images and variables
 Property Signature As String Use $Signature                                        '' Used to reconstitute co correct object shmmem in an application
-Static Public Objects As New Collection(gb.ignorecase)                             '' The list of instanciations of the class
+Static Public Objects As New Collection(gb.ignorecase)                             '' The list of instantiations of the class
 Property Read ShmObjects As Collection                                             '' returns a list of allocated memory segments
 
-'' We need to determine if the object is a class=module or object=class instanciated object
-'' This function correctly retruns the class for both objects and modules
+'' We need to determine if the object is a class=module or object=class instantiated object
+'' This function correctly returns the class for both objects and modules
 Static Public Sub GetObjectClass(BasicObject As Object) As Class
 
     Dim result As Class = Object.Class(BasicObject)
@@ -122,7 +122,7 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
     Local_PID = Application.Id
 
     If shmmem.PID <> Application.id Then
-        ' Print "reseting Shmmem pid"
+        ' Print "resetting Shmmem pid"
         shmMem.Objects.Clear()
         shmMem.PID = Application.id
     Endif
@@ -143,9 +143,9 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
         'Flush
         If shmMem.Objects.Exist($Signature) Then
             Dim OldShm As ShmMem = shmMem.objects[$Signature]
-            Dim Default As ShmMem = shmMem.objects[$Signature]
+            Dim hDefault As ShmMem = shmMem.objects["default"]
 
-            If default.Signature = OldShm.Signature Then
+            If hDefault = OldShm Then                              ' the older one of this name was the default
                 ' Print "Define memory block step 4 remove already defined by class removing"
                 'Flush
                 shmMem.Objects.Remove("default")
@@ -194,8 +194,7 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
     'Print "Completed memory block definition"
 
 Catch
-    Print "Shm : Error creating Mem Block";; Error.text, Error.where
-    Flush
+    Error.Raise("Shm : Error creating Mem Block " & Error.Text & " " & Error.Where)
 
 End
 
@@ -216,13 +215,13 @@ Public Sub _free()
     ' as the owner is deleted of each segment the default memory segment becomes the previous
     ' block of memory
     If shmmem <> Null And If shmMem.objects <> Null And If shmMem.objects.count > 0 Then
-        If shmMem.Objects.Exist("default")
-            If shmMem.objects["default"].signature = $Signature Then
-                shmMem.objects.Remove("default")
-            Endif
+        ' only the entries of this object: a newer ShmMem of the same name has the same signature, freeing the
+        ' older one after it was made removed the newer one's entries, its values could not be loaded any more
+        If shmMem.Objects.Exist("default") And If shmMem.objects["default"] = Me Then
+            shmMem.objects.Remove("default")
         Endif
-        If shmMem.Objects.Exist($Signature) Then
-            shmMem.objects.Remove(Me.Signature)
+        If shmMem.Objects.Exist($Signature) And If shmMem.objects[$Signature] = Me Then
+            shmMem.objects.Remove($Signature)
         Endif
         If Not shmMem.objects.Exist("default") And If shmMem.objects.count > 0 Then
             shmMem.objects["default"] = shmMem.Objects[shmMem.objects.First]                                                       ' just assign the next one as the default
@@ -254,7 +253,7 @@ Public Sub _property(...) As Boolean
 
 End
 
-'' alway create a new symbol when  not know, save value otherwise
+'' always create a new symbol when  not know, save value otherwise
 Public Sub _unknown(...) As Variant
 
     If Param.count = 0 Then                        ' if there are no parameters then assume it is a read value
@@ -329,7 +328,7 @@ End
 '' -----------------------------------------------------------------------------------
 ''  Read and write images and variables
 '' -----------------------------------------------------------------------------------
-'' Defines the default Paths/names for images and varianbls
+'' Defines the default Paths/names for images and variables
 Public Sub SetPath(filePath As String, Optional defaultBaseName As String = "", defaultExtension As String = "") As String
 
     Dim basename As String = File.BaseName(filePath)
@@ -422,7 +421,7 @@ End
 
 '' Re-loads the Variables saved from the symbol table and restores its value
 '' Also restore the date/time that the last change to this copy of the table
-'' occured
+'' occurred
 Public Sub LoadImage(Optional FileName As String = Application.name & ".image", merge As Boolean = False)
 
     Dim infileName As String = SetPath(FileName)
@@ -439,7 +438,7 @@ End
 
 '' Merges the Variables saved from the symbol table and restores its value
 '' Also restore the date/time that the last change to this copy of the table
-'' occured
+'' occurred
 Public Sub MergeImage(Optional FileName As String = Application.name & ".image")
 
     LoadImage(filename, True)
@@ -512,7 +511,7 @@ Public Sub {Print}()
 
 End
 
-'' print all posible information about the shared memory
+'' print all possible information about the shared memory
 Public Sub PrintAllInfo(Optional Title As String = "")
 
     Print "***************************************** Full Memory Info " & title & "***************************************************"
@@ -525,14 +524,14 @@ Public Sub PrintAllInfo(Optional Title As String = "")
 
 End
 
-'' Print a tree formated symbol table by hash bucket(not implemented)
+'' Print a tree formatted symbol table by hash bucket(not implemented)
 Public Sub PrintTree()
 
     Print "not implemented"
 
 End
 
-'' Waitfor a symbol to be created, use notify on new instead
+'' Wait for a symbol to be created, use notify on new instead
 Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
 
     Return vars.WaitFor(symname, timeout)
@@ -579,12 +578,9 @@ Public Sub Notify(SymName As String, NotifyObject As Object, Optional NotifyFunc
 
     vars.Notify(SymName, NotifyObject, NotifyFunction, TimeOut, tag)
 
-Catch
-    Print "shm Notify :";; Error.text;; Error.where
-
 End
 
-'' Stop recieving notification for a symbol. Info must match the original notify call exactly
+'' Stop receiving notification for a symbol. Info must match the original notify call exactly
 Public Sub NotifyStop(SymName As String, CallObject As Object, Optional CallFunc As String = "", Optional tag As String = "")
 
     vars.NotifyStop(SymName, CallObject, CallFunc, tag)
@@ -629,7 +625,7 @@ Private Function Count_Read() As Integer
 
 End
 
-'' retruns the max element index in the list
+'' returns the max element index in the list
 Private Function Max_Read() As Integer
 
     Return Vars.max
@@ -661,7 +657,7 @@ Private Function Key_Read() As String
     Return $sKey
 
 End
-'' Returns the actual Physical address after traslating the Virtual pointer
+'' Returns the actual Physical address after translating the Virtual pointer
 '' returns the pointer to the actual data portion of the variable
 
 Public Sub RealDataAddress(VirtAddress As Variant) As Pointer
@@ -682,12 +678,9 @@ Public Sub RealDataAddress(VirtAddress As Variant) As Pointer
     End Select
 
     Return result
-Catch
-    Error Error.Text;; Error.where
-    Stop
 
 End
-'' Returns the actual Physical address after traslating the Virtual pointer
+'' Returns the actual Physical address after translating the Virtual pointer
 
 Public Sub RealAddress(VirtAddress As Variant) As Pointer
 

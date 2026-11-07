@@ -81,7 +81,7 @@ Public Sub main()
         '' test if we can get a single column
         Print "%%%%%%%%%%%%%%%%%% fetch a col from the array %%%%%%%%%%%%%%%%%%%%"
         Dim co As Variant[]
-        co = !a.GetCol(1, 2, 0, 0)  ' the first number is the col index I am interested in, the remender defines the subscripts to start with
+        co = !a.GetCol(1, 2, 0, 0)  ' the first number is the col index I am interested in, the remainder defines the subscripts to start with
         ' the col index  defines the subscript to iterate over, the starting index in that subscript is ignored
         For Each va In co
             Print va,

@@ -8,7 +8,7 @@
 
 Export
 
-''' This class is responible for managing the storage and retrieval of vales to and from the Shared memory\
+''' This class is responsible for managing the storage and retrieval of vales to and from the Shared memory\
 ''' Using  the ShmManage class  interface to get and free the memory it uses to create and release values from memory\
 ''' This is called by the Symbol table manager or directly by the user to store a value into the shared memory\
 ''' Returns a virtual  pointer to the stored value.
@@ -39,11 +39,11 @@ Public Struct dList                          '' A defined entry in list of objec
     Type As Integer                          '' Type of memory
     {Next} As Pointer                        '' Next in list or head of pool
     Prev As Pointer                          '' previous in list or end of pool
-    sema As Pointer                          '' The locking semephor for each list
+    sema As Pointer                          '' The locking semaphore for each list
     Global As Integer                        '' Defines if this is a global memory object or not
     bDebug As Boolean                        '' Turns on debugging
     Tag[64] As Byte                          '' a user text tag for this list, can be used to identify nameless queues
-    RefCount As Long                         '' Number of refrences to this element
+    RefCount As Long                         '' Number of references to this element
     Priority As Long                         '' in a queue this is the priority of this element or the Extended Id of a list
     UsePriority As Boolean                   '' Enable the use of priority ordering in the queue
     Value As Pointer                         '' Value of entry or count if pool
@@ -56,7 +56,7 @@ Public Struct dArray
     Type As Integer                                                                 '' Type of array
     {Next} As Pointer                                                              '' never really used except if free block
     dimensions[MaxArrayDims] As Long                          '' The actual dimensions of the array max 64
-    DimCount As Integer                                                        '' The number of used dimentions
+    DimCount As Integer                                                        '' The number of used dimensions
     Count As Integer                                                                '' The number of elements in the array
     DataAddress As Pointer                                                 '' Pointer to where the memory is located
     Sema As Pointer                                                                '' The locking sema virtual address
@@ -72,7 +72,7 @@ Public Struct dValue
     {Next} As Pointer                                                              '' never really used except if free block
     bDebug As Boolean                                                         '' debug flag for this datatype
     Tag[64] As Byte                                                                  '' Tag id of Value
-    RefCount As Integer                                                         '' Refrence counter to this value
+    RefCount As Integer                                                         '' Reference counter to this value
     DataAddress As Pointer                                                 '' Pointer to where the memory is located
 End Struct
 
@@ -174,7 +174,7 @@ Property Read Count As Integer                                                  
 Property Read Length As Integer                                                      '' the same as count
 Property Read Max As Integer                                                           '' Highest valid Value list index
 Property Debug As Boolean Use $bDebug                                    '' controls if the debug messages are printed
-Property Signature As String Use $Signature                                '' The uniqueue signature of the object
+Property Signature As String Use $Signature                                '' The unique signature of the object
 Property Read IsValid As Boolean                                                       '' returns if this storage is still valid
 
 '' Define a new user class for shared objects
@@ -188,7 +188,7 @@ Static Public Sub DefineClass(ClassName As String, ClassIndex As Integer)
 End
 
 '' Take the User defined data type as a type value and a virtual pointer
-'' the the shared data structure and return a gambas object of that type
+'' the shared data structure and return a gambas object of that type
 '' This is only valid for shmmem defined user classes
 Public Sub AsObject(ctype As Integer, virtaddress As Pointer) As Variant
 
@@ -420,14 +420,14 @@ Private Sub putstring(value As String, vptr As DPointer)
         vptr.value = varmem.Alloc(length + HeadLenExtra)                      '' The String Header is 8 bytes longer
         tmpptr = GetPointer(StrData, vptr.Value)
         If tmpptr.length < length Then
-            Stop
+            Error.Raise("ShmVarStorage: internal error, a block of " & CStr(tmpptr.length) & " bytes was given for " & CStr(length))
         Endif
         TmpPtr.ObjLen = length
         tmpptr.type = StrData
     Endif
 
     If TmpPtr.Length < DefaultAlloc Then
-        Stop
+        Error.Raise("ShmVarStorage: internal error, a string block of " & CStr(TmpPtr.Length) & " bytes, less than " & CStr(DefaultAlloc))
     Endif
 
     Dim copyLen As Integer = IIf(value.len + 1 < Length, value.len + 1, length - 1)
@@ -547,7 +547,7 @@ Public Sub RealDataAddress(VirtAddress As Pointer) As Pointer
 
 End
 
-'' Instanciate an object representing the value stored in memory
+'' Instantiate an object representing the value stored in memory
 Public Sub Getpointer(Type As Integer, VirtAddress As Pointer) As Variant
 
     Dim realaddr As Pointer = varmem.RealAddress(VirtAddress)
@@ -637,8 +637,6 @@ Public Sub {VarPtr}(VirtAddress As Pointer) As Variant
 
     svptr = Getpointer(vptr.type, VirtAddress)
     Return svptr
-Catch
-    Stop
 
 End
 
@@ -662,8 +660,6 @@ Public Sub Atptr(svptr As Variant) As Pointer
 
     End Select
     Return vptr
-Catch
-    Stop
 
 End
 
@@ -921,8 +917,6 @@ Public Sub ObjectFromHex(theHex As String) As Variant
     Close mFile
     Free(buffer)
     Return value
-Catch
-    Stop
 
 End
 
