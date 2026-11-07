@@ -1,0 +1,35 @@
+' Gambas module file
+
+Public Sub main()
+
+    Dim mem As New ShmMem
+
+    With mem
+        !a = 100
+        !b = 200
+        !c = "this little string of stuff"
+        !d = ["grose", "bob", "jane", "lindo"]
+        .["sub.a"] = "this prog"
+        .["sub.b"] = "this prog"
+        .["sub.b"] = "this prog"
+        .["sub.c"] = "this prog"
+        .["sub.d"] = "this prog"
+        .["sub.e"] = "this prog"
+        .["sub.f"] = "this prog"
+        .["class.a"] = "this prog"
+        .["class.b"] = "this prog"
+        .["class.b"] = "this prog"
+        .["class.c"] = "this prog"
+        .["class.d"] = "this prog"
+        .["class.e"] = "this prog"
+        .["class.f"] = "this prog"
+        Dim list As String[] = mem.Variables("class.*")
+        For Each s As String In list
+            Print s;; "=";; .[s]
+        Next
+        .Close()
+    End With
+
+End
+' Gambas module file
+

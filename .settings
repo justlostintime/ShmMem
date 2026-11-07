@@ -4,7 +4,7 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={"LoadAndSaveValue":[4,27,36]}
+Breakpoints={}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
@@ -867,15 +867,15 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="More Cleanup after 2 pass compiler was deployed\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
+LastCommit="Cleanup examples\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
 
 [OpenFile]
 Count=4
-Active=4
-File[1]=".src/ShmMem/shmMem.class:27.673"
-File[2]=".src/Examples/vTestApps/ProcessSimpleLoadTest/NewFGSingleWait.module:41.14"
-File[3]=".src/Examples/vTestApps/ProcessSimpleLoadTest/NewBGSingleWait.class:14.17"
-File[4]=".src/Examples/vTestApps/ProcessSimpleLoadTest/NewFGLoader.module:0.4"
+Active=3
+File[1]=".src/ShmMem/ShmVarStorage.class:22.449"
+File[2]=".src/ShmMem/ShmSymbolTable.class:0.0"
+File[3]=".src/ShmMem/ShmNotify.class:1.49"
+File[4]=".src/Examples/vTestApps/Shared Memory Images/SaveAndMergeafterclear.module:1.6"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

@@ -27,6 +27,7 @@ Public SymStoreName As String                                                   
 Static Public PID As Integer = 0                                                  '' The pid of the application using this class
 Private Local_PID As Integer = 0                                                  '' pid of the app/task class instaciating this as object
 
+Property Read Version As String Use $Version = Application.Version              '' get the library version
 Property Read Count As Integer                                                     '' number of symbols
 Property Read Max As Integer                                                       '' Max index into the list
 Property Read Length As Integer                                                    '' number of entries in the list
@@ -375,7 +376,7 @@ Public Sub SaveVar(VarName As String, Optional filename As String = "")
 
 End
 
-'' Saves a copy of a gambas variable as asvaed ShmMem variable
+'' Saves a copy of a gambas variable as a saved ShmMem variable
 '' VarName is the name to be used by ShmMem when the value is reloaded
 '' Value is the value to be converted to shmMem variable
 '' FileName sets the full path to locate the file, May only be the path
@@ -396,10 +397,33 @@ Public Sub SaveNativeVar(VarName As String, value As Variant, Optional filename 
 
 End
 
+'' Clear all unprotected variable from the image
+'' user provides a list of protected variable  which are ignores all # variables are ignores
+Public Sub Clear(Optional ListToIgnore As String[] = Null)
+
+    Dim mvars As String[] = variables()
+
+    For Each v As String In mvars
+        If v[0] = "#" Then Continue
+        If ListToIgnore <> Null Then
+            Dim del As Boolean = True
+            For Each s As String In mvars
+                If v Like s Then
+                    del = False
+                    Break
+                Endif
+            Next
+        Endif
+        If del Then remove(v)
+    Next
+
+End
+
+
 '' Re-loads the Variables saved from the symbol table and restores its value
 '' Also restore the date/time that the last change to this copy of the table
 '' occured
-Public Sub LoadImage(Optional FileName As String = Application.name & ".image")
+Public Sub LoadImage(Optional FileName As String = Application.name & ".image", merge As Boolean = False)
 
     Dim infileName As String = SetPath(FileName)
     Dim infile As File
@@ -408,13 +432,22 @@ Public Sub LoadImage(Optional FileName As String = Application.name & ".image")
     If Error Then
         Error.propagate()
     Endif
-    vars.Load(infile)
+    vars.Load(infile, merge)
     Close infile
 
 End
 
+'' Merges the Variables saved from the symbol table and restores its value
+'' Also restore the date/time that the last change to this copy of the table
+'' occured
+Public Sub MergeImage(Optional FileName As String = Application.name & ".image")
+
+    LoadImage(filename, True)
+
+End
+
 '' Loads An individual Symbol and its value From a file
-Public Sub LoadVar(FileName As String, Optional SymName As String = "")
+Public Sub LoadVar(FileName As String, Optional SymName As String = "", Optional merge As Boolean = False)
 
     Dim infileName As String = SetPath(FileName, "", "var")
     Dim infile As File
@@ -423,7 +456,7 @@ Public Sub LoadVar(FileName As String, Optional SymName As String = "")
     If Error Then
         Error.Propagate()
     Endif
-    vars.LoadVar(infile, SymName)
+    vars.LoadVar(infile, SymName, merge)
     Close infile
 
 End
@@ -456,6 +489,21 @@ Public Sub {SizeOf}(Value As Variant) As Long
     Return MyVarMem.SizeOf(Value)
 
 End
+
+'' Search and return a list of variable names that match the provided pattern
+Public Sub Variables(Optional Filter As String = "*") As String[]
+
+    Dim Varlist As New String[]
+
+    For Each s As Variant In vars
+        If vars.key Like Filter Then
+            Varlist.Add(vars.key)
+        Endif
+    Next
+    Return VarList
+
+End
+
 
 '' Prints a list of all Symbols and definition
 Public Sub {Print}()

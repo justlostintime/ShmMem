@@ -11,8 +11,15 @@ Fast Unsafe
 ''' Defines the Shm datatype - list
 ''' Lists are inherited by every other list based object
 
-Public Const ChangeSignal As Integer = 16               '' Sigsys = 31, SigUSr2 = 12, sig16 is unused too
-Private InitSignal As Boolean = False                           '' force the init on first call of Notify
+' A change is announced by writing one byte into the notify pipe of each waiting process,
+' /dev/shm/shmmem-notify-<pid>, after the change was put on its queue. The process watches its pipe, so File_Read
+' delivers the queued changes as soon as the event loop runs: in any Wait, or when the program returns to the loop.
+' No signal is used: a signal handler ran Gambas code at any point of the program, and crashed it
+Private Const NotifyPipePrefix As String = "/dev/shm/shmmem-notify-"
+Private hNotify As File = Null                                  '' our notify pipe, open while we wait for changes
+Private $iNotifyPid As Integer = 0                              '' the process that opened hNotify, a forked Task inherits it
+Private bDelivering As Boolean = False                          '' a notify function that changes a variable does not deliver again
+Private $cPipes As New Collection                               '' pid -> the write end of its notify pipe, kept open
 
 Public Struct AllocHeader                      '' Standard header
     Length As Long                                     '' Length including header
@@ -40,9 +47,7 @@ Public Struct Symbol
     Type As Integer                                   '' data type of the data stored into the memory, -1 if gambas data type
 End Struct
 
-Extern signal(sig As Integer, sighandler As Pointer) As Pointer In "libc:6"
-Extern sKill(sigpid As Integer, Sig As Integer) As Integer In "libc:6" Exec "kill"
-Extern sched_yield() As Integer In "libpthread:0"
+'Extern sched_yield() As Integer In "libpthread:0"
 
 Public VarMem As ShmVarStorage                     '' The memory block to be used for creating queues
 Public SymMem As ShmSymbolTable = Null     ''  The Symbol Table holding variable information
@@ -61,6 +66,11 @@ End
 
 Public Sub _free()
 
+    CloseNotifyPipe()
+    For Each hPipe As File In $cPipes                       ' the write ends of the other processes' pipes
+        Try Close hPipe
+    Next
+    $cPipes.Clear()
     If VarMem.IsValid Then
         If NotifyQueue <> Null Then
             NotifyQueue.free()
@@ -79,9 +89,6 @@ Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String,
     Dim PidQueue As ShmList
     Dim VarInfo As ShmNotifyEntry
 
-    If Not InitSignal Then
-        SetSignal()
-    Endif
 
     '' Create a queue for this process id that will contain a list of the variables that this pid is looking for
     '' The created queue is used by the app/task to enqueue a notification to this task that a value has
@@ -90,6 +97,7 @@ Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String,
         MyAppId = Application.id                                                                               ' Keep a local copy of the running tasks/apps i
         NotifyQueue = Null
     Endif
+    OpenNotifyPipe()                                            ' where the changes are announced to us
 
     Dim Symname As String = SymEntry.Name.ToString()
 
@@ -214,6 +222,7 @@ Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Optional CallFun
                     NotifyQueue.free()
                     NotifyVars = Null
                     NotifyQueue = Null
+                    CloseNotifyPipe()                   ' nothing left to wait for
                 Endif
                 If PidQueue.count = 0 Then
                     SymEntry.NotifyBlock = 0
@@ -228,35 +237,119 @@ Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Optional CallFun
 
 End
 
-'' This function is called upon the first call to create  notify
-'' for a variable. This setts the task or applications signal handler
-'' to catch change signals from the task/app changing the value of a symbol
-Private Sub SetSignal()
+'' Open our notify pipe, read and write so it never reports end of file when a writer closes it. Pipes left by
+'' processes that ended without closing theirs are removed first
+Private Sub OpenNotifyPipe()
 
-    InitSignal = Application.id
-    signal(ChangeSignal, _signal)
-    InitSignal = True
+    DropInheritedPipe()
+    If hNotify <> Null Then Return
+    For Each sName As String In Dir("/dev/shm", "shmmem-notify-*")
+        If Not Exist("/proc/" & Mid(sName, Len("shmmem-notify-") + 1)) Then Try Kill "/dev/shm" &/ sName
+    Next
+    hNotify = Open Pipe NotifyPipePrefix & CStr(Application.Id) For Read Write Watch
+    $iNotifyPid = Application.Id
 
 End
 
-'' This is where the signal arrives when generated from
-'' Any App/task. Basically we are decoupling the signal
-'' into an event for the task/application
+'' A forked Task inherits the pipe of its parent: close our copy without reading it, the bytes are for the parent.
+'' The pipe file stays, it is the parent's
+Private Sub DropInheritedPipe()
 
-Public Sub _signal(Sig As Integer)                  '' Signal handler for user defined signal
+    If hNotify = Null Or If $iNotifyPid = Application.Id Then Return
+    Try Close hNotify
+    hNotify = Null
+    $iNotifyPid = 0
 
-    If sig <> ChangeSignal Then Return
+End
 
-    While NotifyQueue.count > 0                                                                                    ' for each of the queued changes notify the reqestor
-        Dim VarName As Variant = NotifyQueue.Pop()                                             ' get the name of the variable that changed
-        Dim VarExtended As Variant[] = Split(varname, ";", "\"", True, False)     ' # type control variable may have extended information
-        Dim todoList As Collection = NotifyVars[VarExtended[0]]                        ' get the local todo list for this variable
-        If todolist = Null Then Continue                                                                          ' if it does not exsist then skip to next Queue
-        For Each myNotify As ShmNotifyEntry In todoList                                        ' Loop over the list
-            MyNotify.Newval(VarExtended)                                                                     ' create an event for the signal we recieved
-            Sched_Yield()                                                                                                        ' yield this task for another one to run
+Private Sub CloseNotifyPipe()
+
+    DropInheritedPipe()
+    If hNotify = Null Then Return
+    Try Close hNotify
+    hNotify = Null
+    Try Kill NotifyPipePrefix & CStr(Application.Id)
+
+End
+
+'' A change came in: the event loop calls this as soon as a byte is in our notify pipe
+Public Sub File_Read()
+
+    DropInheritedPipe()
+    DrainNotifyPipe()
+    Deliver()
+
+End
+
+'' Deliver the changes that came in, for a program that is busy and does not return to the event loop
+Public Sub CheckNotify()
+
+    DropInheritedPipe()
+    If hNotify = Null Or If Lof(hNotify) = 0 Then Return
+    DrainNotifyPipe()
+    Deliver()
+
+End
+
+Private Sub DrainNotifyPipe()
+
+    Dim sData As String
+
+    If hNotify = Null Then Return
+    While Lof(hNotify) > 0
+        Try sData = Read #hNotify, -256
+        If Error Then Break
+    Wend
+
+End
+
+'' Raise the event of every request waiting for each change on our queue
+Private Sub Deliver()
+
+    If bDelivering Or If NotifyQueue = Null Then Return
+    bDelivering = True
+    While NotifyQueue.count > 0                                 ' for each of the queued changes notify the requestor
+        Dim VarName As Variant = NotifyQueue.Pop()              ' get the name of the variable that changed
+        Dim VarExtended As Variant[] = Split(varname, ";", "\"", True, False)   ' # type control variable may have extended information
+        Dim todoList As Collection = NotifyVars[VarExtended[0]] ' get the local todo list for this variable
+        If todolist = Null Then Continue                        ' if it does not exist then skip to next Queue
+        For Each myNotify As ShmNotifyEntry In todoList         ' Loop over the list
+            MyNotify.Newval(VarExtended)                        ' create an event for the change
         Next
     Wend
+    bDelivering = False
+
+Catch
+    bDelivering = False
+    Error.Propagate()
+
+End
+
+'' Tell process Pid that a change is on its queue. False when the process is gone. The write end of each pipe stays
+'' open: a variable written in a loop signals at every write, opening the pipe each time made it 50 times slower
+Private Sub NotifyPid(Pid As Integer) As Boolean
+
+    Dim sKey As String = CStr(Pid)
+    Dim hPipe As File = $cPipes[sKey]
+
+    If hPipe = Null Then
+        If Not Exist(NotifyPipePrefix & sKey) Then
+            If Exist("/proc/" & sKey) Then Return True           ' alive, no pipe open now. Open Pipe would make one
+            Return False
+        Endif
+        Try hPipe = Open Pipe NotifyPipePrefix & sKey For Write   ' never blocks
+        If Error Then Return True
+        $cPipes[sKey] = hPipe
+    Endif
+    If Lof(hPipe) = 0 Then                                      ' a byte already waiting is enough, the pipe never fills
+        Try Write #hPipe, "x", 1
+        Return True
+    Endif
+    If Exist("/proc/" & sKey) Then Return True                  ' unread: busy, or gone without NotifyStop
+    Try Close hPipe
+    $cPipes.Remove(sKey)
+    Try Kill NotifyPipePrefix & sKey
+    Return False
 
 End
 
@@ -268,10 +361,11 @@ Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
 
     Dim PidQueue As ShmList
     Dim UserQueue As ShmList
-    Dim Result As Integer
     Dim SymName As String = ""
     Dim Pid As Integer
 
+    CheckNotify()                                               ' a program writing in a loop gets its own changes here, its queue
+    ' grew until the memory was full when only the event loop delivered
     If Sym.NotifyBlock = 0 Then Return
 
     PidQueue = New ShmList(VarMem, Sym.NotifyBlock)                                                           ' get the list of pids waiting for this variable to change
@@ -291,14 +385,9 @@ Public Sub SignalEach(Sym As Symbol, Optional tag As String = "")
 
     For Each Pid In PidQueue
 
-        Result = sKill(Pid, ChangeSignal)                                                                                             ' try to send the signal to the other tasks
-
-        If result <> 0 Then                                                                                                                         ' if it is an invalid pid then clean this stuff up
-            RemoveSet.Add(pid)                                                                                                              ' We cant change the content while processing it
+        If Not NotifyPid(Pid) Then                              ' the change is on its queue, tell it through its pipe
+            RemoveSet.Add(pid)                                  ' gone: cleaned up below, the list can not change while it is read
         Endif
-
-        Wait
-        Sched_Yield()                                                                                                                                      ' Allow the other tasks to process the signal
     Next
 
     If RemoveSet.count > 0 Then

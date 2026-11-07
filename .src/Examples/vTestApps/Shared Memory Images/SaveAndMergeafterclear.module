@@ -1,0 +1,59 @@
+' Gambas module file
+
+Public Sub main()
+
+    Dim shm As New ShmMem
+    Dim ShmLoad As New Shmmem
+    '    Dim ExcludeErase As String[] = ["sub.*", "class.*", "c"]
+
+    With shm
+        !a = 100
+        !b = [100, 200, 300]
+        !c = "this little string of stuff"
+        !d = ["grose", "bob", "jane", "lindo"]
+        .["sub.a"] = "this prog"
+        .["sub.b"] = "this prog"
+        .["sub.b"] = "this prog"
+        .["sub.c"] = "this prog"
+        .["sub.d"] = "this prog"
+        .["sub.e"] = "this prog"
+        .["sub.f"] = "this prog"
+        .["class.a"] = "this prog"
+        .["class.b"] = "this prog"
+        .["class.b"] = "this prog"
+        .["class.c"] = "this prog"
+        .["class.d"] = "this prog"
+        .["class.e"] = "this prog"
+        .["class.f"] = "this prog"
+        .Notify("a", Me)
+        Try .SaveImage()
+        If Error Then
+            Print "Save Failed ";; Error.text, Error.where
+        Endif
+    End With
+
+
+    With ShmLoad
+        Try .MergeImage()
+        If Error Then
+            Print Error.text, Error.where
+        Else
+            If !a = 100 Then Print "Integer Passed"
+            If !c = "this little string of stuff" Then Print "String Passed"
+            If !b[2] = 300 Then Print "integer Array Passes"
+            If !d[2] = "other" Then Print "Array Strings passes"
+        Endif
+    End With
+
+    shm.close()
+    ShmLoad.close()
+    Print "Test completed without errors"
+    Quit 0
+
+End
+
+Public Sub a_changed(Varname As String, value As Variant, timedout As Boolean)
+
+    Print VarName;; "changed to";; value;; "Timed out =";; Str(timedout)
+
+End

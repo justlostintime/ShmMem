@@ -1,7 +1,7 @@
 # Gambas Project File 3.0
 Title=ShmMem
-Startup=NewFGLoader
-Version=2.2.8
+Startup=SaveAndMergeafterclear
+Version=2.2.12
 Component=gb.args
 Component=gb.dbus
 Component=gb.eval

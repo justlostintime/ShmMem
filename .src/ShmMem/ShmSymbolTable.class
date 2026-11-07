@@ -165,8 +165,10 @@ Catch
 
 End
 
+
+
 '' Load the complete previously saved Symbol table and symbol values.
-Public Sub Load(InFile As File)
+Public Sub Load(InFile As File, Optional merge As Boolean = False)
 
     Dim UsedCount As Long
     Dim lastUpdate As Float
@@ -174,7 +176,7 @@ Public Sub Load(InFile As File)
     UsedCount = Read #inFile As Long
     lastUpdate = Read #inFile As Float
     For i As Integer = 1 To usedCount - 1                         '' load all the variables
-        LoadVar(inFile)
+        LoadVar(inFile, "", merge)
     Next
 
 Catch
@@ -184,16 +186,16 @@ Catch
 End
 
 '' Load a variable file by text name into the symbol table
-Public Sub Loadvar(infile As File, Optional symname As String = "")
+Public Sub Loadvar(infile As File, Optional symname As String = "", merge As Boolean = False)
 
-    ReadVar(infile, symname)
+    ReadVar(infile, symname, merge)
 
 End
 
 '' Read symbol value from a file, if the Symname does not match the
 '' stored symbol name then rename the symbol to the
 '' provided name. if the ReqSymName is blank then use the name from the file
-Public Sub ReadVar(infile As File, ReqSymname As String)
+Public Sub ReadVar(infile As File, ReqSymname As String, Optional merge As Boolean = False)
 
     Dim symname As String
     Dim value As Variant
@@ -206,6 +208,7 @@ Public Sub ReadVar(infile As File, ReqSymname As String)
     shmMem.objects.Remove("Override")
 
     If SymName[0] = "#" Then Return                                                     '' do not restore special use variables
+    If merge And If Me.Exist(SymName) Then Return                                       '' do not overwrite already used variables
     _put(value, symname)
 
 End
@@ -450,6 +453,8 @@ Public Sub Add(symName As String, value As Variant, Optional HashValue As Long =
 
     '    Dim result As Pointer
 
+    If NotifyVars <> Null Then NotifyVars.CheckNotify()          ' events waiting for us first, they read the values as they are now
+
     If SymName = "" Then
         Error.Raise("Symbol name can not be blank")
     Endif
@@ -532,6 +537,8 @@ Public Sub Remove(SymName As String)
 
     Dim index As Long
     Dim freeData As Pointer
+
+    If NotifyVars <> Null Then NotifyVars.CheckNotify()          ' events waiting for us first, they read the values as they are now
 
     If $UseCache Then
         UpdateCache() ' updated
@@ -638,6 +645,8 @@ Public Sub _put(value As Variant, SymName As String)
     Dim SymbolIndex As Pointer
     Dim sym As Symbol
     Dim index As Pointer
+
+    If NotifyVars <> Null Then NotifyVars.CheckNotify()          ' events waiting for us first, they read the values as they are now
 
     If $UseCache Then
         UpdateCache() ' upated
