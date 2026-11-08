@@ -75,7 +75,7 @@ Public Sub main()
                     Try MyShare.Remove(element[0])
                     If Error Then Print Error.text
                 Else
-                    Print "What the heck, thats not right"
+                    Print "What the heck, that's not right"
                 End If
             Endif
             'PrintStuff(MyShare)

@@ -74,7 +74,7 @@ End
 
 Public Sub done_changed(varname As String, value As Variant, TimedOut As Boolean)
 
-    Print Application.id;; " FG Recieved Done directive, starting exit procedure";; Str(TimedOut);; value;; VarName
+    Print Application.id;; " FG Received Done directive, starting exit procedure";; Str(TimedOut);; value;; VarName
 
 End
 

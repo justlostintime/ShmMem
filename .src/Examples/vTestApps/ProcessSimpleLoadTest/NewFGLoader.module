@@ -14,7 +14,7 @@ Public Sub main()
         !Wiggle = 0
         !AllDone = "No"
 
-        Print "Create 100 tasks to access the shared memeory"
+        Print "Create 100 tasks to access the shared memory"
         For i As Integer = 0 To 100
             tmp = New NewBGLoader
             tmp.myindex = i

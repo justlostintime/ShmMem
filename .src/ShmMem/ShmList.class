@@ -439,7 +439,7 @@ End
 Public Sub {lock}(Optional Wait_Time As Float = 30.0, Auto_Recovery As Boolean = False) As Boolean
 
     If listhead = Null Then
-        Error.Raise("List/Queue - invald listhead")
+        Error.Raise("List/Queue - invalid listhead")
     Endif
 
     If $iLockPid <> Application.Id Then                         ' a forked Task: the depth is its parent's
@@ -483,7 +483,7 @@ Public Sub add(Value As Variant, Optional ExtendedId As Long = 0, TagInfo As Str
     Dim RealAddress As Pointer
 
     If listhead = Null Then
-        Error.Raise("List/Queue - invald listhead")
+        Error.Raise("List/Queue - invalid listhead")
     Endif
 
     If ListHead.bDebug Then Print Application.id, "Add ShmList Value = ";; Str(Value)
@@ -539,7 +539,7 @@ Public Sub Clear()
     Dim pEntry As Variant
 
     If listhead = Null Then
-        Error.Raise("List/Queue  clear - invald listhead")
+        Error.Raise("List/Queue  clear - invalid listhead")
     Endif
 
     While Me.count > 0
@@ -554,7 +554,7 @@ End
 Public Sub AsDlistList() As DList[]
 
     If listhead = Null Then
-        Error.Raise("List/Queue  asDlistList - invald listhead")
+        Error.Raise("List/Queue  asDlistList - invalid listhead")
     Endif
 
     Dim pList As New DList[]
@@ -577,7 +577,7 @@ End
 Private Sub FreeEntry(Entry As DList)
 
     If listhead = Null Then
-        Error.Raise("List/Queue - invald listhead")
+        Error.Raise("List/Queue - invalid listhead")
     Endif
 
     If ListHead.bDebug Then Print Application.id, "Free Entry  in ShmList :";; entry.address;; "RefCount="; entry.RefCount
@@ -596,7 +596,7 @@ Public Sub _get(Index As Integer) As Variant
     Dim dPtr As Dlist
 
     If listhead = Null Then
-        Error.Raise("List/Queue _get - invald listhead")
+        Error.Raise("List/Queue _get - invalid listhead")
     Endif
 
     If ListHead.bDebug Then Print Application.id, "_get ShmList index =  " & Index
@@ -633,7 +633,7 @@ Public Sub _put(Value As Variant, Index As Integer)
     Dim dPtr As Dlist
 
     If listhead = Null Then
-        Error.Raise("List/Queue _put  - invald listhead")
+        Error.Raise("List/Queue _put  - invalid listhead")
     Endif
 
     If ListHead.bDebug Then Print Application.id, "_put ShmList index = " & Index & " Value = " & Str(value)
@@ -666,7 +666,7 @@ Public Sub insert(Index As Long, value As Variant, Optional ExtendedId As Intege
     Dim ptrPrev As DList
 
     If listhead = Null Then
-        Error.Raise("List/Queue insert - invald listhead")
+        Error.Raise("List/Queue insert - invalid listhead")
     Endif
 
     Dim NewItem As Dlist = NewEntry(Value)
@@ -747,7 +747,7 @@ Private Sub SeekRec(Index As Integer) As DList
     Dim Current As DList
 
     If listhead = Null Then
-        Error.Raise("List/Queue SeekRec- invald listhead")
+        Error.Raise("List/Queue SeekRec- invalid listhead")
     Endif
 
     If Index < 0 Or If Index >= ListHead.Value Then
@@ -778,7 +778,7 @@ Private Sub _remove(CurrentItem As Dlist, Optional WithValue As Boolean = True) 
     Dim ptrNext As Dlist
 
     If listhead = Null Then
-        Error.Raise("List/Queue _remove - invald listhead")
+        Error.Raise("List/Queue _remove - invalid listhead")
     Endif
 
     If WithValue Then
@@ -824,7 +824,7 @@ Public Sub RemoveExtId(ExtendedId As Long) As Variant
     Dim Value As Variant
 
     If listhead = Null Then
-        Error.Raise("List/Queue remove ext id- invald listhead")
+        Error.Raise("List/Queue remove ext id- invalid listhead")
     Endif
 
     If ListHead.bDebug Then Print Application.id, "RemoveExtId ShmList For " & ExtendedId
@@ -933,7 +933,7 @@ Public Sub PopInfo() As EntryInfo
     Dim result As EntryInfo
 
     If listhead = Null Then
-        Error.Raise("List/Queue PopInfo - invald listhead")
+        Error.Raise("List/Queue PopInfo - invalid listhead")
     Endif
 
     If listhead.value = 0 Then Error.Raise("PopInfo : empty queue")
@@ -947,7 +947,7 @@ End
 Public Sub Pop() As Variant
 
     If listhead = Null Then
-        Error.Raise("List/Queue pop - invald listhead")
+        Error.Raise("List/Queue pop - invalid listhead")
     Endif
 
     If ListHead.value > 0 Then
@@ -962,7 +962,7 @@ End
 Public Sub Push(value As Variant, Optional ExtendedID As Long = 0, TagInfo As String = "Push")
 
     If listhead = Null Then
-        Error.Raise("List/Queue push - invald listhead")
+        Error.Raise("List/Queue push - invalid listhead")
     Endif
     add(value, ExtendedID, TagInfo)
 
@@ -977,7 +977,7 @@ Public Sub remove(Optional Index As Long = -1, WithReturn As Boolean = True) As 
     Dim Value As Variant
 
     If listhead = Null Then
-        Error.Raise("List/Queue remove - invald listhead")
+        Error.Raise("List/Queue remove - invalid listhead")
     Endif
 
     Me.lock()
@@ -1044,7 +1044,7 @@ Public Sub RemoveByValue(vValue As Variant) As Variant
     Dim Value As Variant
 
     If listhead = Null Then
-        Error.Raise("List/Queue remove by value- invald listhead")
+        Error.Raise("List/Queue remove by value- invalid listhead")
     Endif
 
     If ListHead.bDebug Then Print Application.id, "RemoveByValue ShmList  " & Str(vValue)
@@ -1096,7 +1096,7 @@ Public Sub RemoveByVirt(VirtAddress As Pointer) As Variant
     Dim currentItem As DList
 
     If listhead = Null Then
-        Error.Raise("List/Queue remove by virtual address - invald listhead")
+        Error.Raise("List/Queue remove by virtual address - invalid listhead")
     Endif
     If ListHead.bDebug Then Print Application.id, "RemoveByVirt ShmList  " & VirtAddress
     Me.lock()
@@ -1148,7 +1148,7 @@ Public Sub {Copy}() As Variant
     Dim NewTag As String
 
     If listhead = Null Then
-        Error.Raise("List/Queue copy - invald listhead")
+        Error.Raise("List/Queue copy - invalid listhead")
     Endif
 
     newlist = Object.Class(Me).New([VarMem, 0, Me.ListHead.Global, "Copy:" & Me.tag])
@@ -1249,7 +1249,7 @@ Public Sub FindExtId(Value As Long, Optional returnElement As Boolean = False) A
     Dim Result As Long = -1
 
     If listhead = Null Then
-        Error.Raise("List/Queue Find extended id - invald listhead")
+        Error.Raise("List/Queue Find extended id - invalid listhead")
     Endif
 
     If listhead.bDebug Then Print Application.id, "FindExtId : ";; Object.Class(Me).name;; "Entries=";; Me.count
@@ -1293,7 +1293,7 @@ Public Sub FindTag(Value As String, Optional returnElement As Boolean = False) A
     Dim Result As Long = -1
 
     If listhead = Null Then
-        Error.Raise("List/Queue Find extended id - invald listhead")
+        Error.Raise("List/Queue Find extended id - invalid listhead")
     Endif
 
     If listhead.bDebug Then Print Application.id, "FindExtId : ";; Object.Class(Me).name;; "Entries=";; Me.count
@@ -1337,7 +1337,7 @@ Public Sub FindVirtAddress(VirtAddress As Pointer, Optional ReturnElement As Boo
     Dim result As Long = -1
 
     If listhead = Null Then
-        Error.Raise("List/Queue Find Virtual address - invald listhead")
+        Error.Raise("List/Queue Find Virtual address - invalid listhead")
     Endif
 
     If listhead.bDebug Then Print " FindVirtAddress : ";; Object.Class(Me).name;; "Entries=";; Me.count
@@ -1375,7 +1375,7 @@ Public Sub Find(value As Variant, Optional ReturnElement As Boolean = False) As 
     Dim Result As Long = -1
 
     If listhead = Null Then
-        Error.Raise("List/Queue Find - invald listhead")
+        Error.Raise("List/Queue Find - invalid listhead")
     Endif
 
     If listhead.bDebug Then Print " Find Value : ";; Object.Class(Me).name;; "Entries=";; Me.count

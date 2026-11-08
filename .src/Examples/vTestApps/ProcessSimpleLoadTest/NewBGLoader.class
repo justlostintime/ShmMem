@@ -22,7 +22,7 @@ Public Sub main() As String
             Endif
 
             If !AllDone == "Yes" Then
-                'Print MyIndex;; "All done recieved , Wiggle =";; !Wiggle
+                'Print MyIndex;; "All done received , Wiggle =";; !Wiggle
                 counter = !Wiggle
                 Break
             Endif

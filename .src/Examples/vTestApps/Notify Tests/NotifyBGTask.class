@@ -64,7 +64,7 @@ End
 
 Public Sub done_changed(VarName As String, Value As Variant, TimedOut As Boolean)
 
-    Print Application.id;; " BG Recieved Done directive, Timed Out=";; Str(timedOut);; Varname;; "=";; Value
+    Print Application.id;; " BG Received Done directive, Timed Out=";; Str(timedOut);; Varname;; "=";; Value
     isRunning = False
 
 End

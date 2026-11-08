@@ -708,7 +708,7 @@ Public Sub NotifyQ(symname As String) As ShmList
 
     index = getsymbol(SymName)
     If index = noentry Then
-        Error.Raise("Unknown Sysmbol name " & symname)
+        Error.Raise("Unknown Symbol name " & symname)
     Endif
     sym = SymMem.Table[index]
     If sym.notifyBlock = 0 Then Return Null
@@ -876,14 +876,14 @@ Public Sub {VarPtr}(SymName As String) As Variant
     If $UseCache Then
         UpdateCache() ' updated
         If Not SymbolCache.exist(SymName) Then 'updated
-            Error.Raise("Unknow Symbol " & SymName)
+            Error.Raise("Unknown Symbol " & SymName)
         Else
             index = SymbolCache[SymName] 'updated
         Endif
     Else
         index = GetSymbol(SymName)
         If index = noentry Then
-            Error.Raise("Unknow Symbol " & SymName)
+            Error.Raise("Unknown Symbol " & SymName)
         Endif
     Endif
 

@@ -44,7 +44,7 @@ Public Sub application_signal(signo As Integer)
                 Error "SIGINT";;
                 .ServerRunning = False
             Case Signal.SIGQUIT                     ' Quit from keyboard, Control-\
-                Error "SIGQIUIT";;
+                Error "SIGQUIT";;
                 .ServerRunning = False
             Default
                 Return

@@ -137,7 +137,7 @@ Public Sub _compare(OtherObject As Variant) As Integer
 
     Try otherversion = Object.GetProperty(OtherObject, "objectversion")
     If Error Or If otherversion <> objectversion Then
-        Error.Raise("Object versions not equal or not found Compareded object class : " & Object.Class(OtherObject).name & "," & objectversion & "<>" & otherversion)
+        Error.Raise("Object versions not equal or not found Compared object class : " & Object.Class(OtherObject).name & "," & objectversion & "<>" & otherversion)
     Endif
 
     For Each sym As String In Object.Class(Me).Symbols

@@ -14,7 +14,7 @@ Public Sub main() As Integer
         Print "BG Queue contains:"
         For Each g As Variant In !TheQ
             s = theq.key_tag
-            Print g, "Priorty ="; TheQ.key;; ", Tag="; Quote(s)
+            Print g, "Priority ="; TheQ.key;; ", Tag="; Quote(s)
             Flush
         Next
         Print "BG End Queue"

@@ -520,7 +520,7 @@ Public Sub GetOffset(Dims As Variant[], Optional SingleIndex As Long) As Pointer
         Endif
     Else
         If Dims.count <> ArrayDef.DimCount Then
-            Error.Raise("ShmArray : Invalid dimesions count on access, given " & Dims.count & " , Needed  " & ArrayDef.dimcount)
+            Error.Raise("ShmArray : Invalid dimensions count on access, given " & Dims.count & " , Needed  " & ArrayDef.dimcount)
         Endif
 
         For i As Long = 0 To ArrayDef.DimCount - 1
@@ -858,7 +858,7 @@ Public Sub GetRow(...) As Variant[]
     Dim physAddr As Pointer
 
     If Param.count <> ArrayDef.Dimcount - 1 Then
-        Error.Raise("Get row must specifiy all Sub scripts except the last one, needed : " & Str(ArrayDef.DimCount - 1) & ", Got " & Str(Param.count))
+        Error.Raise("Get row must specify all Sub scripts except the last one, needed : " & Str(ArrayDef.DimCount - 1) & ", Got " & Str(Param.count))
     Endif
 
     For i = 0 To Me.SubMax[ArrayDef.DimCount - 1]                              ' the last row
