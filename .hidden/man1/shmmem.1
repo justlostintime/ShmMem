@@ -1,0 +1,346 @@
+.TH SHMMEM 1 "2026-11-08" "ShmMem 2.3" "Gambas Components"
+.SH NAME
+shmmem \- Gambas 3 component for sharing variables between tasks and applications in Linux shared memory
+.SH SYNOPSIS
+.nf
+.B Dim mymem As New ShmMem("segment_name")
+.BI "Dim mymem As New ShmMem(" length ", " name ", " max_symbols ", " lock_timeout ", " executable ", " permissions ")"
+.B mymem!myvar = 100
+.B Print mymem!myvar
+.fi
+.SH DESCRIPTION
+.B ShmMem
+stores Gambas values in Linux shared memory, so that tasks and applications on the same machine can read and
+change them directly, without copying them through the kernel.
+Any value that Gambas can write with
+.B Write As Variant
+can be stored: native values, arrays, collections and objects.
+Variables do not need to be declared before use, and their type may change, except while another task is
+notified of their changes.
+.PP
+A segment has a symbol table and a variable memory area.
+Values are reached by name:
+.BR mymem!name ,
+.B mymem["name"]
+or
+.BR mymem.name .
+.PP
+A named segment can be used by every application with the right permissions.
+An unnamed segment, made with an empty name, is shared by the application and its tasks only.
+The segments are deleted when the last task or application using them closes.
+.SH CREATING A SEGMENT
+.TP
+.I length
+Size of the variable memory in bytes. Defaults to 20000000 (20 MB).
+.TP
+.I name
+Name of the segment. Two segments are made in /dev/shm:
+.IB name _Data
+and
+.IB name _Symbols .
+An empty name makes an unnamed segment.
+.TP
+.I max_symbols
+Maximum number of symbols. Defaults to 8000.
+.TP
+.I lock_timeout
+Defaults to 0.1. Kept in the memory block and used by
+.BR ExclusiveTimeout .
+The normal lock waits up to 30 seconds, see
+.BR LOCKS .
+.TP
+.I executable
+Allows binary code in the segment to be run, see
+.BR ShmThread .
+Defaults to False.
+.TP
+.I permissions
+Permissions of the segment. Defaults to &O660, or &O770 when executable.
+.PP
+All the parameters are optional.
+.B New ShmMem("name")
+uses the defaults for the rest.
+.SH METHODS
+.SS Variables
+.TP
+.BI Exist( name ") As Boolean"
+True when the symbol exists.
+.TP
+.BI Remove( name )
+Removes the symbol and frees its value. Tasks waiting for its removal are notified.
+.TP
+.BI Free( name )
+Frees the symbol and the memory used by its value.
+.TP
+.BI Clear( "" "[ignore_list]" )
+Removes every variable except those in ignore_list. Names starting with # are kept.
+.TP
+.BI Variables( "" "[filter]" ") As String[]"
+Names of the variables that match the pattern filter, default "*".
+.TP
+.BI SizeOf( value ") As Long"
+Storage size of a value.
+.TP
+.BI VarPtr( name ) ", VarEntryPtr(" name )
+Virtual address of the value, and of the variable control block.
+.SS Images and saved variables
+Files are kept in
+.B DefaultDirectory
+(~/vars) unless a path is given.
+.TP
+.BI SaveImage( "" "[file]" )
+Saves all the symbols and their values. Default file:
+.IR application_name .image.
+.TP
+.BI LoadImage( "" "[file], [merge]" )
+Loads a saved image. With merge set to True, variables that exist already are kept.
+.TP
+.BI MergeImage( "" "[file]" )
+Same as LoadImage with merge set to True.
+.TP
+.BI SaveVar( name ", [file])"
+Saves one variable, by default to
+.IR name .var.
+.TP
+.BI LoadVar( file ", [name], [merge])"
+Loads one variable, optionally under another name.
+.TP
+.BI SaveNativeVar( name ", " value ", [file])"
+Saves a Gambas value as a variable file, without storing it in the segment.
+.TP
+.BI SetPath( path ", [base_name], [extension]) As String"
+Full path of an image or variable file, with the defaults applied.
+.SS Notifications
+The handler is called with the variable name, the new value and a timed out flag.
+.TP
+.BI Notify( name ", " object ", [method], [timeout], [tag])"
+Calls the handler when the variable changes. The variable must exist. The default handler is
+.IR name _notify.
+A timeout of 0 waits for ever.
+.TP
+.BI NotifyStop( name ", " object ", [method], [tag])"
+Cancels a Notify request; name, object, method and tag must match it. Raises an error when no request matches.
+.TP
+.BI NotifyOnAny( enabled ", " object ", [method])"
+Calls the handler when any variable changes.
+.TP
+.BI NotifyOnNew( enabled ", " object ", [method])"
+Calls the handler when a variable is created.
+.TP
+.BI NotifyOnRemove( enabled ", " object ", [method])"
+Calls the handler when a variable is removed.
+.TP
+.BI NotifyQ( name ") As ShmList"
+The tasks and applications waiting for changes of the variable.
+.PP
+Each process waiting for notifications has a queue in the segment and a pipe,
+.RI /dev/shm/shmmem-notify- pid .
+The event is raised when the program returns to the Gambas event loop, for example in a
+.BR Wait .
+A busy program gets its events when it next creates, changes or removes a variable.
+No signals are used.
+.SS Waiting (deprecated, use the notifications)
+.TP
+.BI WaitFor( name ", [timeout]) As Boolean"
+Waits for the variable to be created.
+.TP
+.BI WaitForValue( name ", " value ", [timeout]) As Boolean"
+Waits for the variable to have the value.
+.TP
+.BI WaitValueChange( name ", " value ", [timeout]) As Boolean"
+Waits for the variable to change from the value.
+.PP
+They check in a loop that pauses 1 ms at first, doubling up to 50 ms. A timeout of 0 waits for ever.
+.SS Memory and segments
+.TP
+.BI Alloc( length ") As Pointer"
+Allocates memory in the segment and returns its virtual address.
+.TP
+.BI RealAddress( virtual ") , RealDataAddress(" virtual )
+Real address of a block, and of its data.
+.TP
+.B Close()
+Closes the segment and releases its resources. Call it when the application ends.
+.TP
+.BI "ShmMem.ForceDelete(" name )
+Deletes the segments of that name. Tasks still using them are left in a bad state.
+.TP
+.BI "ShmMem.GetMemSegment(" signature ") As ShmMem"
+The open segment with that signature, used when objects are read back.
+.TP
+.BI "ShmMem.GetListType(" memory ", " type ") As Variant[]"
+All the memory blocks of one datatype.
+.TP
+.BI "ShmMem.GetObjectClass(" object ") As Class"
+The class of an object.
+.SS Debugging
+.TP
+.BR Print() ", " PrintAllInfo( [title] ) ", " PrintTree()
+Print the symbols, the memory information and blocks, and the hash buckets (not implemented).
+.TP
+.BI "ShmMem.Dump(" pointer ", " length ", [file])"
+Writes memory to a file, by default ~/Desktop/dumpfile.ghex.
+.SH PROPERTIES
+.TP
+.B Count, Length
+Number of symbols.
+.TP
+.B Max, Key
+The last index and the current name while iterating with For Each.
+.TP
+.B Debug
+Turns debug messages on or off.
+.TP
+.B DefaultDirectory
+Directory for images and variable files. Defaults to ~/vars.
+.TP
+.B Signature
+Unique identifier of the ShmMem object, used to put values read back in the right segment.
+.TP
+.B ShmObjects
+The open segments.
+.TP
+.B Version
+The library version.
+.TP
+.B ShmMem.Objects, ShmMem.PID
+Static: the open segments of this process, and its process id.
+.SH DATATYPES
+Shared datatypes keep their structure in the segment, so every task sees the same list, queue or array.
+Create them with the segment they belong to, for example
+.BR "New ShmList(mymem, 0, True, \(dqtag\(dq)" .
+A tag, or the virtual address, refers to an existing one from another task.
+.TP
+.B ShmList
+Doubly linked list with extended ids and tags.
+.TP
+.B ShmQueue
+Queue, optionally ordered by priority.
+.TP
+.BR ShmFiFo ", " ShmFiLo
+First in first out, and first in last out queues.
+.TP
+.B ShmArray
+Static array of up to 10 dimensions.
+.TP
+.B ShmValue
+A single value, found by tag, outside the symbol table.
+.TP
+.B ShmThread
+Runs position independent binary code stored in an executable segment as a thread.
+.TP
+.B ShmStorableClass
+Base class for your own classes: their public variables and properties are stored and read back.
+Every public property must be writable.
+.SH EXECUTABLE BLOCKS
+A segment created with
+.I executable
+set to True can hold binary code, a blob written in assembler or C, and run it as a native thread inside the
+program with
+.BR ShmThread .
+The code runs with no checks: a bad blob crashes the whole program.
+.PP
+.nf
+smem = New ShmMem(1280000, "test", 3000, 2.2, True)
+smem!a = File.Load("templates/pthreadPassString.bin")
+Dim t As New ShmThread(smem, "a")
+t.Execute("Hello\(rsn")         ' waits for the thread
+.fi
+.PP
+.B Execute(\fIarg\fP, \fIWaitToComplete\fP)
+starts the code at the first byte of the blob, with
+.I arg
+in register rdi: the address of a string's characters, a number, or
+.B Object.Data()
+of a structure whose first field is, by convention, the result.
+With
+.I WaitToComplete
+set to False, call
+.B WaitComplete()
+before reading what the thread writes.
+.PP
+A blob must be x86-64 position independent code with its entry point at its first byte. It is not linked to any
+library: it uses Linux system calls only, and keeps its data inside the blob. It ends with the exit system call
+(60), never exit_group (231), which ends the whole program.
+.PP
+The
+.B templates
+directory of the project has blobs in assembler (pthreadPassString.asm, pthreadPassValue.asm,
+pthreadPassStruct.asm) and C (pthreadStruct.c), with their build scripts:
+.TP
+.B ./buildAsm
+Assembles the assembler templates into flat binaries with
+.BR fasm (1).
+.TP
+.B ./buildC
+Builds pthreadStruct.bin with
+.B gcc -fPIE -fno-stack-protector
+and
+.B ld -T linkinfo
+at address 0, keeps only the code with
+.BR objcopy ,
+and writes a disassembly to C_dump.txt.
+In C the entry function must come first in the file, and there can be no global variables or string constants.
+.PP
+The example Examples/vTestApps/Executable_Shared_Segments/TestExecutableBlocks.module runs all the templates;
+run it from the project directory after building them.
+.SH LOCKS
+The memory block, every list and queue, and every array have their own lock: a process shared, robust, recursive
+pthread mutex in the segment.
+.IP \(bu 2
+A lock held by a process that ended or was killed is taken over by the next process that locks it, with the message
+"a process ended while it held the lock of ..., recovered" on stderr. What that process was changing may be half done.
+.IP \(bu 2
+A process waits up to 30 seconds for a lock held by a live process, then the error
+"Mutex race condition !!! : ..." is raised. Lists and arrays wait the Wait_Time of their Lock method.
+.IP \(bu 2
+Waiting does not use the processor: the waiters sleep in the kernel until the lock is released.
+.IP \(bu 2
+A process may take the same lock more than once; each Lock needs its Unlock.
+.SH TASKS
+A forked Task inherits the ShmMem objects of its parent. When the Task ends it does not change the use counts of its
+parent's segment, lists and values, nor take over its notify queue. Lock counts are kept per process.
+.SH ERRORS
+Errors are raised to the caller; the library does not stop or print and carry on. Errors inside the library say
+"internal error" and where. Examples: "Empty List - ..." when a list remove finds nothing, "Out Of Bounds",
+"Out Of Variable Memory".
+.SH FILES
+.TP
+.IB name _Data ", " name _Symbols
+The two segments of a named ShmMem, in /dev/shm.
+.TP
+.RI /dev/shm/shmmem-notify- pid
+The notify pipe of a process. A pipe left by a process that ended is removed by the next one that opens its pipe.
+.TP
+.RI ~/vars/ application .image
+Default image file.
+.SH NOTES
+Segments made by a version before 2.3 use semaphores and can not be used with this version. Delete them with
+.B ShmMem.ForceDelete
+or remove their files in /dev/shm before starting.
+.SH EXAMPLE
+.nf
+Public Sub Main()
+
+    Dim mymem As New ShmMem("mymem")
+
+    mymem!counter = 0               ' Notify needs the variable to exist
+    mymem.Notify("counter", Me, "Changed")
+    mymem!counter = 1
+    Wait 1                          ' events arrive in the event loop
+    mymem.NotifyStop("counter", Me, "Changed")
+    mymem.Close()
+
+End
+
+Public Sub Changed(VarName As String, Value As Variant, TimedOut As Boolean)
+
+    Print VarName; " = "; Value
+
+End
+.fi
+.SH SEE ALSO
+The full documentation is in the ShmMem wiki, https://github.com/justlostintime/ShmMem/wiki, with a copy in
+\&.hidden/Document/ShmMem.md in the project.
+.SH AUTHOR
+Brian G (JustLostInTime)

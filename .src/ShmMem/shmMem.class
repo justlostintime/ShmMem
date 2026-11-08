@@ -12,7 +12,7 @@ Fast Unsafe
 ' when dumping the memory we must use a raw write mode
 Extern rWrite(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "write"
 
-Const VarMemDefault As Long = 2000000                                '' default memory size is 2 meg
+Const VarMemDefault As Long = 20000000                               '' default memory size is 20 MB
 Const MaxSymbolsDefault As Integer = 8000                          '' default variable memory space 8000 entries
 Const TimeOutDefault As Float = 0.1                                          '' Default sem timeout
 
@@ -515,7 +515,7 @@ End
 Public Sub PrintAllInfo(Optional Title As String = "")
 
     Print "***************************************** Full Memory Info " & title & "***************************************************"
-    Print Subst("Default Memory Size &1MB, Max Symbol Table entries &2, Default Timeout &3", VarMemDefault / 1024, MaxSymbolsDefault, TimeOutDefault)
+    Print Subst("Default Memory Size &1MB, Max Symbol Table entries &2, Default Timeout &3", VarMemDefault / 1000000, MaxSymbolsDefault, TimeOutDefault)
     Print
     Print Vars.text
     Print

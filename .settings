@@ -867,16 +867,10 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Cleanup examples\n\n*NEW: Added function NotifyOnAny for notification when any variable changes\n*OPT: Cleanup Asm and c thread examples"
+LastCommit="Added local copy of the wiki to the project\n\n*NEW: Updated wiki added local .md file to project"
 
 [OpenFile]
-Count=5
-Active=5
-File[1]=".src/UnitTestShm/NewBSaveLoadImage.test:0.29"
-File[2]=".src/Examples/Demo/Demo_ArrayFunctions.module:0.0"
-File[3]=".src/Examples/Demo/Demo_shmListArrayQueue.module:0.0"
-File[4]=".src/Examples/Demo/Demo_user1.module:0.0"
-File[5]="Demo Scripts/demo_monitornew:0.0"
+Count=0
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

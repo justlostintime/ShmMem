@@ -19,7 +19,7 @@ Public Struct pthread_args
 End Struct
 
 'Private a As New Pthread_p
-Private b As Pointer = Alloc(100)
+Private b As Pointer = Alloc(SizeOf(gb.Pointer))                '' receives the value the thread returns, see WaitComplete. Freed in _free
 'pthread_create(pthread_t *, const pthread_attr_t *,   void * ( * )(void * ), void * );
 
 Extern pthread_create(thread As Pthread_t, attributes As Pointer, start_routine As Pointer, arg As Pointer) As Integer In "libc:6"
@@ -97,6 +97,15 @@ End
 Public Sub {kill}(Optional signumber As Integer = Signal.SIGKILL) As Integer
 
     Return pthread_kill($Thread, signumber)
+
+End
+
+'' Free the buffer that receives the thread's return value. Only pthread_join in WaitComplete writes it, never the
+'' thread, so it can be freed while a thread still runs
+Public Sub _free()
+
+    If b Then Free(b)
+    b = 0
 
 End
 

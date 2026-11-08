@@ -66,11 +66,11 @@ Shared named memory segments may be created and accessed by using the Assigned n
 
 ### Definition Long
 MyMemory = ShmMem(Memory_Length, Segment_name, Number_Of_Symbols,Locking_timeout, isExecutable , setPermissions )
-* Memory Length     - Defaults to 20Meg. This is the length of the variable memory made available to users program
+* Memory Length     - Defaults to 20000000 bytes (20 MB). This is the length of the variable memory made available to users program
 * Segment Name      - This is a string used to name the segment. Two actual segments will be created SegName_Data, SegName_Symbols
 * Number of Symbols - Defaults to 8000. This is the maximum number of symbols supported by the allocated memory segment.
 * Locking timeout   - Defaults to 0.1. Kept in the memory block (LockTimeout) and used by ExclusiveTimeout. The normal memory lock waits up to 30 seconds for a live holder, see [Locks](#locks-processes-and-errors).
-* isExecutable      - Defaults to false. This will allow the loading of binary blobs, and execution of those blobs. Intended for JIT
+* isExecutable      - Defaults to false. This will allow the loading of binary blobs, and execution of those blobs. Intended for JIT. See [Executable Blocks](https://github.com/justlostintime/ShmMem/wiki/Executable-Blocks)
 * setPermissions    - Integer value used to set the permissions for the created segment. Defaults to &O660.or &0770 if executable
 
 The number of symbols and locking timeout are optional for the call to create the class.
@@ -85,11 +85,11 @@ Unnamed memory segments may be shared by all tasks and the app creating it.
 
 ### Definition Long
 MyMemory = new ShmMem(Memory Length, "", Max Number of symbols, LockTimeOut, isExecutable , setPermissions )
-* Memory Length     - Defaults to 20Meg. This is the length of the variable memory made available to users program
+* Memory Length     - Defaults to 20000000 bytes (20 MB). This is the length of the variable memory made available to users program
 * Segment Name ""   - Left Blank indicates unnamed segments
 * Number of Symbols - Defaults to 8000. This is the maximum number of symbols supported by the allocated memory segment.
 * Locking timeout   - Defaults to 0.1. Kept in the memory block (LockTimeout) and used by ExclusiveTimeout. The normal memory lock waits up to 30 seconds for a live holder, see [Locks](#locks-processes-and-errors).
-* isExecutable      - Defaults to false. This will allow the loading of binary blobs, and execution of those blobs. Intended for JIT
+* isExecutable      - Defaults to false. This will allow the loading of binary blobs, and execution of those blobs. Intended for JIT. See [Executable Blocks](https://github.com/justlostintime/ShmMem/wiki/Executable-Blocks)
 * setPermissions    - Integer value used to set the permissions for the created segment. Defaults to &O660.or &0770 if executable.
 
 Everything is optional  number of symbols and locking timeout are optional for the call to create the class.
@@ -217,7 +217,7 @@ Last Updated 0.002051937000942, Phy Address 7322AC23F000
 * Print Symbol info and Raw Storage memory
 ```
 ***************************************** Full Memory Info ***************************************************
-Default Memory Size 1953.125MB, Max Symbol Table entries 8000, Default Timeout 0.1
+Default Memory Size 20MB, Max Symbol Table entries 8000, Default Timeout 0.1
 
 
 Symbol Table Listing
@@ -578,6 +578,9 @@ Public Sub Pop() As Variant
 
 End
 ```
+### Storing your own objects
+Objects of your own Gambas classes can be stored too: inherit [ShmStorableClass](https://github.com/justlostintime/ShmMem/wiki/ShmStorableClass), or define _read and _write in the class.
+
 ### Notes on using Tags
 While it is possible to add a TAG to many of the data types used by shared memory, referencing these TAGS can be very slow
 when there is a large number of tagged memory segments. The program does a sequential search through the allocated memory blocks looking for the requested TAG.
@@ -1332,6 +1335,8 @@ This Data type allows the creation and execution of linux threats from binary bl
 Straight forward interface which allows creation and execution of threads withing the gambas executable. This is meant for creating in memory JIT'S or very fast synchronous or asynchronous functions that operate on gambas variables. Implemented in assembly or C languages. C being the most portable from arm to x86-64.
 The binaries that are executed must be linked as Position independent executables. The templates included Build scripts included in this project help to achieve this goal.
 
+See [Executable Blocks](https://github.com/justlostintime/ShmMem/wiki/Executable-Blocks) for making an executable segment, the rules a blob must follow, passing data, and the assembler and C templates with their build scripts.
+
 # Interface
 ## Creating New Thread
 ```
@@ -1429,3 +1434,198 @@ Sends a signal to the running thread, SIGKILL by default.
 ### WaitComplete
 * WaitComplete() As Variant
 Waits for the running thread to complete and returns its result (the pthread_join error code if the join fails). This should be used most of the time, a thread left running in the background can be dangerous.
+
+# Executable Blocks
+A ShmMem segment can be made executable. Binary code, a "blob" written in assembler or C, is then stored in it like any other value, and run as a native thread inside the Gambas program with [ShmThread](https://github.com/justlostintime/ShmMem/wiki/ShmMem-Datatypes-%E2%80%90-ShmThread). This is meant for in memory JIT code and for very fast functions working on shared data.
+
+**Be careful:** the code runs inside your program, with no checks. A bad blob crashes the whole program, and it can overwrite any memory of the process.
+
+The project provides templates for blobs in assembler and C, with the scripts that build them, in the `templates` directory. The example `Examples/vTestApps/Executable_Shared_Segments/TestExecutableBlocks.module` loads and runs all of them.
+
+# Making an executable segment
+Pass True as the isExecutable parameter (the fifth) when the segment is created:
+```
+Dim smem As New ShmMem(1280000, "test", 3000, 2.2, True)   ' length, name, symbols, lock timeout, executable
+```
+The segment is mapped with execute permission, and gets the permissions &O770 instead of &O660.
+
+# Loading and running a blob
+Store the binary in a variable and create a ShmThread on it:
+```
+With smem
+    !a = File.Load("templates/pthreadPassString.bin")      ' the binary is stored in the segment
+    Dim a As New ShmThread(smem, "a")                       ' a thread running the code of variable a
+    a.Execute("Hello from Gambas\n")                        ' run it, wait for it to finish
+End With
+```
+A ShmThread can also be created:
+* on a virtual address in the segment: `New ShmThread(smem, VirtualAddress)`
+* on new memory: `New ShmThread(smem, "", 4000)` allocates 4000 bytes for the program, then copy the code into it with `e[0] = File.Load("templates/pthreadPassStruct.bin")`.
+
+## Execute
+* Execute(Optional arg As Pointer = Null, WaitToComplete As Boolean = True) As Variant
+* Starts the code as a new pthread. The code starts at the first byte of the blob, with arg as its only argument, in register rdi (the x86-64 C calling convention).
+* WaitToComplete = True waits for the thread and returns its result. With False it returns at once: call WaitComplete() before reading anything the thread writes.
+* WaitComplete(), Cancel() and Kill() are described on the [ShmThread](https://github.com/justlostintime/ShmMem/wiki/ShmMem-Datatypes-%E2%80%90-ShmThread) page.
+
+## Passing data
+The templates show three ways to pass data:
+* **A string:** `a.Execute("message")` passes the address of the string's characters. End it with "\0" if the code looks for the end of the string.
+* **A value:** `b.Execute(2)` passes the number itself, in rdi.
+* **A structure:** `c.Execute(Object.Data(MyStruct))` passes the address of a Gambas structure. The code reads and writes its fields at their offsets, and by convention the first field is the result:
+```
+Public Struct messitup
+    result As Long          ' offset 0, set by the thread
+    value As Long           ' offset 8
+    message As String       ' offset 16, a pointer to the characters
+    writeLen As Long        ' offset 24
+End Struct
+```
+Read the fields the thread writes only after it has finished.
+
+# Rules for a blob
+* x86-64 Linux code, position independent: the blob is loaded at any address.
+* The entry point is the first byte of the blob.
+* No libraries: the blob is not linked to libc or anything else, so it can not call printf, malloc or pthread functions. Use Linux system calls (the templates use write, open, close and exit).
+* Everything the code needs, its data included, must be inside the blob, reached relative to the instruction pointer.
+* End the thread with the exit system call (SYS_exit, 60), as the templates do. Never use exit_group (231): it ends the whole program.
+
+# The templates
+In the `templates` directory of the project:
+
+| File | What it is |
+|------|------------|
+| pthreadPassString.asm | Assembler: receives a string, writes it and a log entry |
+| pthreadPassValue.asm | Assembler: receives a value, writes a message that many times |
+| pthreadPassStruct.asm | Assembler: receives a structure, uses its fields and sets its result |
+| pthreadStruct.c | C: receives the same structure, writes the message value times and sets result and writeLen |
+| buildAsm | Builds the three assembler templates |
+| buildC | Builds the C template |
+| linkinfo | Linker script used by buildC: puts the code at address 0 |
+| thread_example.c, thread_example.s | Not a blob: a stand-alone C program using pthreads, and its assembler output, kept for reference |
+
+The assembler templates append a line to /tmp/shm_exec.log each time they run.
+
+## Building the assembler blobs
+The assembler templates need the flat assembler, fasm (`sudo apt install fasm`). Run in the templates directory:
+```
+./buildAsm
+```
+It runs `fasm name.asm name.bin` for each template. fasm writes a flat binary directly: no linking is needed.
+
+## Building the C blob
+The C template needs gcc and binutils (ld, objcopy, objdump). Run in the templates directory:
+```
+./buildC
+```
+It does:
+1. `gcc -g -fPIE -finline-functions -fno-stack-protector -c pthreadStruct.c`: position independent code, without the stack protector, which needs libc.
+2. `ld -T linkinfo -o pthreadStruct.elf pthreadStruct.o --entry threadEntry -z noexecstack`: links at address 0.
+3. `objcopy -O binary -j .text pthreadStruct.elf pthreadStruct.bin`: keeps only the code.
+4. `objdump -d -M intel -S pthreadStruct.elf > C_dump.txt`: a disassembly, to check the result.
+
+Rules for the C code, followed by pthreadStruct.c:
+* The entry function (threadEntry) must be the first function in the file.
+* Only the .text section is kept: no global or static variables, and no string constants.
+* System calls are made with inline assembler, see showMsg and ThreadExit in the template.
+
+## Running the example
+The example loads the blobs from `templates/`, so run it from the project directory, after building them:
+```
+cd templates && ./buildAsm && ./buildC && cd ..
+```
+Then run TestExecutableBlocks from the IDE, or `gbx3 -s TestExecutableBlocks .` in the project directory. It runs each blob 1001 times (RepeatLoop), without waiting for the threads (WaitComplete = False), so the results it prints while the threads are still running can be 0.
+
+# ShmStorableClass
+A base class for your own Gambas classes whose objects are stored in shared memory, saved in images and shared between tasks and applications.
+
+Inherit it and the object is written and read for you: every public variable and property of your class is stored. Without it a class must define its own `_read` and `_write` methods (see Writing your own _read and _write below).
+
+```
+' Gambas class file: Person.class
+Inherits ShmStorableClass
+
+Public Name As String
+Public Age As Integer
+Public Phones As String[]
+```
+```
+Dim mymem As New ShmMem("mymem")
+Dim p As New Person
+
+p.Name = "jane"
+p.Age = 40
+mymem!person = p                    ' a copy of the object is stored in shared memory
+
+' in another task or application using "mymem"
+Dim q As Person = mymem!person      ' a new Person object with the stored values
+Print q.Name, q.Age
+```
+The value read back is a new object, a copy: changing it does not change the stored value. Assign it again to store the change.
+
+# What is stored
+* The class version (an Integer), then the value of each public variable and property of the object, in the order Gambas lists the class symbols.
+* Values are written with `Write As Variant`, so any type that can be written that way can be stored: native values, arrays, collections and other storable objects.
+* Methods, constants and static variables are not stored.
+* The Tag property is stored too.
+
+# Rules for your class
+* Every public property must be writable: reading the object sets each property again. A read only property makes the read fail with "'Class.Property' is read only".
+* The class must be available, with the same name, in every program that reads the object.
+* Adding, removing or reordering public variables changes the stored layout: objects saved before the change can not be read correctly after it.
+
+# Interface
+## Creating
+* New YourClass(Optional LoadFrom As Variant = Null)
+* LoadFrom - Null creates a normal new object.
+* * a Pointer - reads the object from the memory at that address.
+* * a File - reads the object from the file.
+* Any other value raises "Invalid object type specified for loading/copy". See Limitations.
+
+## Properties
+### Tag
+* Tag As String
+* Read or write. Defaults to the name of the class.
+
+## Methods
+### CheckVersion
+* CheckVersion(VersionNumber As String) As Integer
+* Returns the version of the object minus VersionNumber: 0 when they are the same.
+### GetObjectVersion
+* GetObjectVersion() As Integer
+* Returns the version of the object.
+### ToString
+* ToString() As String
+* Returns a printable list of the stored values: name, Gambas type and value. Objects are shown as their address.
+
+## Special methods
+These are called by Gambas and the library. Override them in your class only to change how the object is stored.
+* _write(mFile As File) - writes the version and the values.
+* _read(mFile As File) - reads the version and the values.
+* _serialize() As Integer - the number of bytes _write writes.
+* _compare(OtherObject) As Integer - compares the values one by one: 0 when equal, 1 or -1 at the first difference. Raises "Object versions not equal or not found" when the versions differ.
+
+# Writing your own _read and _write
+A class that does not inherit ShmStorableClass can be stored when it defines both methods. Read the values in the order they were written.
+```
+' Gambas class file
+Public Name As String
+Public Count As Integer
+
+Public Sub _write(hFile As Stream)
+    Write #hFile, Name As String
+    Write #hFile, Count As Integer
+End
+
+Public Sub _read(hFile As Stream)
+    Name = Read #hFile As String
+    Count = Read #hFile As Integer
+End
+```
+See SharedObjectExample.class in the library source for a longer example.
+
+# Limitations
+These are how the class behaves now:
+* The version is always 1 (ShmStorableClass.classversion). A `classversion` constant declared in your class is not used, so the version can not be used to tell apart the layouts of your class.
+* There is no way to convert objects stored with an older layout: the conversion hook (_convertStream) is private and does nothing.
+* Creating an object from another object, New YourClass(OtherObject), always raises "Invalid object type specified for loading/copy".
