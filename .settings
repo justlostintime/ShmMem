@@ -867,10 +867,13 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Added local copy of the wiki to the project\n\n*NEW: Updated wiki added local .md file to project"
+LastCommit="Fix a bug in shmThread and added section on running c and asm code from mmem segments\n\n* BUG: shmThread memory leak, \n* OPT: updated wiki with section on executable c and asm functions"
 
 [OpenFile]
-Count=0
+Count=2
+File[1]=".src/ShmMem/ShmQueue.class:4.83"
+Active=2
+File[2]=".src/Examples/vTestApps/Queues/NewFGEnqueue.module:0.0"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"
