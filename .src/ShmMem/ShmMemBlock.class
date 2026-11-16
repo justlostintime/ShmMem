@@ -14,6 +14,7 @@ Extern munmap(MapPoint As Pointer, MapLength As Integer) As Integer In "libc:6"
 Extern shm_open(name As String, oflag As Integer, mode As Integer) As Integer In "librt:1"
 Extern shm_unlink(name As String) As Integer In "librt:1"
 Extern ftruncate(FileHandle As Integer, length As Integer) As Integer In "libc:6"
+Extern lseek(FileHandle As Integer, Offset As Long, Whence As Integer) As Long In "libc:6"
 Extern mremap(MapPoint As Pointer, MapLength As Integer, NewMapLength As Integer, flags As Integer) As Pointer In "libc:6"
 Extern strerror(err As Integer) As Pointer In "libc:6"
 
@@ -21,7 +22,7 @@ Extern strerror(err As Integer) As Pointer In "libc:6"
 'Extern rRead(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "read"
 Extern rClose(Handle As Integer) As Integer In "libc:6" Exec "close"
 
-Extern sched_yield() As Integer In "libpthread:0"
+'Extern sched_yield() As Integer In "libpthread:0"
 
 Static Private Const PROT_READ As Integer = &H01
 Static Private Const PROT_WRITE As Integer = &H02
@@ -100,7 +101,8 @@ Static Public Sub ForceDelete(SharedName As String)
 
 End
 
-Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As String = "", WaitTimeout As Float = 2.1, isExecutable As Boolean = False, Permissions As Integer = DefaultPermissions)
+'' AttachOnly: open a named block that already exists, never create it. Its length is the length it was made with
+Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As String = "", WaitTimeout As Float = 2.1, isExecutable As Boolean = False, Permissions As Integer = DefaultPermissions, AttachOnly As Boolean = False)
 
     ' $bDebug = True
 
@@ -112,7 +114,7 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
         MemoryAddress = MapMemory(MemoryLength, isExecutable)
     Else
         If $bDebug Then Print Object.Class(Me).Name;; "Map Named Segment "; SharedName
-        MemoryAddress = CreateNamedMem(SharedName, MemoryLength, False, isExecutable, Permissions)
+        MemoryAddress = CreateNamedMem(SharedName, MemoryLength, False, isExecutable, Permissions, AttachOnly)
     Endif
 
     If $bDebug Then Print Object.Class(Me).Name;; " Memory has been mapped"
@@ -245,7 +247,7 @@ Public Sub MapMemory(BlockSize As Long, Optional isExecutable As Boolean = False
 End
 
 '' Allocate the block of named memory right away
-Public Sub CreateNamedMem(Optional MemName As String = User.name & Application.name, MemSize As Integer = DefaultLength, forceCleanup As Boolean = False, isExecutable As Boolean = False, setPermissions As Integer = DefaultPermissions) As Pointer
+Public Sub CreateNamedMem(Optional MemName As String = User.name & Application.name, MemSize As Integer = DefaultLength, forceCleanup As Boolean = False, isExecutable As Boolean = False, setPermissions As Integer = DefaultPermissions, AttachOnly As Boolean = False) As Pointer
 
     If ForceCleanup Then           ' try to clean up any leftover stuff
         Try shm_unlink(MemName)
@@ -254,7 +256,11 @@ Public Sub CreateNamedMem(Optional MemName As String = User.name & Application.n
     Dim permissions As Integer = setPermissions Or IIf(isExecutable, SetExecutable, 0)
     If $bDebug Then Print Object.Class(Me).Name;; " Call map named segment"
 
-    MemoryHandle = shm_open(MemName, O_CREAT Or O_RDWR Or O_EXCL, Permissions)     ' return an error if its already there
+    If AttachOnly Then
+        MemoryHandle = -1                                       ' never create: go straight to opening the existing one
+    Else
+        MemoryHandle = shm_open(MemName, O_CREAT Or O_RDWR Or O_EXCL, Permissions)     ' return an error if its already there
+    Endif
 
     If $bDebug Then Print Object.Class(Me).Name;; " Call map named segment complete"
 
@@ -265,6 +271,20 @@ Public Sub CreateNamedMem(Optional MemName As String = User.name & Application.n
             Error.Raise("Unable to open Named Shared Memory" & MemName & " " & Str(System.error) & " " & String@(strerror(System.error)))
         Endif
         NewMemoryBlock = False
+        ' map the length it was made with: more than that faults when touched, less than that cut off its end.
+        ' Its creator may still be between shm_open and ftruncate, then its length is 0 for a moment
+        Dim iRealSize As Long = lseek(MemoryHandle, 0, 2)          ' 2 = SEEK_END
+        Dim fSized As Float = Timer
+        While iRealSize < SizeOf(MemBlockHeader) And Timer - fSized < 1.0
+            Wait 0.001
+            iRealSize = lseek(MemoryHandle, 0, 2)
+        Wend
+        If iRealSize < SizeOf(MemBlockHeader) Then
+            rClose(MemoryHandle)
+            Error.Raise("Named Shared Memory " & MemName & " has no length")
+        Endif
+        MemSize = iRealSize
+        MemoryLength = iRealSize
     Else If ftruncate(MemoryHandle, MemSize) = -1 Then
         If $bDebug Then Print Object.Class(Me).Name;; " ftrunc failed!"
         Error "Unable to ftruncate the Memory area " & MemName & " " & Str(System.error) & " " & String@(strerror(System.error))

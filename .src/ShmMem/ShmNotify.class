@@ -16,8 +16,12 @@ Fast Unsafe
 ' delivers the queued changes as soon as the event loop runs: in any Wait, or when the program returns to the loop.
 ' No signal is used: a signal handler ran Gambas code at any point of the program, and crashed it
 Private Const NotifyPipePrefix As String = "/dev/shm/shmmem-notify-"
-Private hNotify As File = Null                                  '' our notify pipe, open while we wait for changes
-Private $iNotifyPid As Integer = 0                              '' the process that opened hNotify, a forked Task inherits it
+' There is one pipe per process, and every segment (ShmMem / namespace) of the process waits on it. One pipe per
+' ShmNotify object made the segments of one process open the same pipe: one of them read the byte meant for another,
+' and the first to close deleted the pipe of the others. The pipe and the list of objects waiting are shared
+Static Private hNotify As File = Null                           '' our notify pipe, open while any segment waits for changes
+Static Private $iNotifyPid As Integer = 0                       '' the process that opened hNotify, a forked Task inherits it
+Static Private $aWatchers As New Object[]                       '' the ShmNotify objects of this process waiting for changes
 Private bDelivering As Boolean = False                          '' a notify function that changes a variable does not deliver again
 Private $cPipes As New Collection                               '' pid -> the write end of its notify pipe, kept open
 
@@ -66,7 +70,7 @@ End
 
 Public Sub _free()
 
-    CloseNotifyPipe()
+    Detach()
     If MyAppId <> Application.Id Then NotifyQueue = Null        ' a forked Task: the queue is its parent's, it must not free it
     For Each hPipe As File In $cPipes                       ' the write ends of the other processes' pipes
         Try Close hPipe
@@ -85,7 +89,7 @@ Public Sub _free()
 End
 
 '' Create a request to be notified when the value of a specific variable has changed
-Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String, Optional timeout As Long = 0, Tag As String = "")         '' Timeout of zero means wait for ever
+Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String, Optional timeout As Long = 0, Tag As String = "", Prefix As String = "")         '' Timeout of zero means wait for ever
 
     Dim PidQueue As ShmList
     Dim VarInfo As ShmNotifyEntry
@@ -99,6 +103,7 @@ Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String,
         NotifyQueue = Null
     Endif
     OpenNotifyPipe()                                            ' where the changes are announced to us
+    If $aWatchers.Find(Me) < 0 Then $aWatchers.Add(Me)          ' File_Read delivers our changes too
 
     Dim Symname As String = SymEntry.Name.ToString()
 
@@ -135,6 +140,7 @@ Public Sub Notify(SymEntry As Symbol, CallObject As Variant, CallFunc As String,
     Endif
 
     VarInfo = New ShmNotifyEntry(SymEntry, CallObject, CallFunc, Me, Timeout, Tag) As "VarInfo"
+    VarInfo.Prefix = Prefix                                      ' the namespace path the notify was asked with
 
     If Not NotifyVars.Exist(SymName) Then
         Dim todoList As New Collection(gb.ignorecase)   ' now create a collection of all the parts of this program asking for notification
@@ -220,7 +226,7 @@ Public Sub NotifyStop(SymEntry As Symbol, CallObject As Object, Optional CallFun
                     NotifyQueue.free()
                     NotifyVars = Null
                     NotifyQueue = Null
-                    CloseNotifyPipe()                   ' nothing left to wait for
+                    Detach()                            ' nothing left to wait for
                 Endif
                 If PidQueue.count = 0 Then
                     SymEntry.NotifyBlock = 0
@@ -237,7 +243,7 @@ End
 
 '' Open our notify pipe, read and write so it never reports end of file when a writer closes it. Pipes left by
 '' processes that ended without closing theirs are removed first
-Private Sub OpenNotifyPipe()
+Static Private Sub OpenNotifyPipe()
 
     DropInheritedPipe()
     If hNotify <> Null Then Return
@@ -245,22 +251,35 @@ Private Sub OpenNotifyPipe()
         If Not Exist("/proc/" & Mid(sName, Len("shmmem-notify-") + 1)) Then Try Kill "/dev/shm" &/ sName
     Next
     hNotify = Open Pipe NotifyPipePrefix & CStr(Application.Id) For Read Write Watch
+    Object.Attach(hNotify, ShmNotify, "File")                   ' opened from an object its events went to that object
     $iNotifyPid = Application.Id
 
 End
 
 '' A forked Task inherits the pipe of its parent: close our copy without reading it, the bytes are for the parent.
-'' The pipe file stays, it is the parent's
-Private Sub DropInheritedPipe()
+'' The pipe file stays, it is the parent's. The objects waiting are the parent's too: each one the Task uses again
+'' joins the list when it asks for a notification
+Static Private Sub DropInheritedPipe()
 
     If hNotify = Null Or If $iNotifyPid = Application.Id Then Return
     Try Close hNotify
     hNotify = Null
     $iNotifyPid = 0
+    $aWatchers.Clear()
 
 End
 
-Private Sub CloseNotifyPipe()
+'' This object waits for nothing any more: leave the list, the last one out closes the pipe
+Public Sub Detach()
+
+    Dim i As Integer = $aWatchers.Find(Me)
+
+    If i >= 0 Then $aWatchers.Remove(i)
+    If $aWatchers.Count = 0 Then CloseNotifyPipe()
+
+End
+
+Static Private Sub CloseNotifyPipe()
 
     DropInheritedPipe()
     If hNotify = Null Then Return
@@ -270,12 +289,13 @@ Private Sub CloseNotifyPipe()
 
 End
 
-'' A change came in: the event loop calls this as soon as a byte is in our notify pipe
-Public Sub File_Read()
+'' A change came in: the event loop calls this as soon as a byte is in our notify pipe.
+'' The byte does not say which segment changed: every segment waiting delivers what is on its queue
+Static Public Sub File_Read()
 
     DropInheritedPipe()
     DrainNotifyPipe()
-    Deliver()
+    DeliverAll()
 
 End
 
@@ -285,11 +305,20 @@ Public Sub CheckNotify()
     DropInheritedPipe()
     If hNotify = Null Or If Lof(hNotify) = 0 Then Return
     DrainNotifyPipe()
-    Deliver()
+    DeliverAll()
 
 End
 
-Private Sub DrainNotifyPipe()
+'' Each segment waiting delivers its queued changes. A copy of the list: a notify function may stop a notify
+Static Private Sub DeliverAll()
+
+    For Each hWatcher As ShmNotify In $aWatchers.Copy()
+        hWatcher.Deliver()
+    Next
+
+End
+
+Static Private Sub DrainNotifyPipe()
 
     Dim sData As String
 
@@ -302,7 +331,7 @@ Private Sub DrainNotifyPipe()
 End
 
 '' Raise the event of every request waiting for each change on our queue
-Private Sub Deliver()
+Public Sub Deliver()
 
     If bDelivering Or If NotifyQueue = Null Then Return
     bDelivering = True

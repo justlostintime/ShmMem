@@ -1,0 +1,273 @@
+' Gambas test file
+
+' Namespaces: a name a:b:x is x in the namespace b of the namespace a. Resolving starts at the object it is called on,
+' each segment strips its own part. No namespace, a leading ':' or the root's own name means the root itself
+
+Private Const RootName As String = "nstroot"
+Private $iRootChanged As Integer
+Private $iNsChanged As Integer
+Private $sNsReported As String
+Private $aNewNames As New String[]
+
+'' a clean root with the namespace nsta and its namespace nstb
+Private Sub MakeRoot() As ShmMem
+
+    Dim root As ShmMem
+
+    For Each sName As String In [RootName, "nsta", "nstb", "nstc", "nstbig", "nstsub", "nstnope"]
+        ShmMem.ForceDelete(sName)
+    Next
+    root = New ShmMem(1000000, RootName)
+    root.NewNameSpace(1000000, "nsta")
+    root.NewNameSpace(1000000, "nsta:nstb")
+    Return root
+
+End
+
+Public Sub aBasicReadWrite()
+
+    Dim root As ShmMem = MakeRoot()
+
+    root["nsta:x"] = 5
+    Assert.Equals(root["nsta:x"], 5, "value stored in a namespace")
+    Assert.Equals(root.NameSpace("nsta")["x"], 5, "the namespace object has it")
+    Assert.NotOk(root.Exist("x"), "the root does not have it")
+    Assert.Ok(root.Exist("nsta:x"), "Exist through the namespace")
+
+    root["nsta:nstb:y"] = "deep"
+    Assert.Equals(root.NameSpace("nsta").NameSpace("nstb")["y"], "deep", "nested namespace")
+    Assert.Equals(root.NameSpace("nsta:nstb")["y"], "deep", "NameSpace takes a path")
+    Assert.Equals(root.NameSpace("nsta")["nstb:y"], "deep", "resolving starts at the object it is called on")
+
+    root.Remove("nsta:x")
+    Assert.NotOk(root.Exist("nsta:x"), "Remove through the namespace")
+
+    root.Close()
+
+End
+
+Public Sub bRootNameAndLeadingColon()
+
+    Dim root As ShmMem = MakeRoot()
+
+    root[RootName & ":z"] = 1
+    Assert.Equals(root["z"], 1, "<rootname>:z is z in the root")
+    root[":z"] = 2
+    Assert.Equals(root["z"], 2, ":z is z in the root")
+    root[RootName & ":nsta:x"] = 7
+    Assert.Equals(root["nsta:x"], 7, "<rootname>:nsta:x is nsta:x")
+    Assert.Equals(root[Upper(RootName) & ":nsta:x"], 7, "names are not case sensitive")
+
+    root.Close()
+
+End
+
+Public Sub cUnknownAndDuplicate()
+
+    Dim root As ShmMem = MakeRoot()
+
+    Try root["nstnope:x"] = 1
+    Assert.Error("an unknown namespace raises an error")
+    Assert.NotOk(Exist("/dev/shm/nstnope_Data"), "a lookup never creates a segment")
+    Assert.NotOk(root.Exist("nstnope:x"), "Exist is false for an unknown namespace")
+    Assert.Null(root.NameSpace("nstnope"), "NameSpace is Null for an unknown namespace")
+
+    root["nsta:keep"] = "still here"
+    Try root.NewNameSpace(1000000, "nsta")
+    Assert.Error("a namespace defined twice raises an error")
+    Assert.Equals(root["nsta:keep"], "still here", "the first namespace still works")
+
+    Try root.NewNameSpace(1000000, RootName)
+    Assert.Error("a segment can not be its own namespace")
+
+    Try root.NewNameSpace(1000000, "")
+    Assert.Error("a namespace needs a name")
+
+    Try root.Vars["a:b"] = 1
+    Assert.Error("the symbol table refuses ':' in a name")
+
+    root.Close()
+
+End
+
+Public Sub dAttachExistingInProcess()
+
+    Dim root As ShmMem = MakeRoot()
+    Dim other As New ShmMem(1000000, "nstc")
+
+    other["v"] = "from other"
+    Assert.Equals(root["nstc:v"], "from other", "an open segment is found without NewNameSpace")
+    Assert.Ok(root.NameSpace("nstc") = other, "and the open object is used, not a second one")
+    Assert.Ok(root.NameSpaceList.Exist("nstc"), "it is now in the list")
+
+    root.RemoveNameSpace("nstc")
+    Assert.NotOk(root.NameSpaceList.Exist("nstc"), "RemoveNameSpace takes it out")
+    Assert.Equals(other["v"], "from other", "an object opened by the program is not closed by RemoveNameSpace")
+
+    root["nstc:w"] = 1                                           ' found again
+    root.Close()
+    Assert.Equals(other["w"], 1, "nor by Close of the root")
+    other.Close()
+
+End
+
+Public Sub eAttachFromOtherProcess()
+
+    Dim root As ShmMem = MakeRoot()
+    Dim bg As NewNameSpaceBG
+
+    bg = New NewNameSpaceBG
+    Assert.Ok(root.WaitForValue("bgready", True, 20), "the task made its namespace")
+
+    ' the task made nstbig with 30MB and wrote at its far end: mapped with the default 20MB it is cut off
+    Assert.Ok(root.NameSpaceExist("nstbig"), "the segment the task made is found")
+    Assert.Equals(Len(root["nstbig:big25"]), 900000, "the whole segment is mapped, not the default size")
+    Assert.Equals(root["nstbig:last"], "end", "a value stored after the large one")
+    Assert.Equals(root["nstbig:nstsub:deep"], "nested from task", "a namespace of the attached namespace is found too")
+
+    root["fgdone"] = True
+    Wait 0.5
+    root.Close()
+
+End
+
+Public Sub fArraysAndObjects()
+
+    Dim root As ShmMem = MakeRoot()
+    Dim ns As ShmMem = root.NameSpace("nsta")
+    Dim wrong As New ShmList(root)
+    Dim right As New ShmList(ns)
+
+    root["nsta:arr"] = [1, 2, 3]
+    Assert.Equals(root["nsta:arr"][1], 2, "an array is made in the namespace memory")
+
+    Try root["nsta:wrong"] = wrong
+    Assert.Error("a list made in another segment is refused")
+
+    right.Add("item")
+    root["nsta:right"] = right
+    Assert.Equals(root["nsta:right"].Count, 1, "a list made in the namespace is stored")
+
+    root.Close()
+
+End
+
+Public Sub gVariablesAndClear()
+
+    Dim root As ShmMem = MakeRoot()
+    Dim names As String[]
+
+    root["r1"] = 1
+    root["keep1"] = 1
+    root["nsta:a1"] = 1
+    root["nsta:keep2"] = 1
+    root["nsta:nstb:b1"] = 1
+
+    names = root.Variables("nsta:*")
+    Assert.Ok(names.Exist("nsta:a1"), "Variables(\"nsta:*\") gives qualified names")
+    Assert.NotOk(names.Exist("r1"), "and not the root's")
+
+    names = root.Variables("*", True)
+    Assert.Ok(names.Exist("r1"), "recursive has the root")
+    Assert.Ok(names.Exist("nsta:a1"), "recursive has the namespace")
+    Assert.Ok(names.Exist("nsta:nstb:b1"), "recursive has the nested namespace")
+
+    Assert.NotOk(root.Variables().Exist("nsta:a1"), "not recursive: the root only")
+
+    root.Clear(["keep*"])
+    Assert.NotOk(root.Exist("r1"), "Clear removes")
+    Assert.Ok(root.Exist("keep1"), "Clear keeps what ListToIgnore matches")
+    Assert.Ok(root.Exist("nsta:a1"), "not recursive: the namespace is not cleared")
+
+    root.Clear(["keep*"], True)
+    Assert.NotOk(root.Exist("nsta:a1"), "recursive clears the namespace")
+    Assert.Ok(root.Exist("nsta:keep2"), "and keeps what ListToIgnore matches")
+    Assert.NotOk(root.Exist("nsta:nstb:b1"), "and its namespaces")
+
+    root.Close()
+
+End
+
+Public Sub hImagesAndVars()
+
+    Dim root As ShmMem = MakeRoot()
+    Dim sImage As String = Temp("nsimage")
+    Dim sVar As String = Temp("nsvar") & ".var"
+
+    root["r"] = "root value"
+    root["nsta:a"] = "a value"
+    root["nsta:nstb:b"] = "b value"
+    root.SaveImage(sImage, True)
+    Assert.Ok(Exist(sImage & ".nsta"), "the namespace has its own image")
+    Assert.Ok(Exist(sImage & ".nsta.nstb"), "the nested namespace has its own image")
+
+    root.Clear(Null, True)
+    Assert.NotOk(root.Exist("nsta:a"), "cleared")
+    root.LoadImage(sImage, False, True)
+    Assert.Equals(root["r"], "root value", "root reloaded")
+    Assert.Equals(root["nsta:a"], "a value", "namespace reloaded")
+    Assert.Equals(root["nsta:nstb:b"], "b value", "nested namespace reloaded")
+
+    root.SaveVar("nsta:a", sVar)
+    root.LoadVar(sVar, "nsta:nstb:copy")
+    Assert.Equals(root["nsta:nstb:copy"], "a value", "SaveVar / LoadVar through namespaces")
+    root.LoadVar(sVar, "nsta:nstb:")
+    Assert.Equals(root["nsta:nstb:a"], "a value", "\"ns:\" loads under the name saved in the file")
+    root.Close()
+
+End
+
+Public Sub iNotify()
+
+    Dim root As ShmMem = MakeRoot()
+
+    $iRootChanged = 0
+    $iNsChanged = 0
+    $sNsReported = ""
+    $aNewNames.Clear()
+
+    root["w"] = 0
+    root["nsta:x"] = 0
+    root.Notify("w", Me)
+    root.Notify("nsta:x", Me)                        ' default function: x_Changed
+    root.NotifyOnNew(True, Me, "", "nsta:nstb")
+
+    root["w"] = 1
+    root["nsta:x"] = 1
+    root["nsta:nstb:fresh"] = 1
+    Wait 0.5
+
+    Assert.Equals($iRootChanged, 1, "the root notify fired")
+    Assert.Equals($iNsChanged, 1, "the namespace notify fired, both segments share the process pipe")
+    Assert.Equals($sNsReported, "nsta:x", "the notify function gets the name as it was asked")
+    Assert.Ok($aNewNames.Exist("nsta:nstb:fresh"), "NotifyOnNew in a namespace reports the qualified name")
+
+    root.NotifyStop("nsta:x", Me)
+    root["nsta:x"] = 2
+    Wait 0.3
+    Assert.Equals($iNsChanged, 1, "NotifyStop through the namespace")
+
+    root.NotifyStop("w", Me)
+    root.NotifyOnNew(False, Me, "", "nsta:nstb")
+    root.Close()
+
+End
+
+Public Sub w_Changed(SymName As String, Value As Variant, TimedOut As Boolean)
+
+    Inc $iRootChanged
+
+End
+
+Public Sub x_Changed(SymName As String, Value As Variant, TimedOut As Boolean)
+
+    Inc $iNsChanged
+    $sNsReported = SymName
+
+End
+
+Public Sub OnNew_Created(SymName As String, Value As Variant, TimedOut As Boolean)
+
+    $aNewNames.Add(SymName)
+
+End

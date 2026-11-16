@@ -1,0 +1,80 @@
+' Gambas module file
+
+' Namespaces: each namespace is its own named shared memory segment, reached through a name like
+'     orders:open:count  -> the variable count in the namespace open of the namespace orders
+' Resolving always starts at the ShmMem it is called on and each segment strips its own part of the name.
+' No namespace, a leading ":" or the segment's own name ("shop:x" on the segment shop) means the segment itself.
+' A namespace a program does not have yet is opened when a segment of that name exists, a lookup never creates one:
+' the program that owns a namespace makes it with NewNameSpace.
+
+Public Shop As ShmMem
+
+Public Sub Main()
+
+    Dim worker As NameSpaceWorker
+
+    For Each sName As String In ["shop", "orders", "open", "stock"]
+        ShmMem.ForceDelete(sName)
+    Next
+
+    Shop = New ShmMem(2000000, "shop")
+    Shop.NewNameSpace(2000000, "orders")                      ' the segment orders, a namespace of shop
+    Shop.NewNameSpace(1000000, "orders:open")                 ' the segment open, a namespace of orders
+
+    Shop["name"] = "Corner Shop"                               ' in shop itself
+    Shop["orders:total"] = 0                                   ' in orders
+    Shop["orders:open:count"] = 0                              ' in open, a namespace of orders
+    Shop["orders:open:list"] = ["first order"]                 ' an array is made in the memory of open
+
+    Print "shop:name           = "; Shop["shop:name"]          ' its own name is the segment itself
+    Print ":name               = "; Shop[":name"]
+    Print "orders object total = "; Shop.NameSpace("orders")["total"]
+    Print "orders from orders  = "; Shop.NameSpace("orders")["open:count"]     ' resolving starts at orders
+
+    ' notify: the function gets the name as it was asked, the default function is <name>_Changed
+    Shop.Notify("orders:open:count", Me)
+
+    ' another process makes the namespace stock and works in orders, it never shares a ShmMem object with us
+    worker = New NameSpaceWorker
+    If Not Shop.WaitForValue("workerready", True, 10) Then
+        Print "The worker did not start"
+        Shop.Close()
+        Quit 1
+    Endif
+
+    ' stock was made by the worker: it is found by its name, opened with the size it was made with
+    Print "stock:apples        = "; Shop["stock:apples"]
+    Print "namespaces of shop  = "; Shop.NameSpaceList.Join(", ")
+
+    Print "\nAll the variables:"
+    For Each sName In Shop.Variables("*", True)
+        If sName Like "*#*" Then Continue                      ' the control variables
+        Print "    "; sName
+    Next
+
+    ' a list belongs to the segment it was made in
+    Dim wrong As New ShmList(Shop)
+    Try Shop["orders:mylist"] = wrong
+    If Error Then Print "\nRefused: "; Error.Text
+    Dim right As New ShmList(Shop.NameSpace("orders"))
+    right.Add("made in orders")
+    Shop["orders:mylist"] = right
+    Print "orders:mylist count = "; Shop["orders:mylist"].Count
+
+    Try Print Shop["nowhere:x"]
+    If Error Then Print "Unknown namespace: "; Error.Text
+
+    Shop.NotifyStop("orders:open:count", Me)
+    Shop["done"] = True
+    Wait 0.5
+    Shop.Close()                                               ' closes its namespaces too
+    Print "\nNameSpaceExample Completed"
+    Quit 0
+
+End
+
+Public Sub count_Changed(SymName As String, Value As Variant, TimedOut As Boolean)
+
+    Print "    notify: "; SymName; " is now "; Value
+
+End

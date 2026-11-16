@@ -44,6 +44,7 @@ Public VarMemory As ShmVarStorage              '' The memory that containing the
 Public SymTable As ShmSymbolTable               '' the symbol table associated with the entry we are waiting for
 Public Tag As String                                                 '' a tag for unique identification of an entry
 Public StartTime As Float                                       '' time we started waiting
+Public Prefix As String = ""                                    '' namespace path put before the name given to the notify function
 Private VarClock As Timer                                    '' the timer associated with this variable
 Private OneShot As Boolean = False                 '' Wait just once for a change, then delete the notify request
 ' Private OneShot As Boolean
@@ -133,7 +134,7 @@ Public Sub Dispatch(Failed As Boolean, Optional NameOverride As String = "")
     Endif
     VarMemory.Unlock()
 
-    Dim ParmList As Variant[] = [ReportedVar, value, Failed]
+    Dim ParmList As Variant[] = [Prefix & ReportedVar, value, Failed]
 
     Object.Call(NotifyObject, NotifyFunc, ParmList)
     Sched_Yield()

@@ -50,7 +50,7 @@ Static Public cShmListEntry As Integer = 21        '' The entry in a ShmList obj
 ' Extern DListPtr(dest As Pointer, src As Pointer, Len As Integer) As DList In "libc:6" Exec "memcpy"
 ' Extern memcpy(dest As Dlist, src As Dlist, Len As Integer) As Integer In "libc:6"
 
-Extern sched_yield() As Integer In "libpthread:0"
+'Extern sched_yield() As Integer In "libpthread:0"
 
 Private VirtualAddress As Pointer = 0              '' Pointer to the head of the list
 Public ListHead As DList                                         '' Pointer to the actual list
@@ -127,7 +127,7 @@ End
 
 Public Sub _configure(Optional VarStorage As Variant = Null, VirtAddressOrTag As Variant = CPointer(0), GlobalValue As Boolean = False, Tag As String = "", UsePriority As Boolean = True)
 
-    Dim Result As Integer = 0
+    '    Dim Result As Integer = 0
     Dim VirtAddress As Pointer = 0
     Dim RealPtr As Pointer
 

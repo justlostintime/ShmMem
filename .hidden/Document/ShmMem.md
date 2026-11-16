@@ -98,7 +98,62 @@ Everything is optional  number of symbols and locking timeout are optional for t
 MyMemory = new ShmMem
 The segments created will assume the defaults listed above. In most cases this will be more than needed by most users.
 
+## Namespaces
+A namespace is another named segment reached through the variable name. `ns:x` is the variable `x` in the namespace `ns`, and `a:b:x` is `x` in the namespace `b` of the namespace `a`.
+
+* Resolving always starts at the ShmMem it is called on, and each segment strips its own part of the name: `root["a:b:x"]` goes to `a`, which resolves `b:x`.
+* A name with no namespace, a leading `:` (`":x"`) or the segment's own name (`"root:x"` on the segment `root`) is in the segment itself.
+* Each namespace is a full named segment, `Name_Data` and `Name_Symbols`. Segment names are global: the namespace `b` of `a` is the segment `b`.
+* A program creates the namespaces it owns with NewNameSpace. When a name uses a namespace the object does not have yet, the segment of that name is opened if it exists, with the sizes it was made with. A lookup never creates a segment, an unknown one raises "Unknown Namespace: name".
+* Every call that takes a symbol name accepts a namespaced name: `[]`, Exist, Remove, Free, VarPtr, VarEntryPtr, RealAddress, RealDataAddress, SaveVar, LoadVar, Notify, NotifyStop, NotifyQ, WaitFor, WaitForValue, WaitValueChange and Variables("ns:*"). The `!name` syntax can not hold a `:`, use `MyMemory["ns:name"]`.
+* A list, array or value lives in the segment it was made in. Make it with the namespace object, `New ShmList(MyMemory.NameSpace("ns"))`, storing one made in another segment raises an error. Gambas arrays assigned to `MyMemory["ns:x"]` are made in the namespace.
+* A symbol name can not contain `:`.
+* Close closes the namespaces the object opened. A segment the program already had open as its own ShmMem is used as the namespace, and is left to the program to close.
+
+```
+Shop = New ShmMem(2000000, "shop")
+Shop.NewNameSpace(2000000, "orders")
+Shop.NewNameSpace(1000000, "orders:open")      ' open is a namespace of orders
+Shop["orders:open:count"] = 1
+Print Shop.NameSpace("orders")["open:count"]   ' resolving starts at orders
+Shop.Notify("orders:open:count", Me)           ' calls count_Changed("orders:open:count", value, timedout)
+```
+See the example NameSpaceExample.
+
+### NewNameSpace
+* NewNameSpace(Memory_Length, Segment_name, Number_Of_Symbols, Locking_timeout, isExecutable, setPermissions) As ShmMem
+* NewNameSpace("Segment_name") uses the default sizes.
+* Creates the segment, or opens it when it exists, and adds it to the namespaces of this object. Returns its ShmMem.
+* Segment_name may be a path: "a:b" makes b a namespace of the namespace a.
+* A segment this process already has open is used, not opened again.
+* Raises an error when this object already has that namespace, for a blank name, and for the object's own name.
+
+### NameSpace
+* NameSpace("Segment_name") As ShmMem
+* Returns the namespace, Null when it is unknown. Takes a path "a:b". Opens an existing segment like any lookup.
+
+### NameSpaceExist
+* NameSpaceExist("Segment_name") As Boolean
+
+### RemoveNameSpace
+* RemoveNameSpace("Segment_name")
+* Removes the namespace from this object and closes it when this object opened it. The segment stays while another process or object has it open.
+
+### GetNameSpace
+* GetNameSpace("a:b:x") As Variant[]
+* Returns [the ShmMem holding the variable, the variable name without namespace], here [b, "x"].
+
 ## Interface Calls
+### Variables
+* Variables(Optional Filter As String = "*", Optional Recursive As Boolean = False) As String[]
+* The names that match Filter. "ns:*" lists the namespace ns, the names are returned as ns:name.
+* Recursive - the namespaces are listed too, as ns:name. The filter matches the name inside its namespace.
+
+### Clear
+* Clear(Optional ListToIgnore As String[] = Null, Optional Recursive As Boolean = False)
+* Removes every variable except the # control variables and the names matching a pattern of ListToIgnore.
+* Recursive - the namespaces are cleared too, with the same patterns.
+
 ### Alloc
 * Alloc(Size_needed) as Pointer
 * Allocates a memory segment returning the virtual memory address to be used for the memory access.
@@ -142,7 +197,8 @@ GetMemorySegment(Signature) as shmmem
 * This is needed because modules return a class of class and require processing to get the actual class for the module.
 
 ### Load Mem Image
-* LoadImage(optional "File_Name")
+* LoadImage(optional "File_Name", optional Merge, optional Recursive)
+* Recursive - each namespace the object has is loaded from File_Name.namespace when that file exists. The namespaces must be created or opened first.
 * Reads and loads/merges the image into shared memory.
 * Error are reported during the load
 * The image must have been saved by the SaveImage call
@@ -153,6 +209,7 @@ GetMemorySegment(Signature) as shmmem
 * "Symbol File path/Name" - Opens the the file and creates the updated/new symbol entry and value.
 * Defaults to an name.extension of Name.var. by default used the base name of the file as the symbol name.
 * optional "Symbol Rename" - The symbol will be created with this name not the base name of the file.
+* "ns:name" loads it as name into the namespace ns, "ns:" loads it into ns under the name saved in the file.
 
 ### Notify on Change of specific variable
 * Notify("Symbol Name",ObjectToCall, Optional "Method to to call", Timeout As Float, "64 char tag name")
@@ -165,6 +222,7 @@ GetMemorySegment(Signature) as shmmem
 >> SymbolName - the name of the symbol which changed<br>
 >> NewValue   - The new value of variable<br>
 >> IfTimedOut - A true or false value<br>
+* For a namespaced name, "ns:x", the event gets the name as it was asked, "ns:x". The default method uses the name without namespace: x_Changed.
 
 ### Notify Stop
 * NotifyStop("Symbol Name",ObjectToCall, Optional "Method to to call", Optional "64 char tag name")
@@ -187,7 +245,8 @@ GetMemorySegment(Signature) as shmmem
 * Returns a list of all tasks apps waiting for a symbol to change
 
 ### Notify On New Symbol
-* NotifyOnNew(EnableDisable, ObjectToCall, Optional "Method to to call")
+* NotifyOnNew(EnableDisable, ObjectToCall, Optional "Method to to call", Optional "NameSpace")
+* NameSpace - watch that namespace instead of this segment, the names reported are NameSpace:name. NotifyOnAny and NotifyOnRemove take it too.
 * Creates a notification when ever a new symbol is created.
 * Enable/Disable - Enable = true, disable = false
 * The default method is OnNew_Created(SymName, Value, TimedOut)
@@ -200,8 +259,8 @@ GetMemorySegment(Signature) as shmmem
 * The default method is OnRemove_Created(SymName, Value, TimedOut)
 
 ### Print
-* Print()
-* list the Symbols in the symbol table
+* Print(Optional Recursive As Boolean = False)
+* list the Symbols in the symbol table, Recursive lists each namespace after it
 ```
 Symbol Table Listing
 MaxLength = 3, Available Slots = 7990, Occupied Slots = 3,
@@ -256,8 +315,9 @@ FreeList Head 2586
 * Notify any app/task waiting for removal of symbols
 
 ### Save Image
-* SaveImage(Optional FileName As String = Application.name & ".image")
+* SaveImage(Optional FileName As String = Application.name & ".image", Optional Recursive As Boolean = False)
 * Saves a re-creatable copy of the Shared memory and symbol table to a file.
+* Recursive - each namespace is saved too, into FileName.namespace, and its namespaces into FileName.namespace.namespace.
 
 ### Save Symbol
 * SaveVar(VarName As String, Optional filename As String = "")
@@ -270,6 +330,7 @@ FreeList Head 2586
 * Assigned_ShmMem_Name - the name of the ShmMem Symbol to associate with the value when loaded
 * Value - the gambas native value to be saved as ShmMem formatted Value
 * FileName = Overrides the default file name used - which is the Assigned_ShmMem_Name.var
+* A namespace in the name is not saved, the namespace is chosen by LoadVar.
 
 ### Set full Paths
 * SetPath(filePath As String, Optional defaultBaseName As String = "", defaultExtension As String = "") As String
@@ -325,6 +386,15 @@ seen at once and a long wait costs about 20 checks a second. A Timeout of 0 wait
 * Examples: a list Remove... of a value that is not there raises "Empty List - ...", an index past the end raises "Out Of Bounds", a full memory raises "Out Of Variable Memory".
 
 # ShmMem Interface - Properties
+
+# Name
+* The name of a named segment, "" for an unnamed one
+
+# NameSpaces
+* The Collection of the namespaces of this object, name -> ShmMem
+
+# NameSpaceList
+* The names of the namespaces of this object, as a String[]
 
 # Count
 * Returns the number of symbols
@@ -417,6 +487,7 @@ Each notification does as the names suggest. The App/Task receives an event with
 
 # How the notifications are delivered
 * Each process that asks for notifications has its own queue in the shared memory and a notify pipe, /dev/shm/shmmem-notify-&lt;pid&gt;.
+* There is one pipe per process: every segment and namespace of the process waits on it, and each delivers what is on its own queue.
 * A change is put on the queue of every process waiting for it, then a byte is written to that process's pipe.
 * The pipe is watched by the Gambas event loop: the event is raised as soon as the program returns to the event loop (for example in a Wait).
 * A program that is busy and does not return to the event loop gets its waiting events when it next creates, writes or removes a variable.

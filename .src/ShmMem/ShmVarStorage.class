@@ -455,11 +455,24 @@ Private Sub getstring(vptr As DPointer) As String
 End
 
 '' Store an object into the memory.
+'' A list, array or value is stored as its address in its own segment: in another segment it means nothing.
+'' Raises an error for one made in another segment/namespace. Called before anything is locked or changed
+Public Sub CheckSegment(Value As Variant)
+
+    If TypeOf(Value) <> gb.Object Or If Value = Null Then Return
+    If Not Object.Class(Value).Exist("_Assign") Or If Not Object.Class(Value).Exist("MemoryPool") Then Return
+    If Value.MemoryPool <> Null And If Value.MemoryPool.Signature <> $Signature Then
+        Error.Raise("ShmMem: " & Object.Type(Value) & " belongs to another segment/namespace, create it in the segment it is stored in")
+    Endif
+
+End
+
 Private Sub PutObject(value As Variant, vptr As DPointer)
 
     Dim length, ObjLen As Long
 
     If Object.Class(Value).Exist("_Assign") Then
+        CheckSegment(Value)
         Object.Call(Value, "_Assign", [vPtr])
         Return
     Endif
@@ -890,7 +903,9 @@ End
 
 Private Function IsValid_Read() As Boolean
 
-    If shmMem.GetMemSegment($Signature) = Null Then
+    ' this segment itself: GetMemSegment gives the default segment for one it does not know, a closed namespace
+    ' was then still valid, and freed its values in the default segment
+    If shmMem.Objects = Null Or If Not shmMem.Objects.Exist($Signature) Then
         Return False
     Else
         Return True

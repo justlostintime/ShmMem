@@ -12,14 +12,26 @@ Fast Unsafe
 ' when dumping the memory we must use a raw write mode
 Extern rWrite(handle As Integer, buf As Pointer, cnt As Integer) As Integer In "libc:6" Exec "write"
 
-Const VarMemDefault As Long = 20000000                               '' default memory size is 20 MB
-Const MaxSymbolsDefault As Integer = 8000                          '' default variable memory space 8000 entries
-Const TimeOutDefault As Float = 0.1                                          '' Default sem timeout
+Const VarMemDefault As Long = 20000000                                            '' default memory size is 20 MB
+Const MaxSymbolsDefault As Integer = 8000                                         '' default variable memory space 8000 entries
+Const TimeOutDefault As Float = 0.1                                               '' Default sem timeout
 
 Public VarStore As ShmMemBlock                                                    '' the physical memory segment being shared
 Public VarMnge As ShmManage                                                       '' the Object responsible to managing the raw memory
 Public MyVarMem As ShmVarStorage                                                  '' manages the actual values stored into the shared memory
 Public VarStoreName As String                                                     '' The name for named memory
+
+'' NameSpaces:
+'' a collection of managed segments containing SegmentName:instance of shmmem
+'' managed segments are accessible via the symbolname namespace portion, for example
+'' myseg:a accesses or manipulates a in the segment myseg, also any notify, or other function is passed off
+'' to the appropriate segment. Each ':' is resolved by the segment it reaches, so myseg:other:a is a in the
+'' namespace other of the segment myseg. Resolving always starts at the object it is called on.
+'' anything without a : , starting with a : or starting with this segment's own name: uses this segment
+'' A namespace not in the collection is opened when a segment of that name exists, it is never created by a lookup
+Public NameSpaces As New Collection(gb.ignorecase)                                '' A collection of managed segments
+Private $bBusy As Boolean = False                                                 '' walking the namespaces, a namespace reached twice is skipped
+Private $cOpened As New Collection(gb.IgnoreCase)                                 '' the namespaces this object opened, Close closes only these
 
 Public SymStore As ShmMemBlock                                                    '' the Raw memory used to store the symbol table
 Public Vars As ShmSymbolTable                                                     '' the object which will manage symbol table
@@ -27,7 +39,7 @@ Public SymStoreName As String                                                   
 Static Public PID As Integer = 0                                                  '' The pid of the application using this class
 Private Local_PID As Integer = 0                                                  '' pid of the app/task class instantiating this as object
 
-Property Read Version As String Use $Version = Application.Version              '' get the library version
+Property Read Version As String Use $Version = Application.Version                 '' get the library version
 Property Read Count As Integer                                                     '' number of symbols
 Property Read Max As Integer                                                       '' Max index into the list
 Property Read Length As Integer                                                    '' number of entries in the list
@@ -38,6 +50,9 @@ Property DefaultDirectory As String Use $sDefaultDirectory                      
 Property Signature As String Use $Signature                                        '' Used to reconstitute co correct object shmmem in an application
 Static Public Objects As New Collection(gb.ignorecase)                             '' The list of instantiations of the class
 Property Read ShmObjects As Collection                                             '' returns a list of allocated memory segments
+Property Read Name As String Use $Name = ""                                        '' Returns the segments assigned name, "" is unnamed segment
+Property Read NameSpaceList As String[]                                            '' The names of the namespaces of this segment
+
 
 '' We need to determine if the object is a class=module or object=class instantiated object
 '' This function correctly returns the class for both objects and modules
@@ -115,7 +130,8 @@ Static Public Sub GetMemSegment(sSignature As String) As ShmMem
 End
 
 '' Allocate the memory and symbol table. initialize structures
-Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault, isExecutable As Boolean = False, setPermissions As Integer = ShmMemBlock.DefaultPermissions)
+'' AttachOnly: open the named segment MemName only when it exists, never create it. Its sizes are the ones it was made with
+Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault, isExecutable As Boolean = False, setPermissions As Integer = ShmMemBlock.DefaultPermissions, AttachOnly As Boolean = False)
 
     '  Print "Define memory block"
     $sDefaultDirectory = User.home &/ "vars"
@@ -129,12 +145,14 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
 
     If TypeOf(VarMemLength) = gb.string Then
         MemName = VarMemLength
+        $Name = MemName
         VarMemLength = VarMemDefault
     Endif
 
     'Print "Define memory block step 2"
     If MemName <> "" Then
         ' Print "Define memory block step 3 Define segment names"
+        $Name = MemName
         VarStoreName = Memname & "_Data"
         SymStoreName = Memname & "_Symbols"
         $Signature = MemName & ":" & Application.version
@@ -167,11 +185,18 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
         'Print "Create memory blocks"
         'Flush
 
-        VarStore = New ShmMemBlock(VarMemLength, VarStoreName, LockTimeOut, isExecutable, setPermissions)
-        SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), SymStoreName, LockTimeOut)
+        VarStore = New ShmMemBlock(VarMemLength, VarStoreName, LockTimeOut, isExecutable, setPermissions, AttachOnly)
+        Try SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), SymStoreName, LockTimeOut, False, ShmMemBlock.DefaultPermissions, AttachOnly)
+        If Error Then
+            Dim sError As String = Error.Text
+            VarStore._free()                                      ' not kept open: the last one out removes it
+            VarStore = Null
+            Error.Raise(sError)
+        Endif
         'Print "Completed memory blocks"
         'Flush
     Else
+        If AttachOnly Then Error.Raise("Only a named segment can be attached")
         VarStoreName = ""
         SymStoreName = ""
         $Signature = Str(Now) & ":" & Str(Timer) & ":" & Application.version
@@ -182,28 +207,191 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
     VarStore.Signature = $Signature
     SymStore.Signature = $Signature
 
-    VarMnge = New ShmManage(varStore)
-    MyVarMem = New ShmVarStorage(varMnge)
-    Vars = New ShmSymbolTable(symStore, MyVarMem)
-
+    ' known before the symbol table is built: its lists look for their segment by signature, a second ShmMem
+    ' was not found then and they were given the default segment
     If Shmmem.Objects.count = 0 Then
         shmMem.Objects.Add(Me, "default")
     Endif
-
     shmMem.Objects.Add(Me, $Signature)
+
+    VarMnge = New ShmManage(varStore)
+    MyVarMem = New ShmVarStorage(varMnge)
+    Vars = New ShmSymbolTable(symStore, MyVarMem)
     'Print "Completed memory block definition"
 
 Catch
-    Error.Raise("Shm : Error creating Mem Block " & Error.Text & " " & Error.Where)
+    Dim sFailed As String = "Shm : Error creating Mem Block " & Error.Text & " " & Error.Where
+    If shmMem.Objects[$Signature] = Me Then shmMem.Objects.Remove($Signature)     ' not left behind half made
+    If shmMem.Objects["default"] = Me Then
+        shmMem.Objects.Remove("default")
+        If shmMem.Objects.Count > 0 Then shmMem.Objects["default"] = shmMem.Objects[shmMem.Objects.First]
+    Endif
+    Error.Raise(sFailed)
 
 End
+
+'' Define a new namespace, creates a shmmem object and stores it into the NameSpaces collection
+'' it checks first if it already exists, returns an error if it does
+'' uses the passed parameters to create or access the specified namespace/segment
+'' MemName may be a path: "a:b" makes the segment b a namespace of the namespace a
+'' A segment this process already has open is used, not made again. NewNameSpace("name") uses the default sizes
+Public Sub NewNameSpace(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault, isExecutable As Boolean = False, setPermissions As Integer = ShmMemBlock.DefaultPermissions) As ShmMem
+
+    Dim NewSeg As ShmMem
+    Dim pos As Integer
+
+    If TypeOf(VarMemLength) = gb.String Then                         ' NewNameSpace("name") uses the default sizes
+        MemName = VarMemLength
+        VarMemLength = VarMemDefault
+    Endif
+
+    pos = RInStr(MemName, ":")
+    If pos > 0 Then                                                  ' "a:b" makes b a namespace of the namespace a
+        NewSeg = GetNameSpace(Left(MemName, pos) )[0]
+        Return NewSeg.NewNameSpace(VarMemLength, Mid(MemName, pos + 1), MaxSymbols, LockTimeOut, isExecutable, setPermissions)
+    Endif
+
+    If MemName = "" Then Error.Raise("NameSpace: a namespace must have a name")
+    If MemName == $Name Then Error.Raise("NameSpace: " & MemName & " is this segment, it can not be its own namespace")
+    If NameSpaces.Exist(MemName) Then Error.Raise("NameSpace Already Defined: " & MemName)
+
+    NewSeg = OpenSegment(MemName)                                    ' made again it would drop the one this process has open
+    If NewSeg = Null Then
+        NewSeg = New ShmMem(VarMemLength, MemName, MaxSymbols, LockTimeOut, isExecutable, setPermissions)
+        $cOpened[MemName] = True                                     ' ours to close, one already open is its owner's
+    Endif
+
+    NameSpaces[MemName] = NewSeg
+    Return NewSeg
+
+End
+
+'' The segment MemName when this process has it open already, else Null
+Static Private Sub OpenSegment(MemName As String) As ShmMem
+
+    Dim seg As ShmMem
+
+    If shmMem.PID <> Application.Id Then Return Null                 ' a forked Task: the open segments are its parent's
+    seg = shmMem.Objects[MemName & ":" & Application.Version]
+    If seg <> Null And If seg.Vars <> Null Then Return seg
+    Return Null
+
+End
+
+'' Close the namespace SegName and remove it from its parent, SegName may be a path "a:b"
+'' The segment itself stays as long as another process or object has it open
+Public Sub RemoveNameSpace(SegName As String)
+
+    Dim pos As Integer = RInStr(SegName, ":")
+    Dim parent As ShmMem = Me
+
+    If pos > 0 Then
+        parent = GetNameSpace(Left(SegName, pos))[0]
+        SegName = Mid(SegName, pos + 1)
+    Endif
+
+    If Not parent.NameSpaces.Exist(SegName) Then Error.Raise("Unknown Namespace: " & SegName)
+    If parent._OpenedNameSpace(SegName) Then parent.NameSpaces[SegName].Close()    ' one opened elsewhere stays open
+    parent.NameSpaces.Remove(SegName)
+
+End
+
+'' True when this object opened the namespace SegName itself, and forgets it. Public only for RemoveNameSpace
+Public Sub _OpenedNameSpace(SegName As String) As Boolean
+
+    If Not $cOpened.Exist(SegName) Then Return False
+    $cOpened.Remove(SegName)
+    Return True
+
+End
+
+'' True when the namespace SegName (or path "a:b") can be reached, an existing segment is opened by this
+Public Sub NameSpaceExist(SegName As String) As Boolean
+
+    Return NameSpace(SegName) <> Null
+
+End
+
+'' The names of this segment's namespaces
+Private Function NameSpaceList_Read() As String[]
+
+    Dim result As New String[]
+
+    For Each seg As ShmMem In NameSpaces
+        result.Add(NameSpaces.Key)
+    Next
+    Return result
+
+End
+
 
 '' Close the open shared memory cleanly as the gambas interpreter does not start at the highest level
 Public Sub {Close}()
 
+    If $bBusy Then Return                                            ' reached again through another namespace
+    $bBusy = True
+    For Each seg As ShmMem In NameSpaces
+        If $cOpened.Exist(NameSpaces.Key) Then seg.Close()        ' one that was open already is closed by its owner
+    Next
+    NameSpaces.Clear()
+    $cOpened.Clear()
+    $bBusy = False
+
     _free()
 
 End
+
+'' Resolve a namespaced name, starting at this object
+'' Returns [owning ShmMem, leaf symbol name]. No namespace, a leading ":" or a leading <my name>: is this object
+'' "a:b:c" -> the namespace a resolves "b:c" -> the namespace b of a returns [b, "c"]
+'' Raises "Unknown Namespace" when a namespace is not open here and no segment of that name exists
+Public Sub GetNameSpace(SymbolName As String) As Variant[]
+
+    Dim pos As Integer = InStr(SymbolName, ":")
+
+    If pos > 1 And If $Name <> "" And If Left(SymbolName, pos - 1) == $Name Then
+        SymbolName = Mid(SymbolName, pos + 1)                        ' "main:a:x" on main is "a:x"
+    Endif
+
+    Return _WalkNameSpace(SymbolName)
+
+End
+
+'' Strip one level per segment, each segment resolves the next name. Our own name is checked at the top only
+'' Public only because the next segment is another object: use GetNameSpace
+Public Sub _WalkNameSpace(SymbolName As String) As Variant[]
+
+    Dim pos As Integer = InStr(SymbolName, ":")
+    Dim SegName As String
+    Dim seg As ShmMem
+
+    If pos = 0 Then Return [Me, SymbolName]
+    If pos = 1 Then Return [Me, Mid(SymbolName, 2)]
+
+    SegName = Left(SymbolName, pos - 1)
+    seg = NameSpaces[SegName]
+    If seg = Null Then seg = AttachNameSpace(SegName)
+    Return seg._WalkNameSpace(Mid(SymbolName, pos + 1))
+
+End
+
+'' A namespace this object does not have yet: use the segment of that name when it exists, a lookup never creates one
+Private Sub AttachNameSpace(SegName As String) As ShmMem
+
+    Dim seg As ShmMem
+
+    If SegName == $Name Then Error.Raise("Unknown Namespace: " & SegName & " is this segment")
+    seg = OpenSegment(SegName)
+    If seg = Null Then
+        Try seg = New ShmMem(VarMemDefault, SegName, MaxSymbolsDefault, TimeOutDefault, False, ShmMemBlock.DefaultPermissions, True)
+        If Error Then Error.Raise("Unknown Namespace: " & SegName & " (create it with NewNameSpace)")
+        $cOpened[SegName] = True
+    Endif
+    NameSpaces[SegName] = seg
+    Return seg
+
+End
+
 
 '' Free the shared memory when the application closes
 Public Sub _free()
@@ -253,7 +441,7 @@ Public Sub _property(...) As Boolean
 
 End
 
-'' always create a new symbol when  not know, save value otherwise
+'' always create a new symbol when  not known, save value otherwise
 Public Sub _unknown(...) As Variant
 
     If Param.count = 0 Then                        ' if there are no parameters then assume it is a read value
@@ -273,10 +461,10 @@ End
 '' return the value of a symbol
 Public Sub _get(SymName As String, ...) As Variant
 
-    Dim result As Variant
+    Dim ns As Variant[] = GetNameSpace(SymName)
 
-    result = vars[SymName]
-    Return result
+    If ns[0] <> Me Then Return ns[0]._get(ns[1])
+    Return vars[ns[1]]
 
 End
 
@@ -284,6 +472,16 @@ End
 Public Sub _put(value As Variant, SymName As String, ...)
 
     Dim params As New Variant[]
+    Dim ns As Variant[] = GetNameSpace(SymName)
+
+    If ns[0] <> Me Then                                              ' the namespace stores it, arrays are made in its memory
+        params.Add(value)
+        params.Add(ns[1])
+        If Param.Count > 0 Then params.Insert(Param.All)
+        Object.Call(ns[0], "_put", params)
+        Return
+    Endif
+    SymName = ns[1]
 
     If Param.count > 0 Then
         Dim tmpvar As Variant = vars[SymName]
@@ -320,7 +518,12 @@ Public Sub {Free}(SymName As Variant)
         Case gb.integer, gb.pointer, gb.long, gb.Short
             MyVarMem.FreeVirt(CPointer(SymName))
         Case gb.string
-            vars.remove(SymName)
+            Dim ns As Variant[] = GetNameSpace(SymName)
+            If ns[0] <> Me Then
+                ns[0].Free(ns[1])
+            Else
+                vars.remove(ns[1])
+            Endif
     End Select
 
 End
@@ -345,7 +548,8 @@ End
 '' Saves the symbols from the symbol table and it's value
 '' Each entry in the symbol table is written to an image file
 '' This does not save other values in the value storage memory
-Public Sub SaveImage(Optional FileName As String = Application.name & ".image")
+'' Recursive: each namespace is saved too, into <FileName>.<namespace>, its namespaces into <FileName>.<namespace>.<namespace>
+Public Sub SaveImage(Optional FileName As String = Application.name & ".image", Recursive As Boolean = False)
 
     Dim outfileName As String = SetPath(FileName)
     Dim outfile As File
@@ -357,11 +561,31 @@ Public Sub SaveImage(Optional FileName As String = Application.name & ".image")
     vars.Save(outfile)
     Close outfile
 
+    If Recursive And If Not $bBusy Then
+        $bBusy = True
+        For Each seg As ShmMem In NameSpaces
+            Try seg.SaveImage(outfileName & "." & NameSpaces.Key, True)
+            If Error Then
+                $bBusy = False
+                Error.Propagate()
+            Endif
+        Next
+        $bBusy = False
+    Endif
+
 End
 
 '' Saves a copy of a symbol and its value to a file
 '' FileName sets the full path to locate the file, May only be the path
 Public Sub SaveVar(VarName As String, Optional filename As String = "")
+
+    Dim ns As Variant[] = GetNameSpace(VarName)
+
+    If ns[0] <> Me Then                                              ' saved under its own name, without the namespace
+        ns[0].SaveVar(ns[1], filename)
+        Return
+    Endif
+    VarName = ns[1]
 
     Dim outfileName As String = SetPath(FileName, VarName, "var")
     Dim outfile As File
@@ -377,9 +601,12 @@ End
 
 '' Saves a copy of a gambas variable as a saved ShmMem variable
 '' VarName is the name to be used by ShmMem when the value is reloaded
+'' a namespace in VarName is not saved: the namespace is chosen by LoadVar
 '' Value is the value to be converted to shmMem variable
 '' FileName sets the full path to locate the file, May only be the path
 Public Sub SaveNativeVar(VarName As String, value As Variant, Optional filename As String = "")
+
+    If RInStr(VarName, ":") Then VarName = Mid(VarName, RInStr(VarName, ":") + 1)
 
     Dim outfileName As String = SetPath(FileName, VarName, "var")
     Dim outfile As File
@@ -398,15 +625,17 @@ End
 
 '' Clear all unprotected variable from the image
 '' user provides a list of protected variable  which are ignores all # variables are ignores
-Public Sub Clear(Optional ListToIgnore As String[] = Null)
+'' Recursive: the namespaces are cleared too, the same patterns protect their variables
+Public Sub Clear(Optional ListToIgnore As String[] = Null, Recursive As Boolean = False)
 
     Dim mvars As String[] = variables()
+    Dim del As Boolean
 
     For Each v As String In mvars
         If v[0] = "#" Then Continue
+        del = True
         If ListToIgnore <> Null Then
-            Dim del As Boolean = True
-            For Each s As String In mvars
+            For Each s As String In ListToIgnore
                 If v Like s Then
                     del = False
                     Break
@@ -416,13 +645,23 @@ Public Sub Clear(Optional ListToIgnore As String[] = Null)
         If del Then remove(v)
     Next
 
+    If Recursive And If Not $bBusy Then
+        $bBusy = True
+        For Each seg As ShmMem In NameSpaces
+            seg.Clear(ListToIgnore, True)
+        Next
+        $bBusy = False
+    Endif
+
 End
 
 
 '' Re-loads the Variables saved from the symbol table and restores its value
 '' Also restore the date/time that the last change to this copy of the table
 '' occurred
-Public Sub LoadImage(Optional FileName As String = Application.name & ".image", merge As Boolean = False)
+'' Recursive: each namespace this object has is loaded from <FileName>.<namespace> when that file exists.
+'' The namespaces are not made by this, create or open them first
+Public Sub LoadImage(Optional FileName As String = Application.name & ".image", merge As Boolean = False, Recursive As Boolean = False)
 
     Dim infileName As String = SetPath(FileName)
     Dim infile As File
@@ -434,19 +673,43 @@ Public Sub LoadImage(Optional FileName As String = Application.name & ".image", 
     vars.Load(infile, merge)
     Close infile
 
+    If Recursive And If Not $bBusy Then
+        $bBusy = True
+        For Each seg As ShmMem In NameSpaces
+            If Exist(infileName & "." & NameSpaces.Key) Then
+                Try seg.LoadImage(infileName & "." & NameSpaces.Key, merge, True)
+                If Error Then
+                    $bBusy = False
+                    Error.Propagate()
+                Endif
+            Endif
+        Next
+        $bBusy = False
+    Endif
+
 End
 
 '' Merges the Variables saved from the symbol table and restores its value
 '' Also restore the date/time that the last change to this copy of the table
 '' occurred
-Public Sub MergeImage(Optional FileName As String = Application.name & ".image")
+Public Sub MergeImage(Optional FileName As String = Application.name & ".image", Recursive As Boolean = False)
 
-    LoadImage(filename, True)
+    LoadImage(filename, True, Recursive)
 
 End
 
 '' Loads An individual Symbol and its value From a file
+'' SymName "a:x" loads it as x into the namespace a, "a:" loads it into a under the name saved in the file
 Public Sub LoadVar(FileName As String, Optional SymName As String = "", Optional merge As Boolean = False)
+
+    If SymName <> "" Then
+        Dim ns As Variant[] = GetNameSpace(SymName)
+        If ns[0] <> Me Then
+            ns[0].LoadVar(FileName, ns[1], merge)
+            Return
+        Endif
+        SymName = ns[1]
+    Endif
 
     Dim infileName As String = SetPath(FileName, "", "var")
     Dim infile As File
@@ -464,8 +727,10 @@ End
 Public Sub {VarPtr}(SymName As String) As Variant
 
     Dim ValueBlock As Variant
+    Dim ns As Variant[] = GetNameSpace(SymName)
 
-    ValueBlock = vars.VarPtr(SymName)    ' get a pointer to the actual value stored
+    If ns[0] <> Me Then Return ns[0].VarPtr(ns[1])
+    ValueBlock = vars.VarPtr(ns[1])    ' get a pointer to the actual value stored
     Return ValueBlock
 
 End
@@ -474,8 +739,10 @@ End
 Public Sub VarEntryPtr(SymName As String) As Variant
 
     Dim VarEntryBlock As Variant
+    Dim ns As Variant[] = GetNameSpace(SymName)
 
-    VarEntryBlock = vars.Entry(SymName)
+    If ns[0] <> Me Then Return ns[0].VarEntryPtr(ns[1])
+    VarEntryBlock = vars.Entry(ns[1])
     VarEntryBlock = MyVarMem._getptr(VarEntryBlock.address)
     Return VarEntryBlock
 
@@ -490,24 +757,57 @@ Public Sub {SizeOf}(Value As Variant) As Long
 End
 
 '' Search and return a list of variable names that match the provided pattern
-Public Sub Variables(Optional Filter As String = "*") As String[]
+'' "a:*" lists the namespace a, the names are returned as a:name
+'' Recursive: the namespaces are listed too, as namespace:name, the pattern matches the name in its namespace
+Public Sub Variables(Optional Filter As String = "*", Recursive As Boolean = False) As String[]
 
     Dim Varlist As New String[]
+    Dim pos As Integer = RInStr(Filter, ":")
+
+    If pos > 0 Then                                                  ' the list of a namespace
+        Dim seg As ShmMem = GetNameSpace(Left(Filter, pos))[0]
+        Dim sPrefix As String = IIf(seg = Me, "", Left(Filter, pos))
+        For Each sName As String In seg.Variables(Mid(Filter, pos + 1), Recursive)
+            Varlist.Add(sPrefix & sName)
+        Next
+        Return Varlist
+    Endif
 
     For Each s As Variant In vars
         If vars.key Like Filter Then
             Varlist.Add(vars.key)
         Endif
     Next
+
+    If Recursive And If Not $bBusy Then
+        $bBusy = True
+        For Each seg In NameSpaces
+            Dim sNameSpace As String = NameSpaces.Key
+            For Each sName In seg.Variables(Filter, True)
+                Varlist.Add(sNameSpace & ":" & sName)
+            Next
+        Next
+        $bBusy = False
+    Endif
+
     Return VarList
 
 End
 
 
 '' Prints a list of all Symbols and definition
-Public Sub {Print}()
+Public Sub {Print}(Optional Recursive As Boolean = False)
 
     Print vars.Text
+
+    If Recursive And If Not $bBusy Then
+        $bBusy = True
+        For Each seg As ShmMem In NameSpaces
+            Print "NameSpace : "; NameSpaces.Key
+            seg.Print(True)
+        Next
+        $bBusy = False
+    Endif
 
 End
 
@@ -534,56 +834,95 @@ End
 '' Wait for a symbol to be created, use notify on new instead
 Public Sub WaitFor(SymName As String, Optional Timeout As Float = 0) As Boolean
 
-    Return vars.WaitFor(symname, timeout)
+    Dim ns As Variant[] = GetNameSpace(SymName)
+
+    Return ns[0].Vars.WaitFor(ns[1], timeout)
 
 End
 
 '' spin wait for a symbol to have a specific value
 Public Sub WaitForValue(SymName As String, Value As Variant, Optional Timeout As Float = 0) As Boolean
 
-    Return vars.WaitForValue(symname, Value, timeout)
+    Dim ns As Variant[] = GetNameSpace(SymName)
+
+    Return ns[0].Vars.WaitForValue(ns[1], Value, timeout)
 
 End
 
 '' spin wait for a value to change, use notify instead
 Public Sub WaitValueChange(SymName As String, Value As Variant, Optional Timeout As Float = 0) As Boolean
 
-    Return vars.WaitValueChange(symname, Value, timeout)
+    Dim ns As Variant[] = GetNameSpace(SymName)
+
+    Return ns[0].Vars.WaitValueChange(ns[1], Value, timeout)
 
 End
 
 '' Get a notification whenever any variable is changed
-Public Sub NotifyOnAny(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "") As Boolean
+'' InNameSpace: in that namespace (or path "a:b") instead of this segment
+Public Sub NotifyOnAny(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "", InNameSpace As String = "") As Boolean
 
-    Return vars.NotifyOnAny(enabled, NotifyObject, NotifyFunction)
+    Dim seg As ShmMem = Me
+    Dim sPrefix As String = ""
+
+    If InNameSpace <> "" Then                                        ' the names given to the notify function are InNameSpace:name
+        seg = GetNameSpace(InNameSpace & ":")[0]
+        If seg <> Me Then sPrefix = InNameSpace & ":"
+    Endif
+    Return seg.Vars.NotifyOnAny(enabled, NotifyObject, NotifyFunction, sPrefix)
 
 End
 
 '' Get a notification whenever a new symbol is created
-Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "") As Boolean
+'' InNameSpace: in that namespace (or path "a:b") instead of this segment
+Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "", InNameSpace As String = "") As Boolean
 
-    Return vars.NotifyOnNew(enabled, NotifyObject, NotifyFunction)
+    Dim seg As ShmMem = Me
+    Dim sPrefix As String = ""
+
+    If InNameSpace <> "" Then                                        ' the names given to the notify function are InNameSpace:name
+        seg = GetNameSpace(InNameSpace & ":")[0]
+        If seg <> Me Then sPrefix = InNameSpace & ":"
+    Endif
+    Return seg.Vars.NotifyOnNew(enabled, NotifyObject, NotifyFunction, sPrefix)
 
 End
 
 '' Get a notification whenever a symbol is removed from the symbol table
-Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "") As Boolean
+'' InNameSpace: in that namespace (or path "a:b") instead of this segment
+Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "", InNameSpace As String = "") As Boolean
 
-    Return vars.NotifyOnRemove(enabled, NotifyObject, NotifyFunction)
+    Dim seg As ShmMem = Me
+    Dim sPrefix As String = ""
+
+    If InNameSpace <> "" Then                                        ' the names given to the notify function are InNameSpace:name
+        seg = GetNameSpace(InNameSpace & ":")[0]
+        If seg <> Me Then sPrefix = InNameSpace & ":"
+    Endif
+    Return seg.Vars.NotifyOnRemove(enabled, NotifyObject, NotifyFunction, sPrefix)
 
 End
 
 '' Create a notification Event when ever the specified variable changes
+'' "a:b:x" watches x in the namespace a:b, the notify function gets the name as it was given here, "a:b:x".
+'' The default notify function is <name>_Changed, the name without its namespace: x_Changed
 Public Sub Notify(SymName As String, NotifyObject As Object, Optional NotifyFunction As String = "", Timeout As Float = 0, Tag As String = "")
 
-    vars.Notify(SymName, NotifyObject, NotifyFunction, TimeOut, tag)
+    Dim ns As Variant[] = GetNameSpace(SymName)
+    Dim seg As ShmMem = ns[0]
+    Dim sPrefix As String = ""
+
+    If seg <> Me Then sPrefix = Left(SymName, Len(SymName) - Len(ns[1]))
+    seg.Vars.Notify(ns[1], NotifyObject, NotifyFunction, TimeOut, tag, sPrefix)
 
 End
 
 '' Stop receiving notification for a symbol. Info must match the original notify call exactly
 Public Sub NotifyStop(SymName As String, CallObject As Object, Optional CallFunc As String = "", Optional tag As String = "")
 
-    vars.NotifyStop(SymName, CallObject, CallFunc, tag)
+    Dim ns As Variant[] = GetNameSpace(SymName)
+
+    ns[0].Vars.NotifyStop(ns[1], CallObject, CallFunc, tag)
 
 End
 
@@ -610,10 +949,14 @@ Public Sub _next() As Variant
 
 End
 
-'' return true if a symbol exists else false
+'' return true if a symbol exists else false, false too when its namespace does not exist
 Public Sub Exist(SymName As String) As Boolean
 
-    Return Vars.Exist(SymName)
+    Dim ns As Variant[]
+
+    Try ns = GetNameSpace(SymName)
+    If Error Then Return False
+    Return ns[0].Vars.Exist(ns[1])
 
 End
 
@@ -643,11 +986,14 @@ End
 '' Returns a list of all apps waiting for notification of a specific variable
 Public Sub NotifyQ(symName As String) As ShmList
 
-    If Not Vars.Exist(symname) Then
+    Dim ns As Variant[] = GetNameSpace(symName)
+    Dim seg As ShmMem = ns[0]
+
+    If Not seg.Vars.Exist(ns[1]) Then
         Error.Raise("Unknown Symbol Name:" & Symname)
     Endif
 
-    Return Vars.NotifyQ(symname)
+    Return seg.Vars.NotifyQ(ns[1])
 
 End
 
@@ -668,7 +1014,9 @@ Public Sub RealDataAddress(VirtAddress As Variant) As Pointer
         Case gb.string                 ' then it must be a variable name
             ' virtAddress = vars.VarPtr(virtaddress)
             ' result = MyVarMem.RealDataAddress(VirtAddress)
-            result = vars.VarPtr(virtaddress)
+            Dim ns As Variant[] = GetNameSpace(VirtAddress)
+            If ns[0] <> Me Then Return ns[0].RealDataAddress(ns[1])
+            result = vars.VarPtr(ns[1])
 
         Case gb.pointer, gb.long, gb.integer
             Result = MyVarMem.RealDataAddress(VirtAddress)
@@ -688,7 +1036,9 @@ Public Sub RealAddress(VirtAddress As Variant) As Pointer
 
     Select Case TypeOf(VirtAddress)
         Case gb.string                 ' then it must be a variable name
-            virtAddress = Me.VarPtr(VirtAddress)
+            Dim ns As Variant[] = GetNameSpace(VirtAddress)
+            If ns[0] <> Me Then Return ns[0].RealAddress(ns[1])  ' translated with the memory of its own segment
+            virtAddress = Me.VarPtr(ns[1])
             result = MyVarMem.RealAddress(VirtAddress)
 
         Case gb.pointer, gb.long, gb.integer
@@ -736,5 +1086,17 @@ Static Public Sub Dump(mPointer As Variant, IntLength As Integer, Optional Filen
     rWrite(mFile.handle, mPointer, IntLength)
 
     Close mFile
+
+End
+
+'' return the namespace segment shmmem, null if not found
+'' SegName may be a path "a:b". A namespace not open here is opened when its segment exists
+Public Function NameSpace(SegName As String) As ShmMem
+
+    Dim ns As Variant[]
+
+    Try ns = GetNameSpace(SegName & ":")
+    If Error Then Return Null
+    Return ns[0]
 
 End

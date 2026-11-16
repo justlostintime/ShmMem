@@ -49,7 +49,7 @@ Public Struct dArray
     Tag[64] As Byte                                                                  '' Tag id of array
 End Struct
 
-Extern sched_yield() As Integer In "libpthread:0"
+'Extern sched_yield() As Integer In "libpthread:0"
 
 Private VirtualAddress As Pointer = 0                  '' Virtual pointer to darray in memory
 Private VarMem As ShmVarStorage                    '' The storage pool to used or referenced
@@ -172,7 +172,7 @@ End
 Private Sub _Configure(Optional VarStorage As Variant = Null, SubscriptsOrVirtAddressOrTag As Variant = 0, Tag As String = "")
 
     Dim pType As Integer
-    Dim Result As Integer = 0
+    '    Dim Result As Integer = 0
     Dim total As Integer = 0
     Dim Virtaddress As Pointer = 0
     Dim Dims As New Long[]

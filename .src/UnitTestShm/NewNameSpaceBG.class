@@ -1,0 +1,30 @@
+' Gambas class file
+
+' Used by NewCNameSpaces: another process makes a namespace larger than the default size, with a namespace of its
+' own, and tells the test through the root. The test never calls NewNameSpace for them: it finds them by name
+
+Inherits Task
+
+Public Sub Main()
+
+    Dim root As New ShmMem(1000000, "nstroot")
+    Dim big As ShmMem
+
+    big = root.NewNameSpace(30000000, "nstbig")
+    big.NewNameSpace(1000000, "nstsub")
+    For i As Integer = 1 To 25                                   ' 22.5MB: past the 20MB a default open would map
+        root["nstbig:big" & i] = String(900000, "x")             ' one string value holds at most 1MB
+    Next
+    root["nstbig:last"] = "end"
+    root["nstbig:nstsub:deep"] = "nested from task"
+    root["bgready"] = True
+
+    root.WaitForValue("fgdone", True, 20)
+    root.Close()
+    Quit 0
+
+Catch
+    Error "NewNameSpaceBG : "; Error.Text, Error.Where
+    Quit 1
+
+End
