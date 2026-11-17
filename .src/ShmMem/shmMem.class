@@ -24,10 +24,12 @@ Public VarStoreName As String                                                   
 '' NameSpaces:
 '' a collection of managed segments containing SegmentName:instance of shmmem
 '' managed segments are accessible via the symbolname namespace portion, for example
-'' myseg:a accesses or manipulates a in the segment myseg, also any notify, or other function is passed off
-'' to the appropriate segment. Each ':' is resolved by the segment it reaches, so myseg:other:a is a in the
+'' myseg?a accesses or manipulates a in the segment myseg, also any notify, or other function is passed off
+'' to the appropriate segment. Each '?' is resolved by the segment it reaches, so myseg?other?a is a in the
 '' namespace other of the segment myseg. Resolving always starts at the object it is called on.
-'' anything without a : , starting with a : or starting with this segment's own name: uses this segment
+'' Gambas allows ? in a name, so Mem!myseg?a and Mem.myseg?a work as well as Mem["myseg?a"]
+'' anything without a ? or starting with this segment's own name? uses this segment. A name can not start with ?,
+'' Gambas reads a leading ? as Print
 '' A namespace not in the collection is opened when a segment of that name exists, it is never created by a lookup
 Public NameSpaces As New Collection(gb.ignorecase)                                '' A collection of managed segments
 Private $bBusy As Boolean = False                                                 '' walking the namespaces, a namespace reached twice is skipped
@@ -302,7 +304,7 @@ End
 '' Define a new namespace, creates a shmmem object and stores it into the NameSpaces collection
 '' it checks first if it already exists, returns an error if it does
 '' uses the passed parameters to create or access the specified namespace/segment
-'' MemName may be a path: "a:b" makes the segment b a namespace of the namespace a
+'' MemName may be a path: "a?b" makes the segment b a namespace of the namespace a
 '' A segment this process already has open is used, not made again. NewNameSpace("name") uses the default sizes
 Public Sub NewNameSpace(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault, isExecutable As Boolean = False, setPermissions As Integer = ShmMemBlock.DefaultPermissions) As ShmMem
 
@@ -314,8 +316,8 @@ Public Sub NewNameSpace(Optional VarMemLength As Variant = VarMemDefault, MemNam
         VarMemLength = VarMemDefault
     Endif
 
-    pos = RInStr(MemName, ":")
-    If pos > 0 Then                                                  ' "a:b" makes b a namespace of the namespace a
+    pos = RInStr(MemName, "?")
+    If pos > 0 Then                                                  ' "a?b" makes b a namespace of the namespace a
         NewSeg = GetNameSpace(Left(MemName, pos))[0]
         Return NewSeg.NewNameSpace(VarMemLength, Mid(MemName, pos + 1), MaxSymbols, LockTimeOut, isExecutable, setPermissions)
     Endif
@@ -373,7 +375,7 @@ Public Sub SaveNameSpaceTree(LastOnly As Boolean, aSaved As String[])
 
 End
 
-'' Save the namespace SegName (a path "a:b" is the namespace b) to its image NameSpaceImage(name)
+'' Save the namespace SegName (a path "a?b" is the namespace b) to its image NameSpaceImage(name)
 Public Sub SaveNameSpace(SegName As String)
 
     Dim seg As ShmMem = NameSpace(SegName)
@@ -383,11 +385,11 @@ Public Sub SaveNameSpace(SegName As String)
 
 End
 
-'' Close the namespace SegName and remove it from its parent, SegName may be a path "a:b"
+'' Close the namespace SegName and remove it from its parent, SegName may be a path "a?b"
 '' The segment itself stays as long as another process or object has it open. DeleteImage: its image file is removed
 Public Sub RemoveNameSpace(SegName As String, Optional DeleteImage As Boolean = False)
 
-    Dim pos As Integer = RInStr(SegName, ":")
+    Dim pos As Integer = RInStr(SegName, "?")
     Dim parent As ShmMem = Me
     Dim sImage As String = NameSpaceImage(Mid(SegName, pos + 1))
 
@@ -412,7 +414,7 @@ Public Sub _OpenedNameSpace(SegName As String) As Boolean
 
 End
 
-'' True when the namespace SegName (or path "a:b") can be reached, an existing segment is opened by this
+'' True when the namespace SegName (or path "a?b") can be reached, an existing segment is opened by this
 Public Sub NameSpaceExist(SegName As String) As Boolean
 
     Return NameSpace(SegName) <> Null
@@ -449,15 +451,15 @@ Public Sub {Close}()
 End
 
 '' Resolve a namespaced name, starting at this object
-'' Returns [owning ShmMem, leaf symbol name]. No namespace, a leading ":" or a leading <my name>: is this object
-'' "a:b:c" -> the namespace a resolves "b:c" -> the namespace b of a returns [b, "c"]
+'' Returns [owning ShmMem, leaf symbol name]. No namespace or a leading <my name>? is this object, a leading "?" is an error
+'' "a?b?c" -> the namespace a resolves "b?c" -> the namespace b of a returns [b, "c"]
 '' Raises "Unknown Namespace" when a namespace is not open here and no segment of that name exists
 Public Sub GetNameSpace(SymbolName As String) As Variant[]
 
-    Dim pos As Integer = InStr(SymbolName, ":")
+    Dim pos As Integer = InStr(SymbolName, "?")
 
     If pos > 1 And If $Name <> "" And If Left(SymbolName, pos - 1) == $Name Then
-        SymbolName = Mid(SymbolName, pos + 1)                        ' "main:a:x" on main is "a:x"
+        SymbolName = Mid(SymbolName, pos + 1)                        ' "main?a?x" on main is "a?x"
     Endif
 
     Return _WalkNameSpace(SymbolName)
@@ -468,12 +470,12 @@ End
 '' Public only because the next segment is another object: use GetNameSpace
 Public Sub _WalkNameSpace(SymbolName As String) As Variant[]
 
-    Dim pos As Integer = InStr(SymbolName, ":")
+    Dim pos As Integer = InStr(SymbolName, "?")
     Dim SegName As String
     Dim seg As ShmMem
 
     If pos = 0 Then Return [Me, SymbolName]
-    If pos = 1 Then Return [Me, Mid(SymbolName, 2)]
+    If pos = 1 Then Error.Raise("A name can not start with ?: " & SymbolName)
 
     SegName = Left(SymbolName, pos - 1)
     seg = NameSpaces[SegName]
@@ -738,7 +740,7 @@ End
 '' FileName sets the full path to locate the file, May only be the path
 Public Sub SaveNativeVar(VarName As String, value As Variant, Optional filename As String = "")
 
-    If RInStr(VarName, ":") Then VarName = Mid(VarName, RInStr(VarName, ":") + 1)
+    If RInStr(VarName, "?") Then VarName = Mid(VarName, RInStr(VarName, "?") + 1)
 
     Dim outfileName As String = SetPath(FileName, VarName, "var")
     Dim outfile As File
@@ -831,7 +833,7 @@ Public Sub MergeImage(Optional FileName As String = Application.name & ".image",
 End
 
 '' Loads An individual Symbol and its value From a file
-'' SymName "a:x" loads it as x into the namespace a, "a:" loads it into a under the name saved in the file
+'' SymName "a?x" loads it as x into the namespace a, "a?" loads it into a under the name saved in the file
 Public Sub LoadVar(FileName As String, Optional SymName As String = "", Optional merge As Boolean = False)
 
     If SymName <> "" Then
@@ -889,13 +891,14 @@ Public Sub {SizeOf}(Value As Variant) As Long
 End
 
 '' Search and return a list of variable names that match the provided pattern
-'' "a:*" lists the namespace a, the names are returned as a:name
-'' Recursive: the namespaces are listed too, as namespace:name, the pattern matches the name in its namespace
+'' "a?*" lists the namespace a, the names are returned as a?name
+'' Recursive: the namespaces are listed too, as namespace?name, the pattern matches the name in its namespace
+'' A ? in Filter is always the namespace separator, it is not a Like wildcard here
 '' The control symbols (#onnew ...) are listed only when Filter starts with #
 Public Sub Variables(Optional Filter As String = "*", Recursive As Boolean = False) As String[]
 
     Dim Varlist As New String[]
-    Dim pos As Integer = RInStr(Filter, ":")
+    Dim pos As Integer = RInStr(Filter, "?")
     Dim bControl As Boolean = Filter Begins "#"
 
     If pos > 0 Then                                                  ' the list of a namespace
@@ -919,7 +922,7 @@ Public Sub Variables(Optional Filter As String = "*", Recursive As Boolean = Fal
         For Each seg In NameSpaces
             Dim sNameSpace As String = NameSpaces.Key
             For Each sName In seg.Variables(Filter, True)
-                Varlist.Add(sNameSpace & ":" & sName)
+                Varlist.Add(sNameSpace & "?" & sName)
             Next
         Next
         $bBusy = False
@@ -994,52 +997,52 @@ Public Sub WaitValueChange(SymName As String, Value As Variant, Optional Timeout
 End
 
 '' Get a notification whenever any variable is changed
-'' InNameSpace: in that namespace (or path "a:b") instead of this segment
+'' InNameSpace: in that namespace (or path "a?b") instead of this segment
 Public Sub NotifyOnAny(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "", InNameSpace As String = "") As Boolean
 
     Dim seg As ShmMem = Me
     Dim sPrefix As String = ""
 
-    If InNameSpace <> "" Then                                        ' the names given to the notify function are InNameSpace:name
-        seg = GetNameSpace(InNameSpace & ":")[0]
-        If seg <> Me Then sPrefix = InNameSpace & ":"
+    If InNameSpace <> "" Then                                        ' the names given to the notify function are InNameSpace?name
+        seg = GetNameSpace(InNameSpace & "?")[0]
+        If seg <> Me Then sPrefix = InNameSpace & "?"
     Endif
     Return seg.Vars.NotifyOnAny(enabled, NotifyObject, NotifyFunction, sPrefix)
 
 End
 
 '' Get a notification whenever a new symbol is created
-'' InNameSpace: in that namespace (or path "a:b") instead of this segment
+'' InNameSpace: in that namespace (or path "a?b") instead of this segment
 Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "", InNameSpace As String = "") As Boolean
 
     Dim seg As ShmMem = Me
     Dim sPrefix As String = ""
 
-    If InNameSpace <> "" Then                                        ' the names given to the notify function are InNameSpace:name
-        seg = GetNameSpace(InNameSpace & ":")[0]
-        If seg <> Me Then sPrefix = InNameSpace & ":"
+    If InNameSpace <> "" Then                                        ' the names given to the notify function are InNameSpace?name
+        seg = GetNameSpace(InNameSpace & "?")[0]
+        If seg <> Me Then sPrefix = InNameSpace & "?"
     Endif
     Return seg.Vars.NotifyOnNew(enabled, NotifyObject, NotifyFunction, sPrefix)
 
 End
 
 '' Get a notification whenever a symbol is removed from the symbol table
-'' InNameSpace: in that namespace (or path "a:b") instead of this segment
+'' InNameSpace: in that namespace (or path "a?b") instead of this segment
 Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "", InNameSpace As String = "") As Boolean
 
     Dim seg As ShmMem = Me
     Dim sPrefix As String = ""
 
-    If InNameSpace <> "" Then                                        ' the names given to the notify function are InNameSpace:name
-        seg = GetNameSpace(InNameSpace & ":")[0]
-        If seg <> Me Then sPrefix = InNameSpace & ":"
+    If InNameSpace <> "" Then                                        ' the names given to the notify function are InNameSpace?name
+        seg = GetNameSpace(InNameSpace & "?")[0]
+        If seg <> Me Then sPrefix = InNameSpace & "?"
     Endif
     Return seg.Vars.NotifyOnRemove(enabled, NotifyObject, NotifyFunction, sPrefix)
 
 End
 
 '' Create a notification Event when ever the specified variable changes
-'' "a:b:x" watches x in the namespace a:b, the notify function gets the name as it was given here, "a:b:x".
+'' "a?b?x" watches x in the namespace a?b, the notify function gets the name as it was given here, "a?b?x".
 '' The default notify function is <name>_Changed, the name without its namespace: x_Changed
 Public Sub Notify(SymName As String, NotifyObject As Object, Optional NotifyFunction As String = "", Timeout As Float = 0, Tag As String = "")
 
@@ -1221,12 +1224,12 @@ Static Public Sub Dump(mPointer As Variant, IntLength As Integer, Optional Filen
 End
 
 '' return the namespace segment shmmem, null if not found
-'' SegName may be a path "a:b". A namespace not open here is opened when its segment exists
+'' SegName may be a path "a?b". A namespace not open here is opened when its segment exists
 Public Function NameSpace(SegName As String) As ShmMem
 
     Dim ns As Variant[]
 
-    Try ns = GetNameSpace(SegName & ":")
+    Try ns = GetNameSpace(SegName & "?")
     If Error Then Return Null
     Return ns[0]
 

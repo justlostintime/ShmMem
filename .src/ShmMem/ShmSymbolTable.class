@@ -458,8 +458,8 @@ Public Sub Add(symName As String, value As Variant, Optional HashValue As Long =
         Error.Raise("Symbol name can not be blank")
     Endif
 
-    If InStr(SymName, ":") Then                                  ' ':' separates namespaces, ShmMem resolves it before here
-        Error.Raise("Symbol name can not contain ':' : " & SymName)
+    If InStr(SymName, "?") Then                                  ' '?' separates namespaces, ShmMem resolves it before here
+        Error.Raise("Symbol name can not contain '?' : " & SymName)
     Endif
 
     VarMem.CheckSegment(value)                                   ' refused before the table is locked and a slot taken

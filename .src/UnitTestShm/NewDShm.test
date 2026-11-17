@@ -93,21 +93,21 @@ Public Sub cNameSpaceImage()
     Clean()
     Shm.Begin(RootName, 1000000, 500, "", False, $sDir)
     Shm.NewNameSpace(1000000, "shmtns", 500)
-    Shm["shmtns:x"] = 5
-    Shm["shmtns:s"] = "kept"
+    Shm["shmtns?x"] = 5
+    Shm["shmtns?s"] = "kept"
     Assert.Equals(Shm.SaveNameSpaces().Join(","), "shmtns", "saved")
     Assert.Ok(Exist($sDir &/ "shmtns.image"), "saved by its name")
 
     Shm.RemoveNameSpace("shmtns")                                 ' the last user: the segment is gone
     Assert.NotOk(Exist("/dev/shm/shmtns_Data"), "segment removed")
 
-    Assert.Equals(Shm["shmtns:x"], 5, "made again from its image when its name is used")
+    Assert.Equals(Shm["shmtns?x"], 5, "made again from its image when its name is used")
     Assert.Ok(Shm.Mem.NameSpace("shmtns").Created, "this process made it again")
-    Assert.Equals(Shm["shmtns:s"], "kept", "all of it")
+    Assert.Equals(Shm["shmtns?s"], "kept", "all of it")
 
-    Try Print Shm["shmtnope:x"]
+    Try Print Shm["shmtnope?x"]
     Assert.Error("no segment and no image: it must be declared")
-    Assert.NotOk(Shm.Exist("shmtnope:x"), "Exist is False for an unknown namespace")
+    Assert.NotOk(Shm.Exist("shmtnope?x"), "Exist is False for an unknown namespace")
 
     Shm.RemoveNameSpace("shmtns", True)
     Assert.NotOk(Exist($sDir &/ "shmtns.image"), "the image is deleted")
@@ -120,13 +120,13 @@ Public Sub dLastUserSaves()
     Clean()
     Shm.Begin(RootName, 1000000, 500, "", False, $sDir)
     Shm.NewNameSpace(1000000, "shmtlast", 500)
-    Shm["shmtlast:y"] = "saved at end"
+    Shm["shmtlast?y"] = "saved at end"
     Assert.Equals(Shm.Mem.NameSpace("shmtlast").Users, 1, "one process uses it")
     Shm.End()
     Assert.Ok(Exist($sDir &/ "shmtlast.image"), "the last user saved it at End")
 
     Shm.Begin(RootName, 1000000, 500, "", False, $sDir)
-    Assert.Equals(Shm["shmtlast:y"], "saved at end", "loaded in the next session")
+    Assert.Equals(Shm["shmtlast?y"], "saved at end", "loaded in the next session")
     Shm.End(False)
 
 End

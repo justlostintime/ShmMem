@@ -4,12 +4,13 @@ ShmNotifyEntry=[54]
 ShmValue=[88]
 
 [Debug]
-Breakpoints={}
+Breakpoints={"NameSpaceExample":[35]}
 UseTerminal=False
 RedirectStderr=False
 UseHttpServer=False
 Remote=False
 Profiling=False
+Environment=["GB_NO_JIT=1"]
 
 [DebugWindow]
 Count=0
@@ -656,6 +657,9 @@ Geometry=[834,512,252,56]
 [DebugWindow/next_info]
 Geometry=[834,505,252,70]
 
+[DebugWindow/ns]
+Geometry=[841,387,376,306]
+
 [DebugWindow/nvalue]
 Geometry=[834,292,252,504]
 
@@ -867,17 +871,25 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Add the notion of name spaces to integrate segments together into one program\n\n* NEW : support multi named segments to be shared with other apps as needed called namespaces"
+LastCommit="Update version to 2.4.0, add forgotten files to commit\n\n* NEW : support multi named segments to be shared with other apps as needed called namespaces"
 
 [OpenFile]
-Count=6
-File[1]=".src/ShmMem/shmMem.class:27.559"
+Count=14
+File[1]=".src/ShmMem/shmMem.class:30.507"
 File[2]=".src/ShmMem/ShmThread.class:4.40"
 File[3]=".src/ShmMem/ShmQueue.class:4.44"
 File[4]=".src/ShmMem/ShmList.class:0.439"
-Active=1
-File[5]=".src/ShmMem/ShmArray.class:1.51"
+Active=12
+File[5]=".src/ShmMem/ShmArray.class:1.89"
 File[6]=".src/ShmMem/ShmMemBlock.class:0.23"
+File[7]=".src/ShmMem/Shm.class:0.0"
+File[8]=".src/Examples/vTestApps/VariableNameCollections/GetVarList.module:0.0"
+File[9]=".src/Examples/vTestApps/VariableNameCollections/GetVarListFiltered.module:0.0"
+File[10]=".src/Examples/vTestApps/Shared Memory Images/SaveAndMergeafterclear.module:4.4"
+File[11]=".src/Examples/vTestApps/Shared Memory Images/LoadAndSaveImage.module:0.0"
+File[12]=".src/Examples/vTestApps/NameSpaces/NameSpaceExample.module:4.37"
+File[13]=".src/Examples/vTestApps/NameSpaces/NameSpaceWorker.class:5.25"
+File[14]=".src/ShmMem/ShmSymbolTable.class:3.349"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"

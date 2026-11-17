@@ -9,7 +9,7 @@
 ''' The main ShmMem of a program, reached by the class name from every module and class of the program.
 ''' Gambas has no program wide variables: this class only holds the object, ShmMem does the work.
 '''   Shm.Begin("mysegment")
-'''   Shm.a = 1 : Shm!b = "text" : Shm["c"] = 3 : Print Shm["ns:x"], Shm.Exist("a")
+'''   Shm.a = 1 : Shm!b = "text" : Shm["c"] = 3 : Print Shm["ns?x"] or Shm!ns?x, Shm.Exist("a")
 '''   With Shm
 '''     !d = 4 : .e = 5 : Print .a, !b, .["c"]
 '''   End With

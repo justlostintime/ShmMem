@@ -10,15 +10,15 @@ Public Sub Main()
     Dim shop As New ShmMem("shop")
 
     shop.NewNameSpace(25000000, "stock")                       ' larger than the default 20MB
-    shop["stock:apples"] = 42
+    shop["stock?apples"] = 42
 
     For i As Integer = 1 To 3
-        shop["orders:open:count"] = i
-        shop["orders:total"] = shop["orders:total"] + 10
+        shop["orders?open?count"] = i
+        shop["orders?total"] = shop["orders?total"] + 10
         Wait 0.1
     Next
 
-    shop["workerready"] = True
+    shop!workerready = True
     shop.WaitForValue("done", True, 10)
     shop.Close()
     Quit 0

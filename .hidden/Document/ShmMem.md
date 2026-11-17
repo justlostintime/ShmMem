@@ -99,24 +99,25 @@ MyMemory = new ShmMem
 The segments created will assume the defaults listed above. In most cases this will be more than needed by most users.
 
 ## Namespaces
-A namespace is another named segment reached through the variable name. `ns:x` is the variable `x` in the namespace `ns`, and `a:b:x` is `x` in the namespace `b` of the namespace `a`.
+A namespace is another named segment reached through the variable name. `ns?x` is the variable `x` in the namespace `ns`, and `a?b?x` is `x` in the namespace `b` of the namespace `a`.
 
-* Resolving always starts at the ShmMem it is called on, and each segment strips its own part of the name: `root["a:b:x"]` goes to `a`, which resolves `b:x`.
-* A name with no namespace, a leading `:` (`":x"`) or the segment's own name (`"root:x"` on the segment `root`) is in the segment itself.
+* Resolving always starts at the ShmMem it is called on, and each segment strips its own part of the name: `root["a?b?x"]` goes to `a`, which resolves `b?x`.
+* A name with no namespace or the segment's own name (`"root?x"` on the segment `root`) is in the segment itself. A name can not start with `?`, Gambas reads a leading `?` as Print, so `"?x"` raises an error.
 * Each namespace is a full named segment, `Name_Data` and `Name_Symbols`. Segment names are global: the namespace `b` of `a` is the segment `b`.
 * A program creates the namespaces it owns with NewNameSpace. When a name uses a namespace the object does not have yet, the segment of that name is opened if it exists, with the sizes it was made with. A lookup never creates a segment, an unknown one raises "Unknown Namespace: name".
-* Every call that takes a symbol name accepts a namespaced name: `[]`, Exist, Remove, Free, VarPtr, VarEntryPtr, RealAddress, RealDataAddress, SaveVar, LoadVar, Notify, NotifyStop, NotifyQ, WaitFor, WaitForValue, WaitValueChange and Variables("ns:*"). The `!name` syntax can not hold a `:`, use `MyMemory["ns:name"]`.
-* A list, array or value lives in the segment it was made in. Make it with the namespace object, `New ShmList(MyMemory.NameSpace("ns"))`, storing one made in another segment raises an error. Gambas arrays assigned to `MyMemory["ns:x"]` are made in the namespace.
-* A symbol name can not contain `:`.
+* Every call that takes a symbol name accepts a namespaced name: `[]`, Exist, Remove, Free, VarPtr, VarEntryPtr, RealAddress, RealDataAddress, SaveVar, LoadVar, Notify, NotifyStop, NotifyQ, WaitFor, WaitForValue, WaitValueChange and Variables("ns?*"). Gambas allows `?` in a name, so `MyMemory!ns?name` and `MyMemory.ns?name` work as well as `MyMemory["ns?name"]`.
+* A list, array or value lives in the segment it was made in. Make it with the namespace object, `New ShmList(MyMemory.NameSpace("ns"))`, storing one made in another segment raises an error. Gambas arrays assigned to `MyMemory["ns?x"]` are made in the namespace.
+* A symbol name can not contain `?`.
 * Close closes the namespaces the object opened. A segment the program already had open as its own ShmMem is used as the namespace, and is left to the program to close.
 
 ```
 Shop = New ShmMem(2000000, "shop")
 Shop.NewNameSpace(2000000, "orders")
-Shop.NewNameSpace(1000000, "orders:open")      ' open is a namespace of orders
-Shop["orders:open:count"] = 1
-Print Shop.NameSpace("orders")["open:count"]   ' resolving starts at orders
-Shop.Notify("orders:open:count", Me)           ' calls count_Changed("orders:open:count", value, timedout)
+Shop.NewNameSpace(1000000, "orders?open")      ' open is a namespace of orders
+Shop["orders?open?count"] = 1
+Shop!orders?open?count = 2                     ' the same variable
+Print Shop.NameSpace("orders")["open?count"]   ' resolving starts at orders
+Shop.Notify("orders?open?count", Me)           ' calls count_Changed("orders?open?count", value, timedout)
 ```
 See the example NameSpaceExample.
 
@@ -124,13 +125,13 @@ See the example NameSpaceExample.
 * NewNameSpace(Memory_Length, Segment_name, Number_Of_Symbols, Locking_timeout, isExecutable, setPermissions) As ShmMem
 * NewNameSpace("Segment_name") uses the default sizes.
 * Creates the segment, or opens it when it exists, and adds it to the namespaces of this object. Returns its ShmMem.
-* Segment_name may be a path: "a:b" makes b a namespace of the namespace a.
+* Segment_name may be a path: "a?b" makes b a namespace of the namespace a.
 * A segment this process already has open is used, not opened again.
 * Raises an error when this object already has that namespace, for a blank name, and for the object's own name.
 
 ### NameSpace
 * NameSpace("Segment_name") As ShmMem
-* Returns the namespace, Null when it is unknown. Takes a path "a:b". Opens an existing segment like any lookup.
+* Returns the namespace, Null when it is unknown. Takes a path "a?b". Opens an existing segment like any lookup.
 
 ### NameSpaceExist
 * NameSpaceExist("Segment_name") As Boolean
@@ -140,14 +141,14 @@ See the example NameSpaceExample.
 * Removes the namespace from this object and closes it when this object opened it. The segment stays while another process or object has it open.
 
 ### GetNameSpace
-* GetNameSpace("a:b:x") As Variant[]
+* GetNameSpace("a?b?x") As Variant[]
 * Returns [the ShmMem holding the variable, the variable name without namespace], here [b, "x"].
 
 ## Interface Calls
 ### Variables
 * Variables(Optional Filter As String = "*", Optional Recursive As Boolean = False) As String[]
-* The names that match Filter. "ns:*" lists the namespace ns, the names are returned as ns:name.
-* Recursive - the namespaces are listed too, as ns:name. The filter matches the name inside its namespace.
+* The names that match Filter. "ns?*" lists the namespace ns, the names are returned as ns?name. A `?` in Filter is the namespace separator, not a wildcard.
+* Recursive - the namespaces are listed too, as ns?name. The filter matches the name inside its namespace.
 
 ### Clear
 * Clear(Optional ListToIgnore As String[] = Null, Optional Recursive As Boolean = False)
@@ -209,7 +210,7 @@ GetMemorySegment(Signature) as shmmem
 * "Symbol File path/Name" - Opens the the file and creates the updated/new symbol entry and value.
 * Defaults to an name.extension of Name.var. by default used the base name of the file as the symbol name.
 * optional "Symbol Rename" - The symbol will be created with this name not the base name of the file.
-* "ns:name" loads it as name into the namespace ns, "ns:" loads it into ns under the name saved in the file.
+* "ns?name" loads it as name into the namespace ns, "ns?" loads it into ns under the name saved in the file.
 
 ### Notify on Change of specific variable
 * Notify("Symbol Name",ObjectToCall, Optional "Method to to call", Timeout As Float, "64 char tag name")
@@ -222,7 +223,7 @@ GetMemorySegment(Signature) as shmmem
 >> SymbolName - the name of the symbol which changed<br>
 >> NewValue   - The new value of variable<br>
 >> IfTimedOut - A true or false value<br>
-* For a namespaced name, "ns:x", the event gets the name as it was asked, "ns:x". The default method uses the name without namespace: x_Changed.
+* For a namespaced name, "ns?x", the event gets the name as it was asked, "ns?x". The default method uses the name without namespace: x_Changed.
 
 ### Notify Stop
 * NotifyStop("Symbol Name",ObjectToCall, Optional "Method to to call", Optional "64 char tag name")
@@ -246,7 +247,7 @@ GetMemorySegment(Signature) as shmmem
 
 ### Notify On New Symbol
 * NotifyOnNew(EnableDisable, ObjectToCall, Optional "Method to to call", Optional "NameSpace")
-* NameSpace - watch that namespace instead of this segment, the names reported are NameSpace:name. NotifyOnAny and NotifyOnRemove take it too.
+* NameSpace - watch that namespace instead of this segment, the names reported are NameSpace?name. NotifyOnAny and NotifyOnRemove take it too.
 * Creates a notification when ever a new symbol is created.
 * Enable/Disable - Enable = true, disable = false
 * The default method is OnNew_Created(SymName, Value, TimedOut)

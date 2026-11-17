@@ -1,6 +1,6 @@
 # Gambas Project File 3.0
 Title=ShmMem
-Startup=SaveAndMergeafterclear
+Startup=NameSpaceExample
 Version=2.4.0
 Component=gb.args
 Component=gb.dbus
