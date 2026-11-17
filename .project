@@ -1,7 +1,7 @@
 # Gambas Project File 3.0
 Title=ShmMem
 Startup=NameSpaceExample
-Version=2.4.0
+Version=2.4.1
 Component=gb.args
 Component=gb.dbus
 Component=gb.eval
