@@ -76,6 +76,8 @@ Property Read length As Long                                            '' Lengt
 Property Read address As Pointer                                   '' address of user space
 Property Debug As Boolean Use $bDebug = False      '' Turn on or off debug messages
 Property Signature As String Use $Signature               ''  the unique signature for this class
+Property Read Created As Boolean                                    '' True when this process made the block, False when it opened an existing one
+Property Read Users As Integer                                        '' The number of processes that have the block open (InUseCounter)
 
 '' P print all information regarding the shared memory segment
 Public Sub _print()
@@ -102,7 +104,9 @@ Static Public Sub ForceDelete(SharedName As String)
 End
 
 '' AttachOnly: open a named block that already exists, never create it. Its length is the length it was made with
-Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As String = "", WaitTimeout As Float = 2.1, isExecutable As Boolean = False, Permissions As Integer = DefaultPermissions, AttachOnly As Boolean = False)
+'' HoldNew: when this process makes the block, it keeps the lock of the block. Processes opening it wait in _new until
+'' the creator has filled it and called Release
+Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As String = "", WaitTimeout As Float = 2.1, isExecutable As Boolean = False, Permissions As Integer = DefaultPermissions, AttachOnly As Boolean = False, HoldNew As Boolean = False)
 
     ' $bDebug = True
 
@@ -151,6 +155,7 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
 
         If $bDebug Then Print Object.Class(Me).Name;; " Block initialization Completed"
 
+        If HoldNew Then Exclusive()                             ' before an opener can see it: openers lock in _new
         BlockInfo.InUseCounter = 1                              ' last: an opener waits for it, the header and the lock are ready
     Else
 
@@ -185,6 +190,19 @@ Public Sub _new(Optional SharedLength As Long = DefaultLength, SharedName As Str
     MyAppId = Application.id
 
     If $bDebug Then Print Object.Class(Me).Name;; " _new Completed"
+
+End
+
+Private Function Created_Read() As Boolean
+
+    Return NewMemoryBlock
+
+End
+
+Private Function Users_Read() As Integer
+
+    If BlockInfo = Null Then Return 0
+    Return BlockInfo.InUseCounter
 
 End
 

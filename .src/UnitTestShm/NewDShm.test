@@ -1,0 +1,169 @@
+' Gambas test file
+
+' Shm: the main ShmMem reached by the class name, namespace images and the creation lock
+
+Private Const RootName As String = "shmtroot"
+Private $sDir As String
+
+Private Sub Clean()
+
+    For Each sName As String In [RootName, "shmtns", "shmtnope", "shmtlast", "shmtimg"]
+        ShmMem.ForceDelete(sName)
+    Next
+    If Shm.IsActive() Then Shm.End(False)
+    $sDir = Temp("shmtdir")
+    If Not IsDir($sDir) Then Mkdir $sDir
+    For Each sFile As String In Dir($sDir)
+        Kill $sDir &/ sFile
+    Next
+
+End
+
+Public Sub aBeginAndAccess()
+
+    Dim aSeen As New String[]
+
+    Clean()
+    Shm.Begin(RootName, 1000000, 500, "", False, $sDir)
+    Assert.Ok(Shm.IsActive(), "active after Begin")
+    Assert.Ok(Shm.Mem.Created, "this process made the segment")
+
+    Shm["a"] = 1
+    Shm!b = "text"
+    With Shm
+        .c = 3
+        Assert.Equals(.a, 1, "read with .name")
+        Assert.Equals(!b, "text", "read with !name")
+        Assert.Equals(.["c"], 3, "read with .[name]")
+    End With
+    Assert.Ok(Shm.Exist("c"), "Exist")
+
+    Shm["zqarr"] = [10, 20, 30]
+    Assert.Equals(Shm["zqarr", 1], 20, "an array element by index")
+    Shm["zqarr", 1] = 25
+    Assert.Equals(Shm["zqarr", 1], 25, "an array element set by index")
+    Shm["zqcol"] = ["k": 1]
+    Assert.Equals(Shm["zqcol", "k"], 1, "a collection element by key")
+    Shm["zqcol", "k"] = 2
+    Assert.Equals(Shm["zqcol", "k"], 2, "a collection element set by key")
+    Assert.Equals(Shm.Mem["zqcol", "k"], 2, "the same through ShmMem")
+    Shm.Free("zqarr")
+    Shm.Free("zqcol")
+    Shm.Free("c")
+    Assert.NotOk(Shm.Exist("c"), "Free")
+
+    For Each vValue As Variant In Shm
+        aSeen.Add(Shm.Key & "=" & CStr(vValue))
+    Next
+    Assert.Equals(aSeen.Join(","), "a=1,b=text", "For Each gives the values, Key the names")
+    Assert.Equals(Shm.Variables().Count, 2, "Variables")
+
+    Shm.End(False)
+    Assert.NotOk(Shm.IsActive(), "not active after End")
+    Try Print Shm["a"]
+    Assert.Error("no access after End")
+
+End
+
+Public Sub fSameVariable()
+
+    Clean()
+    Shm.Begin(RootName, 1000000, 500, "", False, $sDir)
+    Shm.zqdot = 1
+    Assert.Equals(Shm!zqdot, 1, "Shm.name and Shm!name are the same variable")
+    Assert.Equals(Shm["zqdot"], 1, "and Shm[\"name\"]")
+    Shm!zqbang = 2
+    Assert.Equals(Shm.zqbang, 2, "made by !name, read by .name")
+    Shm.count = "a variable"
+    Assert.Equals(Shm!count, "a variable", "a name of a ShmMem property is a variable too")
+    Assert.Equals(Shm.Mem.Variables().Count, 3, "the property is reached through Shm.Mem")
+    Assert.Ok(Shm.Mem.Count >= 3, "Count includes the control symbols")
+    With Shm
+        .zqwith = 4
+        Assert.Equals(!zqwith, 4, ".name and !name in With")
+    End With
+    Shm.NewNameSpace(1000000, "shmtns", 500)
+    Assert.Equals(Shm.Mem.NameSpaceList.Join(","), "shmtns", "namespace calls")
+    Shm.End(False)
+
+End
+
+Public Sub cNameSpaceImage()
+
+    Clean()
+    Shm.Begin(RootName, 1000000, 500, "", False, $sDir)
+    Shm.NewNameSpace(1000000, "shmtns", 500)
+    Shm["shmtns:x"] = 5
+    Shm["shmtns:s"] = "kept"
+    Assert.Equals(Shm.SaveNameSpaces().Join(","), "shmtns", "saved")
+    Assert.Ok(Exist($sDir &/ "shmtns.image"), "saved by its name")
+
+    Shm.RemoveNameSpace("shmtns")                                 ' the last user: the segment is gone
+    Assert.NotOk(Exist("/dev/shm/shmtns_Data"), "segment removed")
+
+    Assert.Equals(Shm["shmtns:x"], 5, "made again from its image when its name is used")
+    Assert.Ok(Shm.Mem.NameSpace("shmtns").Created, "this process made it again")
+    Assert.Equals(Shm["shmtns:s"], "kept", "all of it")
+
+    Try Print Shm["shmtnope:x"]
+    Assert.Error("no segment and no image: it must be declared")
+    Assert.NotOk(Shm.Exist("shmtnope:x"), "Exist is False for an unknown namespace")
+
+    Shm.RemoveNameSpace("shmtns", True)
+    Assert.NotOk(Exist($sDir &/ "shmtns.image"), "the image is deleted")
+    Shm.End(False)
+
+End
+
+Public Sub dLastUserSaves()
+
+    Clean()
+    Shm.Begin(RootName, 1000000, 500, "", False, $sDir)
+    Shm.NewNameSpace(1000000, "shmtlast", 500)
+    Shm["shmtlast:y"] = "saved at end"
+    Assert.Equals(Shm.Mem.NameSpace("shmtlast").Users, 1, "one process uses it")
+    Shm.End()
+    Assert.Ok(Exist($sDir &/ "shmtlast.image"), "the last user saved it at End")
+
+    Shm.Begin(RootName, 1000000, 500, "", False, $sDir)
+    Assert.Equals(Shm["shmtlast:y"], "saved at end", "loaded in the next session")
+    Shm.End(False)
+
+End
+
+Public Sub eCreatorHoldsLock()
+
+    Dim img As ShmMem
+    Dim sImage As String
+    Dim seg As ShmMem
+    Dim fStart As Float
+    Dim bg As NewDShmLoadBG
+    Dim i As Integer
+
+    Clean()
+    img = New ShmMem(4000000, "shmtimg", 4000)
+    For i = 1 To 3000
+        img["v" & i] = "value " & i
+    Next
+    sImage = $sDir &/ "shmtimg.image"
+    img.SaveImage(sImage)
+    img.Close()
+    ShmMem.ForceDelete("shmtimg")
+
+    Env["SHMT_IMAGE"] = sImage
+    bg = New NewDShmLoadBG                                        ' makes the segment and loads the image
+    fStart = Timer
+    While seg = Null And Timer - fStart < 20
+        Try seg = New ShmMem(4000000, "shmtimg", 4000, 0.1, False, ShmMemBlock.DefaultPermissions, True)
+        If seg = Null Then Wait 0.001
+    Wend
+    Assert.Ok(seg <> Null, "opened the segment the task made")
+    Assert.NotOk(seg.Created, "opened, not made")
+    Assert.Ok(seg.Exist("v3000"), "the image was all in before the segment could be opened")
+
+    seg["fgdone"] = True
+    Wait 0.5
+    seg.Close()
+    Env["SHMT_IMAGE"] = Null
+
+End

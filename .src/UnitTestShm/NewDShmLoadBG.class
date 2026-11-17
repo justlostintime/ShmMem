@@ -1,0 +1,21 @@
+' Gambas class file
+
+' Used by NewDShm: another process makes the segment shmtimg from the image in SHMT_IMAGE. The test opens it
+' meanwhile and must find the whole image in it
+
+Inherits Task
+
+Public Sub Main()
+
+    Dim seg As New ShmMem(4000000, "shmtimg", 4000, 0.1, False, ShmMemBlock.DefaultPermissions, False, Env["SHMT_IMAGE"])
+
+    If seg.ImageError <> "" Then Error "NewDShmLoadBG : "; seg.ImageError
+    seg.WaitForValue("fgdone", True, 20)
+    seg.Close()
+    Quit 0
+
+Catch
+    Error "NewDShmLoadBG : "; Error.Text, Error.Where
+    Quit 1
+
+End

@@ -31,6 +31,7 @@ Public VarStoreName As String                                                   
 '' A namespace not in the collection is opened when a segment of that name exists, it is never created by a lookup
 Public NameSpaces As New Collection(gb.ignorecase)                                '' A collection of managed segments
 Private $bBusy As Boolean = False                                                 '' walking the namespaces, a namespace reached twice is skipped
+Private $aNextList As String[]                                                    ' the names For Each walks
 Private $cOpened As New Collection(gb.IgnoreCase)                                 '' the namespaces this object opened, Close closes only these
 
 Public SymStore As ShmMemBlock                                                    '' the Raw memory used to store the symbol table
@@ -52,6 +53,10 @@ Static Public Objects As New Collection(gb.ignorecase)                          
 Property Read ShmObjects As Collection                                             '' returns a list of allocated memory segments
 Property Read Name As String Use $Name = ""                                        '' Returns the segments assigned name, "" is unnamed segment
 Property Read NameSpaceList As String[]                                            '' The names of the namespaces of this segment
+Property Read Created As Boolean                                                   '' True when this object made the segment, False when it opened an existing one
+Property Read Users As Integer                                                     '' The number of processes that have the segment open, 0 for an unnamed one
+Property NameSpaceImages As Boolean Use $bNameSpaceImages = False                  '' Namespaces keep an image <DefaultDirectory>/<name>.image, see NameSpaceImage
+Property Read ImageError As String Use $sImageError = ""                           '' Why the ImageFile given to _new could not be loaded, "" when it was
 
 
 '' We need to determine if the object is a class=module or object=class instantiated object
@@ -131,7 +136,11 @@ End
 
 '' Allocate the memory and symbol table. initialize structures
 '' AttachOnly: open the named segment MemName only when it exists, never create it. Its sizes are the ones it was made with
-Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault, isExecutable As Boolean = False, setPermissions As Integer = ShmMemBlock.DefaultPermissions, AttachOnly As Boolean = False)
+'' ImageFile: when this makes the named segment, the image is loaded before any other process can use the segment.
+'' A segment that exists already is opened as it is. A load error is kept in ImageError, the segment stays usable
+Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As String = "", MaxSymbols As Integer = MaxSymbolsDefault, LockTimeOut As Float = TimeOutDefault, isExecutable As Boolean = False, setPermissions As Integer = ShmMemBlock.DefaultPermissions, AttachOnly As Boolean = False, ImageFile As String = "")
+
+    Dim bHeld As Boolean
 
     '  Print "Define memory block"
     $sDefaultDirectory = User.home &/ "vars"
@@ -185,10 +194,12 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
         'Print "Create memory blocks"
         'Flush
 
-        VarStore = New ShmMemBlock(VarMemLength, VarStoreName, LockTimeOut, isExecutable, setPermissions, AttachOnly)
+        VarStore = New ShmMemBlock(VarMemLength, VarStoreName, LockTimeOut, isExecutable, setPermissions, AttachOnly, ImageFile <> "")
+        bHeld = ImageFile <> "" And VarStore.Created               ' openers wait in their _new until the image is in
         Try SymStore = New ShmMemBlock((ShmSymbolTable.SymbolLength() * MaxSymbols) + ShmSymbolTable.InfoLength(), SymStoreName, LockTimeOut, False, ShmMemBlock.DefaultPermissions, AttachOnly)
         If Error Then
             Dim sError As String = Error.Text
+            If bHeld Then VarStore.Release()
             VarStore._free()                                      ' not kept open: the last one out removes it
             VarStore = Null
             Error.Raise(sError)
@@ -219,14 +230,72 @@ Public Sub _new(Optional VarMemLength As Variant = VarMemDefault, MemName As Str
     Vars = New ShmSymbolTable(symStore, MyVarMem)
     'Print "Completed memory block definition"
 
+    If bHeld Then
+        If Exist(SetPath(ImageFile)) Then $sImageError = LoadHeldImage(ImageFile)
+        bHeld = False
+        VarStore.Release()
+    Endif
+
 Catch
     Dim sFailed As String = "Shm : Error creating Mem Block " & Error.Text & " " & Error.Where
+    If bHeld And If VarStore <> Null Then VarStore.Release()
     If shmMem.Objects[$Signature] = Me Then shmMem.Objects.Remove($Signature)     ' not left behind half made
     If shmMem.Objects["default"] = Me Then
         shmMem.Objects.Remove("default")
         If shmMem.Objects.Count > 0 Then shmMem.Objects["default"] = shmMem.Objects[shmMem.Objects.First]
     Endif
     Error.Raise(sFailed)
+
+End
+
+'' Load the image while the creation lock is held, returns the error text, "" when loaded
+'' Kept apart: an error of the load is caught in this function, not in _new
+Private Sub LoadHeldImage(ImageFile As String) As String
+
+    LoadImage(ImageFile)
+    Return ""
+
+Catch
+    Return Error.Text
+
+End
+
+Private Function Created_Read() As Boolean
+
+    If VarStore = Null Then Return False
+    Return VarStore.Created
+
+End
+
+Private Function Users_Read() As Integer
+
+    If VarStore = Null Or If $Name = "" Then Return 0
+    Return VarStore.Users
+
+End
+
+'' The image file of the namespace SegName: <DefaultDirectory>/<SegName>.image. Segment names are global, so the
+'' namespace b of a is b.image
+Public Sub NameSpaceImage(SegName As String) As String
+
+    Return SetPath(SegName & ".image")
+
+End
+
+'' The image to load into a namespace this object makes: "" when NameSpaceImages is off or there is no file
+Private Sub ImageToLoad(SegName As String) As String
+
+    If Not $bNameSpaceImages Then Return ""
+    If Not Exist(NameSpaceImage(SegName)) Then Return ""
+    Return NameSpaceImage(SegName)
+
+End
+
+'' A namespace made or opened by this object works like it: same directory, same image setting
+Private Sub Adopt(seg As ShmMem)
+
+    seg.DefaultDirectory = $sDefaultDirectory
+    seg.NameSpaceImages = $bNameSpaceImages
 
 End
 
@@ -247,7 +316,7 @@ Public Sub NewNameSpace(Optional VarMemLength As Variant = VarMemDefault, MemNam
 
     pos = RInStr(MemName, ":")
     If pos > 0 Then                                                  ' "a:b" makes b a namespace of the namespace a
-        NewSeg = GetNameSpace(Left(MemName, pos) )[0]
+        NewSeg = GetNameSpace(Left(MemName, pos))[0]
         Return NewSeg.NewNameSpace(VarMemLength, Mid(MemName, pos + 1), MaxSymbols, LockTimeOut, isExecutable, setPermissions)
     Endif
 
@@ -257,8 +326,9 @@ Public Sub NewNameSpace(Optional VarMemLength As Variant = VarMemDefault, MemNam
 
     NewSeg = OpenSegment(MemName)                                    ' made again it would drop the one this process has open
     If NewSeg = Null Then
-        NewSeg = New ShmMem(VarMemLength, MemName, MaxSymbols, LockTimeOut, isExecutable, setPermissions)
+        NewSeg = New ShmMem(VarMemLength, MemName, MaxSymbols, LockTimeOut, isExecutable, setPermissions, False, ImageToLoad(MemName))
         $cOpened[MemName] = True                                     ' ours to close, one already open is its owner's
+        Adopt(NewSeg)
     Endif
 
     NameSpaces[MemName] = NewSeg
@@ -278,12 +348,48 @@ Static Private Sub OpenSegment(MemName As String) As ShmMem
 
 End
 
+'' Save each namespace, and their namespaces, to its own image NameSpaceImage(name). LastOnly: only the namespaces
+'' no other process has open, the last one to close a namespace saves it. Returns the names saved
+Public Sub SaveNameSpaces(Optional LastOnly As Boolean = False) As String[]
+
+    Dim aSaved As New String[]
+
+    SaveNameSpaceTree(LastOnly, aSaved)
+    Return aSaved
+
+End
+
+'' Public only because each namespace is another object: use SaveNameSpaces
+Public Sub SaveNameSpaceTree(LastOnly As Boolean, aSaved As String[])
+
+    For Each seg As ShmMem In NameSpaces
+        If aSaved.Exist(seg.Name, gb.IgnoreCase) Then Continue      ' a segment is reached once
+        If Not LastOnly Or If seg.Users <= 1 Then
+            seg.SaveImage(NameSpaceImage(seg.Name))
+            aSaved.Add(seg.Name)
+        Endif
+        seg.SaveNameSpaceTree(LastOnly, aSaved)
+    Next
+
+End
+
+'' Save the namespace SegName (a path "a:b" is the namespace b) to its image NameSpaceImage(name)
+Public Sub SaveNameSpace(SegName As String)
+
+    Dim seg As ShmMem = NameSpace(SegName)
+
+    If seg = Null Then Error.Raise("Unknown Namespace: " & SegName)
+    seg.SaveImage(NameSpaceImage(seg.Name))
+
+End
+
 '' Close the namespace SegName and remove it from its parent, SegName may be a path "a:b"
-'' The segment itself stays as long as another process or object has it open
-Public Sub RemoveNameSpace(SegName As String)
+'' The segment itself stays as long as another process or object has it open. DeleteImage: its image file is removed
+Public Sub RemoveNameSpace(SegName As String, Optional DeleteImage As Boolean = False)
 
     Dim pos As Integer = RInStr(SegName, ":")
     Dim parent As ShmMem = Me
+    Dim sImage As String = NameSpaceImage(Mid(SegName, pos + 1))
 
     If pos > 0 Then
         parent = GetNameSpace(Left(SegName, pos))[0]
@@ -293,6 +399,7 @@ Public Sub RemoveNameSpace(SegName As String)
     If Not parent.NameSpaces.Exist(SegName) Then Error.Raise("Unknown Namespace: " & SegName)
     If parent._OpenedNameSpace(SegName) Then parent.NameSpaces[SegName].Close()    ' one opened elsewhere stays open
     parent.NameSpaces.Remove(SegName)
+    If DeleteImage And If Exist(sImage) Then Kill sImage             ' plain Exist() here is the file test
 
 End
 
@@ -375,17 +482,25 @@ Public Sub _WalkNameSpace(SymbolName As String) As Variant[]
 
 End
 
-'' A namespace this object does not have yet: use the segment of that name when it exists, a lookup never creates one
+'' A namespace this object does not have yet: use the segment of that name when it exists.
+'' With NameSpaceImages, a namespace with no segment but an image file is made again from the image.
+'' Otherwise a lookup never creates one
 Private Sub AttachNameSpace(SegName As String) As ShmMem
 
     Dim seg As ShmMem
+    Dim sImage As String
 
     If SegName == $Name Then Error.Raise("Unknown Namespace: " & SegName & " is this segment")
     seg = OpenSegment(SegName)
     If seg = Null Then
         Try seg = New ShmMem(VarMemDefault, SegName, MaxSymbolsDefault, TimeOutDefault, False, ShmMemBlock.DefaultPermissions, True)
-        If Error Then Error.Raise("Unknown Namespace: " & SegName & " (create it with NewNameSpace)")
+        If Error Then
+            sImage = ImageToLoad(SegName)
+            If sImage = "" Then Error.Raise("Unknown Namespace: " & SegName & " (create it with NewNameSpace)")
+            seg = New ShmMem(VarMemDefault, SegName, MaxSymbolsDefault, TimeOutDefault, False, ShmMemBlock.DefaultPermissions, False, sImage)
+        Endif
         $cOpened[SegName] = True
+        Adopt(seg)
     Endif
     NameSpaces[SegName] = seg
     Return seg
@@ -435,8 +550,8 @@ End
 '' map the symbol names to a property entry
 Public Sub _property(...) As Boolean
 
-    Debug "Param.count ="; Param.count
     Dim result As Boolean = True
+
     Return result
 
 End
@@ -462,9 +577,26 @@ End
 Public Sub _get(SymName As String, ...) As Variant
 
     Dim ns As Variant[] = GetNameSpace(SymName)
+    Dim vValue As Variant
 
-    If ns[0] <> Me Then Return ns[0]._get(ns[1])
-    Return vars[ns[1]]
+    If ns[0] <> Me Then
+        If Param.Count = 0 Then Return ns[0]._get(ns[1])
+        Return Object.Call(ns[0], "_get", Args(ns[1], Param.All))
+    Endif
+    vValue = vars[ns[1]]
+    If Param.Count = 0 Then Return vValue
+    Return Object.Call(vValue, "_get", Param.All)                     ' Mem["a", 2] is element 2 of the array or collection a
+
+End
+
+'' The argument list First followed by Rest
+Static Private Sub Args(First As Variant, Rest As Variant[]) As Variant[]
+
+    Dim aArgs As New Variant[]
+
+    aArgs.Add(First)
+    aArgs.Insert(Rest)
+    Return aArgs
 
 End
 
@@ -759,10 +891,12 @@ End
 '' Search and return a list of variable names that match the provided pattern
 '' "a:*" lists the namespace a, the names are returned as a:name
 '' Recursive: the namespaces are listed too, as namespace:name, the pattern matches the name in its namespace
+'' The control symbols (#onnew ...) are listed only when Filter starts with #
 Public Sub Variables(Optional Filter As String = "*", Recursive As Boolean = False) As String[]
 
     Dim Varlist As New String[]
     Dim pos As Integer = RInStr(Filter, ":")
+    Dim bControl As Boolean = Filter Begins "#"
 
     If pos > 0 Then                                                  ' the list of a namespace
         Dim seg As ShmMem = GetNameSpace(Left(Filter, pos))[0]
@@ -775,6 +909,7 @@ Public Sub Variables(Optional Filter As String = "*", Recursive As Boolean = Fal
 
     For Each s As Variant In vars
         If vars.key Like Filter Then
+            If Not bControl And If vars.key Begins "#" Then Continue
             Varlist.Add(vars.key)
         Endif
     Next
@@ -929,23 +1064,19 @@ End
 '' iterate through the list
 Public Sub _next() As Variant
 
-    Static SymList As String[]
-
     If Enum.Index = Null Then
-        SymList = Vars.SortedList()
-        If SymList.Count = 0 Then
-            Enum.Stop()
-        Endif
-        Enum.index = 0
+        $aNextList = Me.Variables()                                     ' no control symbols
+        $aNextList.Sort(gb.IgnoreCase)
+        Enum.Index = 0
     Else
         Inc Enum.Index
-        If Enum.index > SymList.max Then
-            Enum.Stop()
-            Return
-        Endif
     Endif
-    $sKey = SymList[Enum.index]
-    Return Vars[SymList[Enum.Index]]
+    While Enum.Index < $aNextList.Count                                 ' a name freed meanwhile is skipped
+        $sKey = $aNextList[Enum.Index]
+        If Me.Exist($sKey) Then Return Me[$sKey]                     ' plain Exist() here is the file test
+        Inc Enum.Index
+    Wend
+    Enum.Stop()
 
 End
 

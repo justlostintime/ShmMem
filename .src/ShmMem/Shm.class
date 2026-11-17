@@ -1,0 +1,253 @@
+' Gambas class file
+
+'Author Westwood JustLostintime
+'Released Under:
+'  GNU GENERAL Public LICENSE
+'  Version 3, 29 June 2007
+'  See project license file.
+
+''' The main ShmMem of a program, reached by the class name from every module and class of the program.
+''' Gambas has no program wide variables: this class only holds the object, ShmMem does the work.
+'''   Shm.Begin("mysegment")
+'''   Shm.a = 1 : Shm!b = "text" : Shm["c"] = 3 : Print Shm["ns:x"], Shm.Exist("a")
+'''   With Shm
+'''     !d = 4 : .e = 5 : Print .a, !b, .["c"]
+'''   End With
+'''   Shm.End()
+''' Shm.name, Shm!name and Shm["name"] are the variable name: a new name is created when it is assigned.
+''' The methods below are the ones of Shm.Mem, anything else of ShmMem is reached through Shm.Mem.
+
+Export
+
+Static Public Mem As ShmMem                                         '' The main segment, Null before Begin and after End
+Static Property Read Key As String                                  '' The name of the current entry in For Each
+
+'' Open the named segment Name, or make it when it does not exist, "" makes an unnamed segment.
+'' ImageFile is loaded when this makes the segment. AttachOnly raises an error when the segment does not exist.
+'' The namespaces keep their images in Directory (NameSpaceImages is on). Returns the segment, also in Shm.Mem
+Static Public Sub Begin(Optional Name As String = "", MemLength As Long = 20000000, MaxSymbols As Integer = 8000, ImageFile As String = "", AttachOnly As Boolean = False, Directory As String = User.Home &/ "vars") As ShmMem
+
+    If Mem <> Null Then Error.Raise("Shm.Begin: a segment is open already: " & Mem.Name)
+    Mem = New ShmMem(MemLength, Name, MaxSymbols, 0.1, False, ShmMemBlock.DefaultPermissions, AttachOnly, ImageFile)
+    Mem.DefaultDirectory = Directory
+    Mem.NameSpaceImages = True
+    Return Mem
+
+End
+
+'' Close the segment. SaveImages: the namespaces this process is the last user of are saved to their images first
+Static Public Sub End(Optional SaveImages As Boolean = True)
+
+    If Mem = Null Then Return
+    If SaveImages Then Mem.SaveNameSpaces(True)
+    Mem.Close()
+    Mem = Null
+
+End
+
+'' True between Begin and End
+Static Public Sub IsActive() As Boolean
+
+    Return Mem <> Null
+
+End
+
+Static Private Sub Check()
+
+    If Mem = Null Then Error.Raise("Shm: no segment, call Shm.Begin first")
+
+End
+
+'' -----------------------------------------------------------------------------------
+''  Variables: Shm.name, Shm!name and Shm["name"]
+'' -----------------------------------------------------------------------------------
+
+'' Shm["a"] or Shm!a is the variable a, Shm["a", 2] is element 2 of it
+Static Public Sub _get(SymName As String, ...) As Variant
+
+    Check()
+    If Param.Count = 0 Then Return Mem[SymName]
+
+    Dim aArgs As New Variant[]
+    aArgs.Add(SymName)
+    aArgs.Insert(Param.All)
+    Return Object.Call(Mem, "_get", aArgs)
+
+End
+
+'' Shm["a"] = v or Shm!a = v sets the variable a, made when it is new. Shm["a", 2] = v sets element 2 of it
+Static Public Sub _put(Value As Variant, SymName As String, ...)
+
+    Check()
+    If Param.Count = 0 Then
+        Mem[SymName] = Value
+        Return
+    Endif
+
+    Dim aArgs As New Variant[]
+    aArgs.Add(Value)
+    aArgs.Add(SymName)
+    aArgs.Insert(Param.All)
+    Object.Call(Mem, "_put", aArgs)
+
+End
+
+'' Every unknown name is a variable
+Static Public Sub _property(...) As Boolean
+
+    Return True
+
+End
+
+'' Shm.a reads the variable a, Shm.a = v sets it, made when it is new
+Static Public Sub _unknown(...) As Variant
+
+    If Param.Count = 0 Then Return _get(Param.Name)
+    _put(Param[0], Param.Name)
+
+End
+
+'' For Each value In Shm, Shm.Key is the name
+Static Public Sub _next() As Variant
+
+    Check()
+    Return Mem._next()
+
+End
+
+Static Private Function Key_Read() As String
+
+    If Mem = Null Then Return ""
+    Return Mem.Key
+
+End
+
+'' -----------------------------------------------------------------------------------
+''  The calls of Shm.Mem
+'' -----------------------------------------------------------------------------------
+
+Static Public Sub Exist(SymName As String) As Boolean
+
+    Check()
+    Return Mem.Exist(SymName)
+
+End
+
+Static Public Sub Free(SymName As Variant)
+
+    Check()
+    Mem.Free(SymName)
+
+End
+
+Static Public Sub Remove(SymName As String)
+
+    Check()
+    Mem.Remove(SymName)
+
+End
+
+Static Public Sub Variables(Optional Filter As String = "*", Recursive As Boolean = False) As String[]
+
+    Check()
+    Return Mem.Variables(Filter, Recursive)
+
+End
+
+Static Public Sub Notify(SymName As String, NotifyObject As Object, Optional NotifyFunction As String = "", Timeout As Float = 0, Tag As String = "")
+
+    Check()
+    Mem.Notify(SymName, NotifyObject, NotifyFunction, Timeout, Tag)
+
+End
+
+Static Public Sub NotifyStop(SymName As String, NotifyObject As Object, Optional NotifyFunction As String = "", Tag As String = "")
+
+    Check()
+    Mem.NotifyStop(SymName, NotifyObject, NotifyFunction, Tag)
+
+End
+
+Static Public Sub NotifyOnNew(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "", InNameSpace As String = "") As Boolean
+
+    Check()
+    Return Mem.NotifyOnNew(Enabled, NotifyObject, NotifyFunction, InNameSpace)
+
+End
+
+Static Public Sub NotifyOnAny(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "", InNameSpace As String = "") As Boolean
+
+    Check()
+    Return Mem.NotifyOnAny(Enabled, NotifyObject, NotifyFunction, InNameSpace)
+
+End
+
+Static Public Sub NotifyOnRemove(Enabled As Boolean, NotifyObject As Object, Optional NotifyFunction As String = "", InNameSpace As String = "") As Boolean
+
+    Check()
+    Return Mem.NotifyOnRemove(Enabled, NotifyObject, NotifyFunction, InNameSpace)
+
+End
+
+Static Public Sub NewNameSpace(Optional VarMemLength As Variant = 20000000, MemName As String = "", MaxSymbols As Integer = 8000) As ShmMem
+
+    Check()
+    Return Mem.NewNameSpace(VarMemLength, MemName, MaxSymbols)
+
+End
+
+Static Public Sub NameSpace(SegName As String) As ShmMem
+
+    Check()
+    Return Mem.NameSpace(SegName)
+
+End
+
+Static Public Sub NameSpaceExist(SegName As String) As Boolean
+
+    Check()
+    Return Mem.NameSpaceExist(SegName)
+
+End
+
+Static Public Sub RemoveNameSpace(SegName As String, Optional DeleteImage As Boolean = False)
+
+    Check()
+    Mem.RemoveNameSpace(SegName, DeleteImage)
+
+End
+
+Static Public Sub SaveNameSpaces(Optional LastOnly As Boolean = False) As String[]
+
+    Check()
+    Return Mem.SaveNameSpaces(LastOnly)
+
+End
+
+Static Public Sub SaveNameSpace(SegName As String)
+
+    Check()
+    Mem.SaveNameSpace(SegName)
+
+End
+
+Static Public Sub SaveImage(Optional FileName As String = Application.Name & ".image", Recursive As Boolean = False)
+
+    Check()
+    Mem.SaveImage(FileName, Recursive)
+
+End
+
+Static Public Sub LoadImage(Optional FileName As String = Application.Name & ".image", Merge As Boolean = False, Recursive As Boolean = False)
+
+    Check()
+    Mem.LoadImage(FileName, Merge, Recursive)
+
+End
+
+Static Public Sub {Print}(Optional Recursive As Boolean = False)
+
+    Check()
+    Mem.Print(Recursive)
+
+End

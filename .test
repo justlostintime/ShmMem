@@ -1,5 +1,5 @@
 [TestSuites]
-Default="NewBSaveLoadImage.aSaveImage;bLoadImage"
+Default="NewANotifyTest.notifyTest,NewBSaveLoadImage.aSaveImage;bLoadImage,NewCNameSpaces.aBasicReadWrite;bRootNameAndLeadingColon;cUnknownAndDuplicate;dAttachExistingInProcess;eAttachFromOtherProcess;fArraysAndObjects;gVariablesAndClear;hImagesAndVars;iNotify,NewProcessUsingNamed.maintest"
 Count=0
 TestWith=0
 

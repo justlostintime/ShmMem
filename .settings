@@ -867,17 +867,17 @@ Diagonals=0
 Lock=False
 
 [FProjectVersion]
-LastCommit="Fix a bug in shmThread and added section on running c and asm code from mmem segments\n\n* BUG: shmThread memory leak, \n* OPT: updated wiki with section on executable c and asm functions"
+LastCommit="Add the notion of name spaces to integrate segments together into one program\n\n* NEW : support multi named segments to be shared with other apps as needed called namespaces"
 
 [OpenFile]
 Count=6
-File[1]=".src/ShmMem/shmMem.class:0.800"
+File[1]=".src/ShmMem/shmMem.class:27.559"
 File[2]=".src/ShmMem/ShmThread.class:4.40"
 File[3]=".src/ShmMem/ShmQueue.class:4.44"
 File[4]=".src/ShmMem/ShmList.class:0.439"
-Active=5
+Active=1
 File[5]=".src/ShmMem/ShmArray.class:1.51"
-File[6]=".src/ShmMem/ShmMemBlock.class:1.23"
+File[6]=".src/ShmMem/ShmMemBlock.class:0.23"
 
 [Package]
 Dir="~/Projects/Distribution/ShmMem/"
