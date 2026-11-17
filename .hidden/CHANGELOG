@@ -1,3 +1,14 @@
+* Tue Nov 17 2026 brian <justlostintime@gmail.com> 2.4.0
+- NEW : Namespaces, other named shared memory segments reached through the variable name and shared with
+  other programs as needed. ns?x is x in the namespace ns, a?b?x is x in the namespace b of the namespace a.
+  NewNameSpace creates one, NameSpace, NameSpaceExist, RemoveNameSpace and SaveNameSpaces manage them.
+  Every call that takes a symbol name, notifications and Variables accept a namespaced name.
+  A namespace not open yet is opened when its segment or image exists, see the example NameSpaceExample
+- Namespaces use ? as the separator in place of :, a name like orders?open?count can be written
+  Mem!orders?open?count or Mem.orders?open?count as well as Mem["orders?open?count"]
+- A name can not start with ? (Gambas reads a leading ? as Print), the segment's own name still means the segment itself
+- A ? in a Variables filter is the namespace separator, not a wildcard
+
 * Thu Oct 08 2026 brian <justlostintime@gmail.com> 2.2.8
 - Updated bugs and malfunctions around executable memory segments
 
